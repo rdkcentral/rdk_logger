@@ -1,0 +1,123 @@
+name: l1-tests
+
+on:
+  push:
+    branches: [ main, 'release/**', develop, 'topic/**' ]
+  pull_request:
+    branches: [ main, 'release/**', develop, 'topic/**' ]
+
+env:
+  WORK_DIR: ${{github.workspace}}
+  DEP_LIB: ${{github.workspace}}/dep_lib
+  RDKLOGGER_ROOT: ${{github.workspace}}/Rdklogger
+  RDKLOGGER_INSTALL_DIR: ${{github.workspace}}/Rdklogger/install
+
+jobs:
+  l1-tests:
+    name: Build rdk_logger with dependecies and execute L1 tests
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        compiler: [ gcc, clang ]
+        coverage: [ with-coverage, without-coverage ]
+        exclude:
+          - compiler: clang
+            coverage: with-coverage
+          - compiler: clang
+            coverage: without-coverage
+          - compiler: gcc
+            coverage: without-coverage
+            
+    steps: # The list of steps to execute
+      - name: Install packages
+        run: >
+          sudo apt update
+          &&
+          sudo apt install build-essential
+          &&
+          sudo apt install -y tree automake libsqlite3-dev libcurl4-openssl-dev valgrind libgtest-dev lcov clang libsystemd-dev libboost-all-dev libwebsocketpp-dev meson libcunit1 libcunit1-dev
+          
+      - name: Checkout CMake
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: Kitware/CMake
+          path: CMake
+          ref: ${{env.CMAKE_REF}}
+
+      - name: Build CMake
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: >
+          cd ${{github.workspace}}/CMake
+          &&
+          ./bootstrap
+          &&
+          make -j8
+
+      - name: Install CMake
+        run: >
+          cd "${{github.workspace}}/CMake"
+          &&
+          sudo make install
+          &&
+          cmake --version
+          
+      - name: Build gtest
+        run: |
+          cd /usr/src/gtest
+          sudo cmake CMakeLists.txt
+          sudo make
+          sudo cp lib/*.a /usr/lib
+          
+      - name: Checkout rdkcentral/rdk_logger
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: rdkcentral/rdk_logger
+          github-server-url: https://github.com/rdkcentral/rdk_logger
+          path: "${{env.RDKLOGGER_ROOT}}"
+
+      - name: Build rdk_logger
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ${{env.DEP_LIB}}
+          cd ${{env.DEP_LIB}}
+          if [ ! -f log4c-1.2.3.tar.gz ]
+          then
+          wget https://sourceforge.net/projects/log4c/files/log4c/1.2.3/log4c-1.2.3.tar.gz
+          fi
+          if [ ! -f log4c-1.2.3 ]
+          then
+          tar -xzf log4c-1.2.3.tar.gz
+          fi
+          cd "log4c-1.2.3"
+          ./configure "--prefix=${DEP_LIB}/log4c-1.2.3/install"
+          make
+          make install
+
+          echo "\"completed log4c build and installed library\""
+          mkdir -p  ${{env.RDKLOGGER_ROOT}}
+          cd ${{env.RDKLOGGER_ROOT}}
+          aclocal -I cfg
+          libtoolize --automake
+          autoheader
+          automake --foreign --add-missing
+          rm -f configure
+          autoconf
+          export ac_cv_func_malloc_0_nonnull=yes
+          export ac_cv_func_memset=yes
+          export LOG4C_CFLAGS="-I${{env.DEP_LIB}}/log4c-1.2.3/install/include/log4c/ -I${{env.DEP_LIB}}/log4c-1.2.3/src/ -I${{env.DEP_LIB}}/log4c-1.2.3/src/log4c -I${{env.DEP_LIB}}/log4c-1.2.3/install/include/"
+          export LOG4C_LIBS="-L${{env.DEP_LIB}}/log4c-1.2.3/install/lib"
+          ./configure --prefix=${{env.RDKLOGGER_INSTALL_DIR}}/lib --sysconfdir=${{env.RDKLOGGER_INSTALL_DIR}}/bin LOG4c_CFLAGS="-I${{env.DEP_LIB}}/log4c-1.2.3/src/ -I${{env.DEP_LIB}}/log4c-1.2.3/install/include/log4c/" LOG4C_LIBS="-L${{env.DEP_LIB}}/log4c-1.2.3/install/lib/liblog4c.so"
+          make
+          make install
+
+      - name: Build and execute L1 unittesting for rdk_logger
+        run: |
+          mkdir -p ${{env.RDKLOGGER_ROOT}}/unittests
+          UNITTESTS="${{env.RDKLOGGER_ROOT}}/unittests"
+          cd ${UNITTESTS}
+          cmake -DRDKLOGGER_SOURCE_PATH=${{env.RDKLOGGER_ROOT}} -DDEP_LIB_PATH=${{env.DEP_LIB}} -DRDKLOGGER_UNITTEST_DIR=${UNITTESTS} -DCMAKE_INSTALL_PREFIX:PATH=${UNITTESTS}/build -DDEBUG_CONF_FILE="\"debug.ini\"" -S . -B build
+          make -C build
+          cmake --install build
+          ./build/rdk_logger_gtest
