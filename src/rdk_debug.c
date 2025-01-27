@@ -82,7 +82,7 @@ void rdk_dbgDumpLog(const char* path)
     {
         modptr = rdk_logger_envGetModFromNum(mod);
     
-        memset(config, 0, sizeof(config));
+        memset(config, 0, 10*sizeof(config));
         (void) rdk_dbg_priv_LogQueryOpSysIntf((char*) modptr, config, 127);
         RDK_LOG(RDK_LOG_INFO, "LOG.RDK.OS",
                 "Initial Logging Level for %-10s: %s\n", modptr, config);

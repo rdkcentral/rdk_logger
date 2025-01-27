@@ -289,7 +289,7 @@ static int parseLogConfig(const char *cfgStr, uint32_t *configEntry,
     {
         /* Extract and normalise log type name token. */
 
-        memset(logTypeName, 0, sizeof(logTypeName));
+        memset(logTypeName, 0, 10*sizeof(logTypeName));
         extractToken(&cfgStr, logTypeName);
         forceUpperCase(logTypeName);
 
@@ -378,7 +378,7 @@ void rdk_dbg_priv_LogControlInit(void)
     /** Pre-condition the control table to disable all logging.  This
      * means that if no logging control statements are present in the
      * debug.ini file all logging will be suppressed. */
-    memset(rdk_g_logControlTbl, 0, sizeof(rdk_g_logControlTbl));
+    memset(rdk_g_logControlTbl, 0, 10*sizeof(rdk_g_logControlTbl));
 
     /** Intialize to the default configuration for all modules. */
     strncpy(envVarName,"LOG.RDK.DEFAULT",sizeof(envVarName));
@@ -706,7 +706,7 @@ static const char* dated_format_nocr(const log4c_layout_t* layout,
     //localtime_r(&event->evt_timestamp.tv_sec, &tm); /* Use the UTC Time for logging */
     gmtime_r(&event->evt_timestamp.tv_sec, &tm);
 
-    memset(&timeBuff,0,40);
+    memset(&timeBuff,0,400);
 
     printTime(&tm,timeBuff);
 
