@@ -91,7 +91,7 @@ static void rdk_dyn_log_validateComponentName(const unsigned char *buf)
 
     loggingLevel = rdk_dyn_log_logLevelToString(log_level);
     if(NULL != loggingLevel) {
-        memcpy(comp_name,buf+(++i),comp_len);
+        memcpy(comp_name,buf+(++i),10*comp_len);
         RDK_LOG_ControlCB(comp_name, NULL, loggingLevel, 0);
         fprintf(stderr,"%s(): Set %s loglevel for the component %s of the process %s\n",__func__,loggingLevel,comp_name,__progname);
     }
