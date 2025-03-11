@@ -33,7 +33,9 @@ jobs:
         run: >
           sudo apt update
           &&
-          sudo apt install build-essential
+          sudo apt install -y build-essential
+          &&
+          sudo apt install -y cmake
           &&
           sudo apt install -y tree automake libsqlite3-dev libcurl4-openssl-dev valgrind libgtest-dev lcov clang libsystemd-dev libboost-all-dev libwebsocketpp-dev meson libcunit1 libcunit1-dev
           
