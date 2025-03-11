@@ -29,7 +29,6 @@
 * @{
 **/
 
-
 #include <sys/socket.h>
 #include <signal.h>
 #include <sys/types.h>
