@@ -30,6 +30,10 @@ then
     exit 1
 fi
 
+if [ -f /lib/rdk/t2Shared_api.sh ]; then
+    source /lib/rdk/t2Shared_api.sh
+fi
+
 #rdkLogMileStone will give uptime info in milliseconds.
 UPTIME_BIN="/usr/bin/rdkLogMileStone"
 
