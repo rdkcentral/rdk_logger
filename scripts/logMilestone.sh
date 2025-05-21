@@ -30,6 +30,10 @@ then
     exit 1
 fi
 
+if [ -f /lib/rdk/t2Shared_api.sh ]; then
+    source /lib/rdk/t2Shared_api.sh
+fi
+
 #rdkLogMileStone will give uptime info in milliseconds.
 UPTIME_BIN="/usr/bin/rdkLogMileStone"
 
@@ -38,6 +42,11 @@ MILESTONE_EVENT=$1
 if [ -f "$UPTIME_BIN" ]; then
     #write uptime using rdkLogMileStone binary
     uptime=`$UPTIME_BIN $1`
+    if [ "$1" == "CONNECT_TO_NTP_SERVER" ]; then
+        t2ValNotify "btime_ntpConnTime_split" "$uptime"
+    elif [ "$1" == "RDK_STARTED" ]; then
+        t2ValNotify "btime_rdkstart_split" "$uptime"
+    fi
 else
     echo "$UPTIME_BIN not found..!"
     exit -1

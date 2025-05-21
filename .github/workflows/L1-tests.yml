@@ -33,42 +33,19 @@ jobs:
         run: >
           sudo apt update
           &&
-          sudo apt install build-essential
+          sudo apt install -y build-essential
+          &&
+          sudo apt install -y cmake
           &&
           sudo apt install -y tree automake libsqlite3-dev libcurl4-openssl-dev valgrind libgtest-dev lcov clang libsystemd-dev libboost-all-dev libwebsocketpp-dev meson libcunit1 libcunit1-dev
-          
-      - name: Checkout CMake
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v3
-        with:
-          repository: Kitware/CMake
-          path: CMake
-          ref: ${{env.CMAKE_REF}}
 
-      - name: Build CMake
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: >
-          cd ${{github.workspace}}/CMake
-          &&
-          ./bootstrap
-          &&
-          make -j8
-
-      - name: Install CMake
-        run: >
-          cd "${{github.workspace}}/CMake"
-          &&
-          sudo make install
-          &&
-          cmake --version
-          
       - name: Build gtest
         run: |
           cd /usr/src/gtest
           sudo cmake CMakeLists.txt
           sudo make
           sudo cp lib/*.a /usr/lib
-          
+
       - name: Checkout rdkcentral/rdk_logger
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v3
