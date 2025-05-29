@@ -42,10 +42,14 @@ MILESTONE_EVENT=$1
 if [ -f "$UPTIME_BIN" ]; then
     #write uptime using rdkLogMileStone binary
     uptime=`$UPTIME_BIN $1`
+    uptime_seconds=$(cut -d ' ' -f 1 /proc/uptime)
+    uptime_ms=$(awk -v up="$uptime_seconds" 'BEGIN { printf "%.0f", up * 1000 }')
+
+    echo "Uptime_MS = $uptime_ms"
     if [ "$1" == "CONNECT_TO_NTP_SERVER" ]; then
-        t2ValNotify "btime_ntpConnTime_split" "$uptime"
+        t2ValNotify "btime_ntpConnTime_split" "$uptime_ms"
     elif [ "$1" == "RDK_STARTED" ]; then
-        t2ValNotify "btime_rdkstart_split" "$uptime"
+        t2ValNotify "btime_rdkstart_split" "$uptime_ms"
     fi
 else
     echo "$UPTIME_BIN not found..!"
