@@ -50,6 +50,8 @@ if [ -f "$UPTIME_BIN" ]; then
         t2ValNotify "btime_ntpConnTime_split" "$uptime_ms"
     elif [ "$1" == "RDK_STARTED" ]; then
         t2ValNotify "btime_rdkstart_split" "$uptime_ms"
+    elif [ "$1" == "SYSTEM_TIME_SET" ]; then
+        t2ValNotify "SYST_INFO_SETSYSTIME" "$uptime_ms"
     fi
 else
     echo "$UPTIME_BIN not found..!"
