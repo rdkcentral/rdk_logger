@@ -231,13 +231,23 @@ const char *rdk_logLevelStrings[ENUM_RDK_LOG_COUNT] =
 };
 #endif /* RDK_DEBUG_DEFINE_STRINGS */
 
+typedef struct _rdk_logger_config
+{
+    char fileName[128];
+    char location[16];
+    char module[16];
+    long maxSize;
+    long maxCount;
+    rdk_LogLevel loglevel;
+}rdklogger_config;
+
 /**
  * @ingroup RDKLOGGER_DEBUG_API
  * @{
  */
 
 rdk_Error rdk_logger_init(const char* debugConfigFile);
-
+rdk_Error rdk_logger_ext_init(rdklogger_config config);
 rdk_Error rdk_logger_deinit();
 
 void rdk_logger_msg_printf(rdk_LogLevel level, const char *module, const char *format, ...) __attribute__ ((format (printf, 3, 4)));

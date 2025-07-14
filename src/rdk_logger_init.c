@@ -40,7 +40,7 @@
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
 #include "rdk_utils.h"
-
+#include "log4c.h"
 #define BUF_LEN 256
 static int isLogInited = 0;
 /**
@@ -100,6 +100,42 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
     return RDK_SUCCESS;
 }
 
+#if 1
+rdk_Error rdk_logger_ext_init(rdklogger_config config)
+{
+#if 1
+    rdk_Error ret;
+    ret = rdk_logger_init("/home/deepthi/RDKLOGGER/generic/debug.ini");
+    if (ret == RDK_SUCCESS)
+    {
+        printf("Calling priv_ext_init\n");
+        rdk_dbg_priv_ext_Init(config.loglevel, config.module, config.location, config.fileName, config.maxCount, config.maxSize);
+    }
+#endif
+         printf ("config.module:%s, config.level:%d, config.location: %s, config.fileName: %s\n", config.module, config.loglevel,config.location, config.fileName);
+         //rdk_dbg_priv_ext_Init(config.location, config.fileName, config.maxCount, config.maxSize);
+    //}
+  return RDK_SUCCESS;
+}
+#endif
+#if 0
+
+rdk_Error rdk_logger_ext_init(rdklogger_config config)
+{
+    // Initialize logger if not already done
+    rdk_Error ret = rdk_logger_init("/home/deepthi/RDKLOGGER/generic/debug.ini");
+    if (ret == RDK_SUCCESS)
+    {
+        // Set log level for the module
+        log4c_category_t* cat = log4c_category_get(config.module);
+        if (cat) {
+            log4c_category_set_priority(cat, config.loglevel);
+        }
+        // NOTE: File name, location, max size, and rotation must be set in log4crc config file.
+    }
+    return RDK_SUCCESS;
+}
+#endif
 /**
  * @brief Cleanup the logger instantiation.
  *

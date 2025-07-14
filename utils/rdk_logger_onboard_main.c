@@ -16,6 +16,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+#define FEATURE_SUPPORT_ONBOARD_LOGGING
 #ifdef FEATURE_SUPPORT_ONBOARD_LOGGING
 #include <stdio.h>
 #include <string.h>
@@ -23,21 +24,41 @@
 #include "rdk_debug.h"
 
 #define MAX_BUF_SIZE 1024
-
+#if 0
 int main( int argc, char **argv)
 {
     char msg[MAX_BUF_SIZE];
     if(argc > 2 && (NULL != argv[1]) && (NULL != argv[2]))
     {
         snprintf(msg,sizeof(msg), "%s\n", argv[2]);
-        rdk_logger_log_onboard(argv[1], msg);
+        rdk_log_onboard(argv[1], msg);
     }
     else if(argc > 1 && (NULL != argv[1]))
     {
         snprintf(msg,sizeof(msg), "%s\n", argv[1]);
-        rdk_logger_log_onboard(NULL, msg);
+        rdk_log_onboard(NULL, msg);
     }
 
     return 0;
 }
+#endif
+int main ()
+{
+    rdklogger_config config;
+    strncpy(config.fileName, "test.txt", sizeof(config.fileName));
+    strncpy(config.location, "/tmp/", sizeof(config.location));
+    strncpy(config.module, "TEST", sizeof(config.module));
+    config.maxSize = 2024;  // 1 MB
+    config.maxCount = 2;
+    config.loglevel = RDK_LOG_INFO;
+    //rdk_logger_init("/home/deepthi/RDKLOGGER/generic/debug.ini");
+    rdk_logger_ext_init(config);
+    for (int i =0; i < 10; i++)
+    {
+        RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.DEEP", "SAMPLELOG\n");
+        RDK_LOG(RDK_LOG_ERROR, "TEST", "TEST LOG\n");
+        RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "RTMSG_LOG\n");
+    }
+}
+
 #endif

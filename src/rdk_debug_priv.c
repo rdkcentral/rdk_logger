@@ -54,6 +54,9 @@
 #include "rdk_dynamic_logger.h"
 #include "log4c.h"
 #include <rdk_utils.h>
+#include <log4c/appender_type_rollingfile.h>
+#include <log4c/rollingpolicy.h>
+#include <log4c/rollingpolicy_type_sizewin.h>
 
 #ifdef SYSTEMD_JOURNAL
 #include <systemd/sd-journal.h>
@@ -191,7 +194,129 @@ void rdk_dbg_priv_Init()
         g_debugEnabled = (strcasecmp(envVar, "TRUE") == 0);
     }
 }
+int get_log4c_log_level(rdk_LogLevel level)
+{
+    int log4c_log_level = LOG4C_PRIORITY_INFO;
+    switch (level)
+    {
+    case RDK_LOG_FATAL:
+        log4c_log_level = LOG4C_PRIORITY_FATAL;
+        printf("FATAL\n");
+        break;
+    case RDK_LOG_ERROR:
+        log4c_log_level = LOG4C_PRIORITY_ERROR;
+        printf("ERROR\n");
+        break;
+    case RDK_LOG_WARN:
+        log4c_log_level = LOG4C_PRIORITY_WARN;
+        break;
+    case RDK_LOG_NOTICE:
+        log4c_log_level = LOG4C_PRIORITY_NOTICE;
+        break;
+    case RDK_LOG_INFO:
+        log4c_log_level = LOG4C_PRIORITY_INFO;
+        printf("INFO\n");
+        break;
+    case RDK_LOG_DEBUG:
+        log4c_log_level = LOG4C_PRIORITY_DEBUG;
+        printf("DEBUG\n");
+        break;
+    case RDK_LOG_TRACE:
+       log4c_log_level = LOG4C_PRIORITY_TRACE;
+        break;
+    default:
+        log4c_log_level = LOG4C_PRIORITY_INFO;
+        break;
+    }
+    return log4c_log_level;
+}
 
+//int g_rdk_logger_ext_init = 0;
+//log4c_category_t* cat = NULL;
+void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* logdir, const char* log_file_name, long maxCount, long maxSize)
+{
+#if 0
+    // Configure log4c rolling file appender for this module
+        log4c_appender_t* app = log4c_appender_get("rdklogfile");
+        if (app) {
+            log4c_rollingpolicy_t* policy = log4c_rollingpolicy_get("sizewin");
+            if (policy) {
+                log4c_rollingpolicy_set_maxsize(policy, config.maxSize);
+                log4c_rollingpolicy_set_maxnum(policy, config.maxCount);
+            }
+            char fullpath[256];
+            snprintf(fullpath, sizeof(fullpath), "%s/%s", config.location, config.fileName);
+            log4c_appender_set_filename(app, fullpath);
+            log4c_appender_set_rollingpolicy(app, policy);
+        }
+        // Set log level for the module
+        log4c_category_t* cat = log4c_category_get(config.module);
+        if (cat) {
+            log4c_category_set_priority(cat, config.loglevel);
+        }
+    //}
+#endif
+#if 1
+     rollingfile_udata_t *rudata = NULL;
+     log4c_rollingpolicy_t *policy = NULL;
+     rollingpolicy_sizewin_udata_t *sizewin_udata = NULL;
+     char buff[128] = {0};
+     // Create a new category
+     //log4c_category_t* cat = log4c_category_new(module);
+     //log4c_category_t* cat = log4c_category_new("RI.Stack.TEST");
+     log4c_category_t* cat = log4c_category_get(module);
+     //cat = log4c_category_new(module);
+
+     // Get the file appender
+     log4c_appender_t* app = log4c_appender_get(module);
+ #if 0
+     if (!app) {
+         fprintf(stderr, "Failed to get file appender\n");
+         return 1;
+     }
+#endif
+     log4c_appender_set_type(app, log4c_appender_type_get("rollingfile"));
+
+     rudata = rollingfile_make_udata();
+     rollingfile_udata_set_logdir(rudata, logdir);
+     rollingfile_udata_set_files_prefix(rudata, log_file_name);
+
+     policy = log4c_rollingpolicy_get("a_policy_name");
+     log4c_rollingpolicy_set_type(policy, log4c_rollingpolicy_type_get("sizewin"));
+
+     /*
+      * Get a new sizewin policy type and configure it.
+      * Then attach it to the policy object.
+     */
+     sizewin_udata = sizewin_make_udata();
+     sizewin_udata_set_file_maxsize(sizewin_udata, maxSize);
+     sizewin_udata_set_max_num_files(sizewin_udata, maxCount);
+     log4c_rollingpolicy_set_udata(policy, sizewin_udata);
+
+     /*
+      * Now set that policy in our rolling file appender udata.
+     */
+
+     rollingfile_udata_set_policy(rudata, policy);
+     log4c_appender_set_udata(app, rudata);
+
+     // Set layout
+     //log4c_layout_t* layout = log4c_layout_get("basic");
+     log4c_layout_t* layout = log4c_layout_get("comcast_dated");
+     log4c_appender_set_layout(app, layout);
+
+     // Attach appender to category
+     log4c_category_set_appender(cat, app);
+     log4c_category_set_priority(cat, get_log4c_log_level(level));
+     //g_rdk_logger_ext_init = 1;
+#if 0
+    for (int i =0; i<300; i++)
+     log4c_category_log(cat, LOG4C_PRIORITY_INFO, "Logging to a file without a config file!");
+#endif
+#endif
+     printf("%s done!\n", __FUNCTION__);
+     return;
+}
 void rdk_dbg_priv_DeInit()
 {
   stackCat = NULL;
@@ -580,35 +705,37 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
         int module, const char *module_name, const char* format, va_list args)
 {
     /** Get the category from module name */
-    static log4c_category_t *cat_cache[RDK_MAX_MOD_COUNT] = {NULL};
+    //static log4c_category_t *cat_cache[RDK_MAX_MOD_COUNT] = {NULL};
     char cat_name[64] = {'\0'};
     log4c_category_t* cat = NULL;
-
-    /* Handling process request here. This is not a blocking call and it shall return immediately */
-    rdk_dyn_log_processPendingRequest();
-
-    if (!g_debugEnabled || !WANT_LOG(module, level))
+    if (!WANT_LOG(module, level))
     {
+        printf("mod:%d, level:%dreturning\n", module, level);
         return;
     }
-
-    char *parent_cat_name = (char *)log4c_category_get_name(stackCat);
-    snprintf(cat_name, sizeof(cat_name)-1, "%s.%s", parent_cat_name == NULL ? "" : parent_cat_name, module_name); 
-
-    if((module >= 0) && (module < RDK_MAX_MOD_COUNT))
+#if 0
+    if ((g_rdk_logger_ext_init) && (strncmp (module_name, "LOG.RDK.", 8) != 0))
+    //if ((g_rdk_logger_ext_init))
     {
-        if (cat_cache[module] == NULL) {
-            /** Only doing a read here, lock not needed */
-            cat_cache[module] = log4c_category_get(cat_name);
-        }
-    
-        cat = cat_cache[module];
+       cat = log4c_category_get(module_name);
+
+        printf("%s CAT: %s\n", format, (char *) log4c_category_get_name(cat));
+#if 0
+           log4c_category_log(cat, LOG4C_PRIORITY_INFO, format);
+#endif
     }
-    /* CID :19939-- some function when explicitly call this function, it might have module < 0, then the else condition will be applicable*/
     else
     {
-        cat = log4c_category_get(cat_name);
-    }
+#endif
+            //char cat_name[64];
+            char *parent_cat_name = (char *) log4c_category_get_name(stackCat);
+            printf("stack cat name:%s\n", parent_cat_name);
+
+            snprintf(cat_name, sizeof(cat_name), "%s.%s", (parent_cat_name == NULL) ? "" : parent_cat_name, module_name);
+            cat = log4c_category_get(cat_name);
+            printf("Cat name:%s\n", cat_name);
+
+    //}
 
     switch (level)
     {
