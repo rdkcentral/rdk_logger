@@ -105,10 +105,11 @@ rdk_Error rdk_logger_ext_init(rdklogger_config config)
 {
 #if 1
     rdk_Error ret;
-    ret = rdk_logger_init("/home/deepthi/RDKLOGGER/generic/debug.ini");
+    ret = rdk_logger_init("/home/deepthi/RDKE-rdklogger/rdk_logger/debug.ini");
     if (ret == RDK_SUCCESS)
     {
         printf("Calling priv_ext_init\n");
+        printf("Initializing file logging for module: %s, file: %s%s\n", config.module, config.location, config.fileName);
         rdk_dbg_priv_ext_Init(config.loglevel, config.module, config.location, config.fileName, config.maxCount, config.maxSize);
     }
 #endif

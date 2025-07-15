@@ -53,11 +53,12 @@ int main ()
     config.loglevel = RDK_LOG_INFO;
     //rdk_logger_init("/home/deepthi/RDKLOGGER/generic/debug.ini");
     rdk_logger_ext_init(config);
-    for (int i =0; i < 10; i++)
+    for (int i =0; i < 5; i++)
     {
-        RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.DEEP", "SAMPLELOG\n");
+        RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.DEEP", "DEEPLOG\n");
         RDK_LOG(RDK_LOG_ERROR, "TEST", "TEST LOG\n");
-        RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "RTMSG_LOG\n");
+        RDK_LOG(RDK_LOG_FATAL, "LOG.RDK.SAMPLE", "SAMPLE_LOG\n");
+        RDK_LOG(RDK_LOG_WARN, "LOGGER", "LOGGING\n");
     }
 }
 

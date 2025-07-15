@@ -76,6 +76,16 @@ extern int global_count;
  * Returns 1 if logging has been requested for the corresponding module (mod)
  * and level (lvl) combination. To be used in rdk_dbg_priv_* files ONLY.
  */
+/*static inline int WANT_LOG(const char* module_name, rdk_LogLevel level)
+{
+    int mod = rdk_logger_envGetNum(module_name);
+    if(mod < 0)
+        mod = 0;
+    if (mod >= 0 && mod < RDK_MAX_MOD_COUNT) {
+        return (rdk_g_logControlTbl[mod] & (1 << level)) ? 1 : 0;
+    }
+    return 0;
+}*/
 #define WANT_LOG(mod, lvl) ( ( ((mod) >= 0) && ((mod) < RDK_MAX_MOD_COUNT) ) ? (rdk_g_logControlTbl[(mod)] & (1 << (lvl))) : 0 )
 
 
@@ -193,6 +203,32 @@ void rdk_dbg_priv_Init()
     {
         g_debugEnabled = (strcasecmp(envVar, "TRUE") == 0);
     }
+     // Set log levels for categories from config
+        const char* defaultLevel = rdk_logger_envGet("LOG.RDK.DEFAULT");
+        if (defaultLevel) {
+            printf("Default log level:%s\n", defaultLevel);
+            log4c_category_t* cat = log4c_category_get("LOG.RDK.DEFAULT");
+            if (cat) {
+                log4c_category_set_priority(cat, defaultLevel);
+            }
+        }
+        // Set log levels for all LOG.RDK.*
+        extern int global_count;
+        extern const char* rdk_logger_envGetModFromNum(int Num);
+        extern const char* rdk_logger_envGetValueFromNum(int Num);
+        for (int i = 1; i <= global_count; ++i) {
+            const char* mod = rdk_logger_envGetModFromNum(i);
+            const char* val = rdk_logger_envGetValueFromNum(i);
+            printf("Before:mod:%s, val:%s\n", mod, val);
+            //if (mod && val && strncmp(mod, "LOG.RDK.", 8) == 0) {
+                //printf("mod:%s, val:%s\n", mod, val);
+                log4c_category_t* cat = log4c_category_get(mod);
+                if (cat) {
+                    log4c_category_set_priority(cat, val);
+                }
+            //}
+        }
+
 }
 int get_log4c_log_level(rdk_LogLevel level)
 {
@@ -261,20 +297,26 @@ void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* l
      log4c_rollingpolicy_t *policy = NULL;
      rollingpolicy_sizewin_udata_t *sizewin_udata = NULL;
      char buff[128] = {0};
+     char cat_name[64] = {'\0'};
      // Create a new category
      //log4c_category_t* cat = log4c_category_new(module);
      //log4c_category_t* cat = log4c_category_new("RI.Stack.TEST");
-     log4c_category_t* cat = log4c_category_get(module);
+     char *parent_cat_name = (char *) log4c_category_get_name(stackCat);
+     //printf("stack cat name:%s\n", parent_cat_name);
+
+     snprintf(cat_name, sizeof(cat_name), "%s.%s", (parent_cat_name == NULL) ? "" : parent_cat_name, module);
+     log4c_category_t* cat = log4c_category_get(cat_name);
+     printf("InitCat name:%s\n", cat_name);
      //cat = log4c_category_new(module);
 
      // Get the file appender
      log4c_appender_t* app = log4c_appender_get(module);
- #if 0
+// #if 0
      if (!app) {
          fprintf(stderr, "Failed to get file appender\n");
          return 1;
      }
-#endif
+//#endif
      log4c_appender_set_type(app, log4c_appender_type_get("rollingfile"));
 
      rudata = rollingfile_make_udata();
@@ -458,7 +500,11 @@ static int parseLogConfig(const char *cfgStr, uint32_t *configEntry,
                 }
                 else
                 {
-                    config |= (1 << logLevel);
+                    // Enable this level and all more severe levels (lower enum values)
+                    for (int i = 0; i <= logLevel; i++)
+                    {
+                        config |= (1 << i);
+                    }
                 }
             }
             else
@@ -542,13 +588,17 @@ void rdk_dbg_priv_LogControlInit(void)
  */
 rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel level)
 {
-        int number = rdk_logger_envGetNum(module); 
+    int number = rdk_logger_envGetNum(module);
+    if(number < 0)
+        number = 1;
 	if (WANT_LOG(number, level))
 	{
+        printf("WANT_LOG returned true\n");
 		return TRUE;
 	}
 	else
 	{
+        printf("WANT_LOG returned false\n");
 		return FALSE;
 	}
 }
@@ -708,9 +758,14 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
     //static log4c_category_t *cat_cache[RDK_MAX_MOD_COUNT] = {NULL};
     char cat_name[64] = {'\0'};
     log4c_category_t* cat = NULL;
-    if (!WANT_LOG(module, level))
+    // Fallback to default config if module not found
+    int mod_index = module;
+    if (mod_index <= 0) {
+        mod_index = 1; // Use index for LOG.RDK.DEFAULT (check your table, sometimes 0 or 1)
+    }
+    if (!WANT_LOG(mod_index, level))
     {
-        printf("mod:%d, level:%dreturning\n", module, level);
+        printf("mod:%d, name:%s, level:%dreturning\n", mod_index, module_name, level);
         return;
     }
 #if 0
