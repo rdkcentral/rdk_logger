@@ -205,9 +205,10 @@ rdk_Error rdk_logger_env_add_conf_file( const char * path)
         {
           number++; 
           node->number = number; 
-        } else 
-        node->number = 0;
-	
+        } else
+        {
+           node->number = number++;
+	    }
         /* Insert at the front of the list */
         node->next = g_envCache;
         g_envCache = node;

@@ -110,7 +110,7 @@ rdk_Error rdk_logger_ext_init(rdklogger_config config)
     {
         printf("Calling priv_ext_init\n");
         printf("Initializing file logging for module: %s, file: %s%s\n", config.module, config.location, config.fileName);
-        rdk_dbg_priv_ext_Init(config.loglevel, config.module, config.location, config.fileName, config.maxCount, config.maxSize);
+        //rdk_dbg_priv_ext_Init(config.loglevel, config.module, config.location, config.fileName, config.maxCount, config.maxSize);
     }
 #endif
          printf ("config.module:%s, config.level:%d, config.location: %s, config.fileName: %s\n", config.module, config.loglevel,config.location, config.fileName);

@@ -44,7 +44,7 @@ int main( int argc, char **argv)
 #endif
 int main ()
 {
-    rdklogger_config config;
+    /*rdklogger_config config;
     strncpy(config.fileName, "test.txt", sizeof(config.fileName));
     strncpy(config.location, "/tmp/", sizeof(config.location));
     strncpy(config.module, "TEST", sizeof(config.module));
@@ -52,7 +52,7 @@ int main ()
     config.maxCount = 2;
     config.loglevel = RDK_LOG_INFO;
     //rdk_logger_init("/home/deepthi/RDKLOGGER/generic/debug.ini");
-    rdk_logger_ext_init(config);
+    rdk_logger_ext_init(config);*/
     for (int i =0; i < 5; i++)
     {
         RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.DEEP", "DEEPLOG\n");

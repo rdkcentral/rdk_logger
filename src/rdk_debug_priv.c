@@ -269,6 +269,7 @@ int get_log4c_log_level(rdk_LogLevel level)
 
 //int g_rdk_logger_ext_init = 0;
 //log4c_category_t* cat = NULL;
+#if 0
 void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* logdir, const char* log_file_name, long maxCount, long maxSize)
 {
 #if 0
@@ -293,6 +294,12 @@ void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* l
     //}
 #endif
 #if 1
+     char fileName[128];
+     snprintf(fileName, sizeof(fileName), "%s.txt", config.module); // Dynamic file name
+
+     char fullpath[256];
+     snprintf(fullpath, sizeof(fullpath), "%s/%s", config.location, fileName);
+
      rollingfile_udata_t *rudata = NULL;
      log4c_rollingpolicy_t *policy = NULL;
      rollingpolicy_sizewin_udata_t *sizewin_udata = NULL;
@@ -359,6 +366,155 @@ void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* l
      printf("%s done!\n", __FUNCTION__);
      return;
 }
+#endif
+void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module)
+{
+    char filePath[256];
+    char cat_name[128];
+rdk_Error ret;
+    ret = rdk_logger_init("/home/deepthi/RDKE-rdklogger/rdk_logger/debug.ini");
+    // Build file path: /tmp/<module>.txt
+    snprintf(filePath, sizeof(filePath), "/tmp/%s.txt", module);
+
+    // Use module name directly as category
+    snprintf(cat_name, sizeof(cat_name), "%s", module);
+
+    // Get or create the category
+    log4c_category_t* cat = log4c_category_get(cat_name);
+    if (!cat) {
+        cat = log4c_category_new(cat_name);
+    }
+
+    // Create or get the appender for this file path
+    log4c_appender_t* app = log4c_appender_get(filePath);
+    if (!app) {
+        app = log4c_appender_new(filePath); // Use file path as appender name
+    }
+    log4c_appender_set_type(app, log4c_appender_type_get("stream_env_append"));
+
+    log4c_layout_t* layout = log4c_layout_get("comcast_dated");
+    log4c_appender_set_layout(app, layout);
+
+    log4c_category_set_appender(cat, app);
+    log4c_category_set_priority(cat, get_log4c_log_level(level));
+
+    printf("rdk_dbg_priv_ext_Init: Logging for module '%s' to file '%s'\n", module, filePath);
+}
+#if 0
+void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* logdir, const char* log_file_name, long maxCount, long maxSize)
+//void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module)
+{
+    char filePath[256];
+    char cat_name[128];
+
+    snprintf(filePath, sizeof(filePath), "/tmp/%s.txt", module);
+    snprintf(cat_name, sizeof(cat_name), "%s", module);
+
+    log4c_category_t* cat = log4c_category_get(cat_name);
+    if (!cat) {
+        cat = log4c_category_new(cat_name);
+    }
+
+    log4c_appender_t* app = log4c_appender_get(filePath);
+    if (!app) {
+        app = log4c_appender_new(filePath); // Use file path as appender name
+    }
+    log4c_appender_set_type(app, log4c_appender_type_get("stream_env_append"));
+
+    log4c_layout_t* layout = log4c_layout_get("comcast_dated");
+    log4c_appender_set_layout(app, layout);
+
+    log4c_category_set_appender(cat, app);
+    log4c_category_set_priority(cat, get_log4c_log_level(level));
+
+    printf("rdk_dbg_priv_ext_Init: Logging for module '%s' to file '%s'\n", module, filePath);
+}
+#endif
+#if 0
+void rdk_dbg_priv_ext_Init(rdk_LogLevel level, const char* module, const char* logdir, const char* log_file_name, long maxCount, long maxSize)
+{
+    // Default values
+    const char* default_location = "/tmp/";
+    long default_max_size = 1024 * 1024; // 1MB
+    long default_max_count = 5;
+
+    char fileName[128];
+    char fullpath[256];
+    char cat_name[128];
+
+    // Build file name and full path automatically
+    snprintf(fileName, sizeof(fileName), "%s.txt", module);
+    snprintf(fullpath, sizeof(fullpath), "%s%s", default_location, fileName);
+    snprintf(cat_name, sizeof(cat_name), "RI.Stack.%s", module);
+
+    // Get or create the category
+    log4c_category_t* cat = log4c_category_get(cat_name);
+    if (!cat) {
+        cat = log4c_category_new(cat_name);
+    }
+    // Create or get the appender for this module
+    log4c_appender_t* app = log4c_appender_get(module);
+    if (!app) {
+        app = log4c_appender_new(module);
+    }
+    // Set appender type to stream_env_append (file appender)
+    log4c_appender_set_type(app, log4c_appender_type_get("stream_env_append"));
+
+    // Set the file name for the appender
+    log4c_appender_set_filename(app, fullpath);
+
+    // Set layout
+    log4c_layout_t* layout = log4c_layout_get("comcast_dated");
+    log4c_appender_set_layout(app, layout);
+
+    // Attach appender to category
+    log4c_category_set_appender(cat, app);
+    log4c_category_set_priority(cat, get_log4c_log_level(level));
+    /*// Get or create the category
+    log4c_category_t* cat = log4c_category_get(cat_name);
+    if (!cat) {
+        cat = log4c_category_new(cat_name);
+    }
+
+    // Get or create the appender for this module
+    log4c_appender_t* app = log4c_appender_get(module);
+    if (!app) {
+        app = log4c_appender_new(module);
+    }
+    log4c_appender_set_type(app, log4c_appender_type_get("rollingfile"));
+
+    // Set up rolling file appender udata
+    rollingfile_udata_t *rudata = rollingfile_make_udata();
+    rollingfile_udata_set_logdir(rudata, logdir);
+    rollingfile_udata_set_files_prefix(rudata, fileName);
+
+    // Set up rolling policy
+    log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(module);
+    if (!policy) {
+        policy = log4c_rollingpolicy_new(module);
+    }
+    log4c_rollingpolicy_set_type(policy, log4c_rollingpolicy_type_get("sizewin"));
+
+    rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
+    sizewin_udata_set_file_maxsize(sizewin_udata, maxSize);
+    sizewin_udata_set_max_num_files(sizewin_udata, maxCount);
+    log4c_rollingpolicy_set_udata(policy, sizewin_udata);
+
+    rollingfile_udata_set_policy(rudata, policy);
+    log4c_appender_set_udata(app, rudata);
+
+    // Set layout
+    log4c_layout_t* layout = log4c_layout_get("comcast_dated");
+    log4c_appender_set_layout(app, layout);
+
+    // Attach appender to category
+    log4c_category_set_appender(cat, app);
+    log4c_category_set_priority(cat, get_log4c_log_level(level));
+*/
+    printf("rdk_logger_ext_init: Logging for module '%s' to file '%s' (maxSize=%ld, maxCount=%ld)\n",
+           module, fullpath, maxSize, maxCount);
+}
+#endif
 void rdk_dbg_priv_DeInit()
 {
   stackCat = NULL;
@@ -554,15 +710,18 @@ void rdk_dbg_priv_LogControlInit(void)
     /** Intialize to the default configuration for all modules. */
     strncpy(envVarName,"LOG.RDK.DEFAULT",sizeof(envVarName));
     envVarValue = rdk_logger_envGet(envVarName);
+    printf("LOG.RDK.DEFAULT value: %s\n", envVarValue ? envVarValue : "NULL");
     if ((envVarValue != NULL) && (envVarValue[0] != 0))
     {
         (void) parseLogConfig(envVarValue, &defaultConfig, &msg);
+         //printf("defaultConfig after parseLogConfig: 0x%08x\n", defaultConfig);
         for (mod = 1; mod <= global_count; mod++) 
         {
             rdk_g_logControlTbl[mod] = defaultConfig;
+            //printf("rdk_g_logControlTbl[%d] = 0x%08x\n", mod, rdk_g_logControlTbl[mod]);
         }
     }
-
+    //printf("rdk_dbg_priv_LogControlInit: global_count=%d\n", global_count);
     /** Configure each module from the ini file. Note: It is not an
      * error to have no entry in the ini file for a module - we simply
      * leave it at the default logging. */
@@ -760,12 +919,14 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
     log4c_category_t* cat = NULL;
     // Fallback to default config if module not found
     int mod_index = module;
-    if (mod_index <= 0) {
+    if (mod_index <= 0 || mod_index > global_count) {
         mod_index = 1; // Use index for LOG.RDK.DEFAULT (check your table, sometimes 0 or 1)
     }
+    //printf("rdk_debug_priv_log_msg: module=%d, mod_index=%d, level=%d, rdk_g_logControlTbl[%d]=0x%08x\n",
+       // module, mod_index, level, mod_index, rdk_g_logControlTbl[mod_index]);
     if (!WANT_LOG(mod_index, level))
     {
-        printf("mod:%d, name:%s, level:%dreturning\n", mod_index, module_name, level);
+        printf("mod:%d,module:%d, name:%s, level:%dreturning\n", mod_index, module, module_name, level);
         return;
     }
 #if 0
@@ -783,10 +944,11 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
     {
 #endif
             //char cat_name[64];
-            char *parent_cat_name = (char *) log4c_category_get_name(stackCat);
+            /*char *parent_cat_name = (char *) log4c_category_get_name(stackCat);
             printf("stack cat name:%s\n", parent_cat_name);
 
-            snprintf(cat_name, sizeof(cat_name), "%s.%s", (parent_cat_name == NULL) ? "" : parent_cat_name, module_name);
+            snprintf(cat_name, sizeof(cat_name), "%s.%s", (parent_cat_name == NULL) ? "" : parent_cat_name, module_name);*/
+            snprintf(cat_name, sizeof(cat_name), "%s", module_name);
             cat = log4c_category_get(cat_name);
             printf("Cat name:%s\n", cat_name);
 

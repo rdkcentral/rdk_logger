@@ -124,6 +124,40 @@ void rdk_dbgDeinit()
  * @param[in] module The name of the module for which this message belongs to, it is mentioned in debug.ini.
  * @param[in] format Printf style string containing the log message.
  */
+#if 0
+void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
+        const char *format, ...)
+{
+#if !defined(RDK_LOG_DISABLE)
+    static char initialized_modules[256][64] = {0};
+    int found = 0;
+    for (int i = 0; i < 256; ++i) {
+        if (initialized_modules[i][0] == '\0') break;
+        if (strcmp(initialized_modules[i], module) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        for (int i = 0; i < 256; ++i) {
+            if (initialized_modules[i][0] == '\0') {
+                strncpy(initialized_modules[i], module, sizeof(initialized_modules[i])-1);
+                // Auto-init: use module name as file name, defaults for location/size/count
+                rdk_dbg_priv_ext_Init(level, module, "/tmp", module, 5, 1024*1024);
+                break;
+            }
+        }
+    }
+
+    int num;
+    va_list args;
+    va_start(args, format);
+    rdk_debug_priv_log_msg( level, num, module, format, args);
+    va_end(args);
+#endif /* RDK_LOG_DISABLE */
+}
+#endif
+#if 0
 void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
         const char *format, ...)
 {
@@ -144,7 +178,37 @@ void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
     va_end(args);
 #endif /* RDK_LOG_DISABLE */
 }
+#endif
+void rdk_logger_msg_printf(rdk_LogLevel level, const char *module,
+        const char *format, ...)
+{
+#if !defined(RDK_LOG_DISABLE)
+    static char initialized_modules[256][64] = {0};
+    int found = 0;
+    for (int i = 0; i < 256; ++i) {
+        if (initialized_modules[i][0] == '\0') break;
+        if (strcmp(initialized_modules[i], module) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        for (int i = 0; i < 256; ++i) {
+            if (initialized_modules[i][0] == '\0') {
+                strncpy(initialized_modules[i], module, sizeof(initialized_modules[i])-1);
+                rdk_dbg_priv_ext_Init(level, module);
+                break;
+            }
+        }
+    }
 
+    int num;
+    va_list args;
+    va_start(args, format);
+    rdk_debug_priv_log_msg( level, num, module, format, args);
+    va_end(args);
+#endif /* RDK_LOG_DISABLE */
+}
 void rdk_logger_msg_vsprintf(rdk_LogLevel level, const char *module,
         const char *format, va_list args)
 {
