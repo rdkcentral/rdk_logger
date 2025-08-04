@@ -33,10 +33,6 @@ extern "C"
 
 #define RDK_MAX_MOD_COUNT 512
 
-/** This variable is described in rdk_dbg_priv_log.c - to be used by
- * rdk_debug_priv_.* files only.
- */
-extern uint32_t rdk_g_logControlTbl[];
 extern rdk_logger_Bool dbg_logViaUDP;
 
 /**
@@ -66,10 +62,11 @@ void 			rdk_dbg_priv_Init(void);
 void 			rdk_dbg_priv_DeInit(void);
 void rdk_dbg_priv_Shutdown();
 const char * 	rdk_dbg_priv_LogControlOpSysIntf(char *logName, char *cfgStr);
-const char * 	rdk_dbg_priv_LogQueryOpSysIntf(char *modName, char *cfgStr, int cfgStrMaxLen);
+void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long maxCount, long maxSize);
 void rdk_debug_priv_log_msg( rdk_LogLevel level,
-        int module, const char *module_name, const char* format, va_list args);
+        const char *module_name, const char* format, va_list args);
 void RDK_LOG_ControlCB(const char *moduleName, const char *subComponentName, const char *loggingLevel, int log_status);
+void rdk_dbg_priv_DumpLogConfig(const char* path);
 void rdk_dbgDumpLog(const char* path);
 void rdk_dbgInit();
 void rdk_dbgDeinit();

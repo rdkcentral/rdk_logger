@@ -1,0 +1,33 @@
+##########################################################################
+# debug.ini.sample - Example configuration for RDK Logger
+#
+# Each line sets the logging level for a module.
+# Format:
+#   LOG.RDK.<MODULE>=<LEVEL>
+#
+# Log levels (from most to least verbose):
+#   TRACE   - Enables TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, FATAL
+#   DEBUG   - Enables DEBUG, INFO, NOTICE, WARN, ERROR, FATAL
+#   INFO    - Enables INFO, NOTICE, WARN, ERROR, FATAL
+#   NOTICE  - Enables NOTICE, WARN, ERROR, FATAL
+#   WARN    - Enables WARN, ERROR, FATAL
+#   ERROR   - Enables ERROR, FATAL
+#   FATAL   - Enables FATAL only
+#
+# LOG.RDK.DEFAULT sets the default log level for all modules not explicitly listed.
+##########################################################################
+
+#LOG.RDK.TEST=DEBUG
+# Enables DEBUG and all higher-severity logs (INFO, NOTICE, WARN, ERROR, FATAL) for LOG.RDK.TEST
+
+#LOG.RDK.SAMPLE=INFO
+# Enables INFO and all higher-severity logs (NOTICE, WARN, ERROR, FATAL) for LOG.RDK.SAMPLE
+
+LOG.RDK.DEFAULT=WARNING
+# All modules not listed below will log WARN, ERROR, and FATAL messages
+
+LOG.RDK.SI=INFO
+# LOG.RDK.SI will log INFO, NOTICE, WARN, ERROR, and FATAL messages
+
+LOG.RDK.FOO = NONE
+#ALL logs will be disabled for this module

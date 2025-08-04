@@ -54,6 +54,9 @@
 #include "rdk_dynamic_logger.h"
 #include "log4c.h"
 #include <rdk_utils.h>
+#include <log4c/appender_type_rollingfile.h>
+#include <log4c/rollingpolicy.h>
+#include <log4c/rollingpolicy_type_sizewin.h>
 
 #ifdef SYSTEMD_JOURNAL
 #include <systemd/sd-journal.h>
@@ -66,29 +69,35 @@
 
 /// Debugging messages are enabled.  Default is enabled (1) and 0 for off.
 static int g_debugEnabled = 1;
-
+log4c_category_t* parent_cat = NULL;
+int parent_prio = 0;
 extern int global_count;
+
+static int rdk_logLevel_to_log4c_priority(int level) {
+     switch (level) {
+         case 0: return LOG4C_PRIORITY_FATAL;   // 000
+         case 1: return LOG4C_PRIORITY_ERROR;   // 300
+         case 2: return LOG4C_PRIORITY_WARN;    // 400
+         case 3: return LOG4C_PRIORITY_NOTICE;  // 500
+         case 4: return LOG4C_PRIORITY_INFO;    // 600
+         case 5: return LOG4C_PRIORITY_DEBUG;   // 700
+         case 6: return LOG4C_PRIORITY_TRACE;   // 800
+         default: return LOG4C_PRIORITY_UNKNOWN;
+     }
+ }
+
+#define LOG4C_PRIORITY_NONE -1
 
 /**
  * Returns 1 if logging has been requested for the corresponding module (mod)
  * and level (lvl) combination. To be used in rdk_dbg_priv_* files ONLY.
  */
-#define WANT_LOG(mod, lvl) ( ( ((mod) >= 0) && ((mod) < RDK_MAX_MOD_COUNT) ) ? (rdk_g_logControlTbl[(mod)] & (1 << (lvl))) : 0 )
-
+#define IS_LOGGING_ENABLED_FOR_LEVEL(module_name, level) \
+    (log4c_category_get(module_name) && \
+     (rdk_logLevel_to_log4c_priority(level) <= log4c_category_get_priority(log4c_category_get(module_name))))
 
 /** Skip whitespace in a c-style string. */
 #define SKIPWHITE(cptr) while ((*cptr != '\0') && isspace(*cptr)) cptr++
-
-/** Bit mask for trace TRACE logging level. */
-#define LOG_TRACE ( (1 << RDK_LOG_TRACE) )
-
-/** Turns on FATAL, ERROR, WARN NOTICE & INFO. */
-#define LOG_ALL (  (1 << RDK_LOG_FATAL) | (1 << RDK_LOG_ERROR) | \
-                   (1 << RDK_LOG_WARN)  | (1 << RDK_LOG_INFO)  | \
-                   (1 << RDK_LOG_NOTICE))
-
-/** All logging 'off'. */
-#define LOG_NONE 0
 
 #define HOSTADDR_STR_MAX 255
 
@@ -113,16 +122,10 @@ static int stream_env_close(log4c_appender_t * appender);
 
 static rdk_logger_Bool g_initialized = FALSE;
 
-
-/** Global variable used to control logging. */
-uint32_t rdk_g_logControlTbl[RDK_MAX_MOD_COUNT];
-
 /** UDP logging variables. */
 rdk_logger_Bool dbg_logViaUDP = FALSE;
 int dbg_udpSocket;
 struct sockaddr_in dbg_logHostAddr;
-
-log4c_category_t* stackCat = NULL;
 
 enum
 {
@@ -142,9 +145,6 @@ static const char *errorMsgs[] =
 /**
  * Initialize Debug API.
  */
-static log4c_category_t* defaultCategory = NULL;
-static log4c_category_t* glibCategory = NULL;
-
 static const log4c_layout_type_t log4c_layout_type_dated_nocr =
 { "dated_nocr", dated_format_nocr, };
 
@@ -175,26 +175,82 @@ void rdk_dbg_priv_Init()
 {
     const char* envVar;
 
-    if (initLogger("RI"))
+    if (initLogger("LOG.RDK"))
     {
         fprintf(stderr, "%s -- initLogger failure?!\n", __FUNCTION__);
     }
 
-    stackCat = log4c_category_get("RI.Stack");
+    parent_cat= log4c_category_get("LOG.RDK");
+}
 
-    rdk_dbg_priv_LogControlInit();
+void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long maxCount, long maxSize)
+{
+    char fullpath[512];
+    snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, log_file_name);
 
-    /* Try to get logging option. */
-    envVar = rdk_logger_envGet("EnableMPELog");
-    if (NULL != envVar)
-    {
-        g_debugEnabled = (strcasecmp(envVar, "TRUE") == 0);
+    const char* cat_name = "LOG.RDK";
+    log4c_category_t* cat = log4c_category_get(cat_name);
+    if (!cat) {
+        cat = log4c_category_new(cat_name);
     }
+
+    log4c_appender_t* app = log4c_appender_get(fullpath);
+    if (!app) {
+        app = log4c_appender_new(fullpath);
+    }
+    log4c_appender_set_type(app, log4c_appender_type_get("rollingfile"));
+
+    rollingfile_udata_t *rudata = rollingfile_make_udata();
+    rollingfile_udata_set_logdir(rudata, logdir);
+    rollingfile_udata_set_files_prefix(rudata, log_file_name);
+
+    log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(cat_name);
+    if (!policy) {
+        policy = log4c_rollingpolicy_new(cat_name);
+    }
+    log4c_rollingpolicy_set_type(policy, log4c_rollingpolicy_type_get("sizewin"));
+
+    rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
+    sizewin_udata_set_file_maxsize(sizewin_udata, maxSize);
+    sizewin_udata_set_max_num_files(sizewin_udata, maxCount);
+    log4c_rollingpolicy_set_udata(policy, sizewin_udata);
+
+    rollingfile_udata_set_policy(rudata, policy);
+    log4c_appender_set_udata(app, rudata);
+
+    log4c_layout_t* layout = log4c_layout_get("comcast_dated");
+    log4c_appender_set_layout(app, layout);
+
+    log4c_category_set_appender(cat, app);
 }
 
 void rdk_dbg_priv_DeInit()
 {
-  stackCat = NULL;
+  parent_cat = NULL;
+}
+
+void rdk_dbg_priv_DumpLogConfig(const char* path)
+{
+    FILE* fp = fopen(path, "w");
+    if (!fp) return;
+
+    log4c_category_t* root = log4c_category_get("LOG.RDK");
+    if (root) {
+        fprintf(fp, "LOG.RDK: %s\n", log4c_priority_to_string(log4c_category_get_priority(root)));
+    }
+
+    extern int global_count;
+    for (int mod = 1; mod <= global_count; mod++) {
+        const char* modName = rdk_logger_envGetModFromNum(mod);
+        if (modName) {
+            log4c_category_t* cat = log4c_category_get(modName);
+            if (cat) {
+                fprintf(fp, "%s: %s\n", modName, log4c_priority_to_string(log4c_category_get_priority(cat)));
+            }
+        }
+    }
+
+    fclose(fp);
 }
 
 /**
@@ -256,101 +312,6 @@ static void extractToken(const char **srcStr, char *tokBuf)
     *srcStr = src;
 }
 
-/**
- * Parse a whitespace delimited list of log types and log type meta names.
- *
- * @param cfgStr String containing one more log types. (Right hand
- * side of INI file entry.)
- *
- * @param defConfig Default configuration to base the return value on.
- *
- * @return Returns a bit mask that can be used as an entry in
- * #rdk_g_logControlTbl.
- */
-static int parseLogConfig(const char *cfgStr, uint32_t *configEntry,
-        const char **msg)
-{
-    uint32_t config = *configEntry;
-    char logTypeName[128] =
-    { 0 };
-    int rc = RC_OK;
-
-    *msg = "";
-
-    SKIPWHITE(cfgStr)
-        ;
-    if (*cfgStr == '\0')
-    {
-        *msg = "Warning: Empty log level confguration.";
-        return RC_ERROR;
-    }
-
-    while (*cfgStr != '\0')
-    {
-        /* Extract and normalise log type name token. */
-
-        memset(logTypeName, 0, sizeof(logTypeName));
-        extractToken(&cfgStr, logTypeName);
-        forceUpperCase(logTypeName);
-
-        /* Handle special meta names. */
-
-        if (strcmp(logTypeName, "ALL") == 0)
-        {
-            config |= LOG_ALL;
-        }
-        else if (strcmp(logTypeName, "NONE") == 0)
-        {
-            config = LOG_NONE;
-        }
-        else if (strcmp(logTypeName, "TRACE") == 0)
-        {
-            config |= LOG_TRACE;
-        }
-        else if (strcmp(logTypeName, "!TRACE") == 0)
-        {
-            config &= ~LOG_TRACE;
-        }
-        else
-        {
-            /* Determine the corresponding bit for the log name. */
-            int invert = 0;
-            const char *name = logTypeName;
-            int logLevel = -1;
-
-            if (logTypeName[0] == '!')
-            {
-                invert = 1;
-                name = &logTypeName[1];
-            }
-
-            logLevel = logNameToEnum(name);
-            if (logLevel != -1)
-            {
-                if (invert)
-                {
-                    config &= ~(1 << logLevel);
-                }
-                else
-                {
-                    config |= (1 << logLevel);
-                }
-            }
-            else
-            {
-                *msg = errorMsgs[ERR_INVALID_LOG_NAME];
-                rc = RC_ERROR;
-            }
-        }
-
-        SKIPWHITE(cfgStr)
-            ;
-    }
-
-    *configEntry = config;
-    return rc;
-}
-
 static void printTime(const struct tm *pTm, char *pBuff)
 {
     sprintf(pBuff,"%02d%02d%02d-%02d:%02d:%02d",pTm->tm_year + 1900 - 2000, pTm->tm_mon + 1, pTm->tm_mday, pTm->tm_hour, pTm->tm_min, pTm->tm_sec);
@@ -361,52 +322,58 @@ static void printTime(const struct tm *pTm, char *pBuff)
  * EXPORTED FUNCTIONS
  *
  ****************************************************************************/
-
-/**
- * Initialize the debug log control table. This should be called from
- * the initialization routine of the debug manager.
- */
 void rdk_dbg_priv_LogControlInit(void)
 {
-    char envVarName[128] =
-    { 0 };
-    const char *envVarValue = NULL;
-    uint32_t defaultConfig = 0;
-    int mod = 0;
-    const char *msg = "";
-
-    /** Pre-condition the control table to disable all logging.  This
-     * means that if no logging control statements are present in the
-     * debug.ini file all logging will be suppressed. */
-    memset(rdk_g_logControlTbl, 0, sizeof(rdk_g_logControlTbl));
-
-    /** Intialize to the default configuration for all modules. */
-    strncpy(envVarName,"LOG.RDK.DEFAULT",sizeof(envVarName));
-    envVarValue = rdk_logger_envGet(envVarName);
-    if ((envVarValue != NULL) && (envVarValue[0] != 0))
+    const char *defaultValue = rdk_logger_envGet("LOG.RDK.DEFAULT");
+    if (defaultValue && defaultValue[0] != 0)
     {
-        (void) parseLogConfig(envVarValue, &defaultConfig, &msg);
-        for (mod = 1; mod <= global_count; mod++) 
-        {
-            rdk_g_logControlTbl[mod] = defaultConfig;
+        char levelName[32];
+        strncpy(levelName, defaultValue, sizeof(levelName)-1);
+        levelName[sizeof(levelName)-1] = '\0';
+        forceUpperCase(levelName);
+
+        log4c_category_t* parent_cat = log4c_category_get("LOG.RDK");
+        if (strcasecmp(levelName, "NONE") == 0) {
+            log4c_category_set_priority(parent_cat, LOG4C_PRIORITY_NONE);
+        } else {
+            int lvl = logNameToEnum(levelName);
+            if (lvl >= 0 && lvl < ENUM_RDK_LOG_COUNT) {
+                log4c_category_set_priority(parent_cat, rdk_logLevel_to_log4c_priority(lvl));
+            }
         }
+        parent_prio = log4c_category_get_priority(parent_cat);
     }
 
-    /** Configure each module from the ini file. Note: It is not an
-     * error to have no entry in the ini file for a module - we simply
-     * leave it at the default logging. */
-    for (mod = 1; mod <= global_count; mod++)
+    for (int mod = 1; mod <= global_count; mod++)
     {
-       /** Get the logging level */
-        envVarValue = rdk_logger_envGetValueFromNum(mod);
-        if ((envVarValue != NULL) && (envVarValue[0] != '\0'))
+        const char* modName = rdk_logger_envGetModFromNum(mod);
+        const char* modValue = rdk_logger_envGetValueFromNum(mod);
+        if (modName && modValue && modValue[0] != '\0')
         {
-            (void) parseLogConfig(envVarValue, &rdk_g_logControlTbl[mod],
-                    &msg);
+            char levelName[32];
+            strncpy(levelName, modValue, sizeof(levelName)-1);
+            levelName[sizeof(levelName)-1] = '\0';
+            forceUpperCase(levelName);
+
+            log4c_category_t* cat = log4c_category_get(modName);
+            if (cat)
+            {
+                if (strcasecmp(levelName, "NONE") == 0)
+                {
+                    log4c_category_set_priority(cat, LOG4C_PRIORITY_NONE);
+                }
+                else
+                {
+                    int lvl = logNameToEnum(levelName);
+                    if (lvl >= 0 && lvl < ENUM_RDK_LOG_COUNT)
+                    {
+                        log4c_category_set_priority(cat, rdk_logLevel_to_log4c_priority(lvl));
+                    }
+                }
+            }
         }
     }
 }
-
 /**
  * @brief Function to check if a specific log level of a module is enabled.
  *
@@ -417,8 +384,7 @@ void rdk_dbg_priv_LogControlInit(void)
  */
 rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel level)
 {
-        int number = rdk_logger_envGetNum(module); 
-	if (WANT_LOG(number, level))
+	if(IS_LOGGING_ENABLED_FOR_LEVEL(module, level))
 	{
 		return TRUE;
 	}
@@ -426,216 +392,68 @@ rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel 
 	{
 		return FALSE;
 	}
-}
-
-/**
- * Modify the debug log control table.
- */
-void rdk_dbg_priv_SetLogLevelString(const char* pszModuleName, const char* pszLogLevels)
-{
-    const char *envVarName;
-    uint32_t defaultConfig = 0;
-    int mod = 0;
-    const char *msg = "";
-
-    if ((pszModuleName != NULL) && (pszLogLevels != NULL))
-    {
-        /* Intialize to the default configuration for all modules. */
-        if(0 == strcmp(pszModuleName, "LOG.RDK.DEFAULT"))
-        {
-            (void) parseLogConfig(pszLogLevels, &defaultConfig, &msg);
-            for (mod = 1; mod <= global_count; mod++)
-            {
-                rdk_g_logControlTbl[mod] = defaultConfig;
-            }
-            printf("rdk_dbg_priv_SetLogLevelString: Set Logging Level for '%s' to '%s'\n", pszModuleName, pszLogLevels);
-            return;
-        }
-
-        /* Configure each module from the ini file. Note: It is not an
-         * error to have no entry in the ini file for a module - we simply
-         * leave it at the default logging. */
-        for (mod = 1; mod <= global_count; mod++)
-        {
-            envVarName = rdk_logger_envGetModFromNum(mod); 
-            if(0 == strcmp(pszModuleName, envVarName))
-            {
-                if ((pszLogLevels != NULL) && (pszLogLevels[0] != '\0'))
-                {
-                    (void) parseLogConfig(pszLogLevels, &rdk_g_logControlTbl[mod], &msg);
-                    //printf("rdk_dbg_priv_SetLogLevelString: Set Logging Level for '%s' to '%s'\n", pszModuleName, pszLogLevels);
-                    return;
-                }
-            }
-        }
-    }
-    printf("rdk_dbg_priv_SetLogLevelString: Failed to set Logging Level for '%s' to '%s'\n", pszModuleName, pszLogLevels);
-}
-
-/**
- * @brief Function to sets a specific log level of a module.
- *
- * @param[in] module The module name or category for for which the log level shall be checked (as mentioned in debug.ini).
- * @param[in] level The debug logging level.
- *
- * @return Returns TRUE, if debug log level enabled successfully else returns FALSE.
- */
-rdk_logger_Bool rdk_logger_enable_logLevel(const char *moduleName, rdk_LogLevel logLevel, rdk_logger_Bool enableLogLvl)
-{
-        const char* logLevelName = rdk_loglevelToString(logLevel, enableLogLvl);
-
-        if ((NULL == moduleName) || (NULL == logLevelName))
-        {
-                return FALSE;
-        }
-
-        rdk_dbg_priv_SetLogLevelString(moduleName, logLevelName);
-
-        int number = rdk_logger_envGetNum(moduleName);
-	if (WANT_LOG(number, logLevel))
-	{
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
-
-}
-
-/**
- * Provides an interface to query the configuration of logging in a
- * specific module as a user readable string. Note: the mimimum
- * acceptable length of the supplied configuration buffer is 32 bytes.
- *
- * @param modName Name of the module.
- *
- * @param cfgStr The configuration strng: which should be space
- * separated module names.
- *
- * @param cfgStrMaxLen The maximum length of the configuration string
- * to be returned including the NUL character.
- *
- * @return A string containing a user readable error message if an
- * error occured; or "OK" upon success.
- */
-const char * rdk_dbg_priv_LogQueryOpSysIntf(char *modName, char *cfgStr,
-        int cfgStrMaxLen)
-{
-    char *name = modName;
-    int mod = -1;
-    uint32_t modCfg = 0;
-    int level = -1;
-
-    assert(modName);
-    assert(cfgStr);
-    assert(cfgStrMaxLen > 32);
-
-    cfgStrMaxLen -= 1; /**< Ensure there is space for NUL. */
-    strncpy(cfgStr,"",cfgStrMaxLen);
-
-    /** Get the module configuration. Note: DEFAULT is not valid as it
-     * is an alias. 
-     */
-    forceUpperCase(name);
-     mod = rdk_logger_envGetNum(modName); 
-    if (mod < 0)
-    {
-        return "Unknown module specified.";
-    }
-    modCfg = rdk_g_logControlTbl[mod];
-
-    /** Try and find a succinct way of describing the configuration. */
-
-    if (modCfg == 0)
-    {
-        strncpy(cfgStr,"NONE",cfgStrMaxLen);
-        return "OK"; /* This is a canonical response. */
-    }
-
-    /** Loop through the control word and print out the enabled levels. */
-
-    for (level = 0; level < ENUM_RDK_LOG_COUNT; level++)
-    {
-        if (modCfg & (1 << level))
-        {
-            /** Stop building out the config string if it would exceed
-             * the buffer length. 
-             */
-            if (strlen(cfgStr) + strlen(rdk_logLevelStrings[level]+1)
-                    > (size_t) cfgStrMaxLen)
-            {
-                return "Warning: Config string too long, config concatenated.";
-            }
-
-            strncat(cfgStr," ",cfgStrMaxLen); /* Not efficient - rah rah. */
-            strncat(cfgStr,rdk_logLevelStrings[level],cfgStrMaxLen);
-        }
-    }
-
-    return "OK";
 }
 
 void rdk_debug_priv_log_msg( rdk_LogLevel level,
-        int module, const char *module_name, const char* format, va_list args)
+        const char *module_name, const char* format, va_list args)
 {
     /** Get the category from module name */
     static log4c_category_t *cat_cache[RDK_MAX_MOD_COUNT] = {NULL};
     char cat_name[64] = {'\0'};
     log4c_category_t* cat = NULL;
+    int prio = 0;
 
     /* Handling process request here. This is not a blocking call and it shall return immediately */
     rdk_dyn_log_processPendingRequest();
 
-    if (!g_debugEnabled || !WANT_LOG(module, level))
+    cat = log4c_category_get(module_name);
+    prio = log4c_category_get_priority(cat);
+    if (cat && prio == LOG4C_PRIORITY_NOTSET && parent_cat) {
+        log4c_category_set_priority(cat, parent_prio);
+        prio = parent_prio;
+    }
+ 
+    if(!cat)
+    {
+        cat = parent_cat;
+    }
+
+    if(!cat)
     {
         return;
     }
 
-    char *parent_cat_name = (char *)log4c_category_get_name(stackCat);
-    snprintf(cat_name, sizeof(cat_name)-1, "%s.%s", parent_cat_name == NULL ? "" : parent_cat_name, module_name); 
-
-    if((module >= 0) && (module < RDK_MAX_MOD_COUNT))
+    if (!IS_LOGGING_ENABLED_FOR_LEVEL(module_name, level))
     {
-        if (cat_cache[module] == NULL) {
-            /** Only doing a read here, lock not needed */
-            cat_cache[module] = log4c_category_get(cat_name);
-        }
-    
-        cat = cat_cache[module];
-    }
-    /* CID :19939-- some function when explicitly call this function, it might have module < 0, then the else condition will be applicable*/
-    else
-    {
-        cat = log4c_category_get(cat_name);
+        return;
     }
 
     switch (level)
     {
-    case RDK_LOG_FATAL:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_FATAL, format, args);
-        break;
-    case RDK_LOG_ERROR:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_ERROR, format, args);
-        break;
-    case RDK_LOG_WARN:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_WARN, format, args);
-        break;
-    case RDK_LOG_NOTICE:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_NOTICE, format, args);
-        break;
-    case RDK_LOG_INFO:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_INFO, format, args);
-        break;
-    case RDK_LOG_DEBUG:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_DEBUG, format, args);
-        break;
-    case RDK_LOG_TRACE:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_TRACE, format, args);
-        break;
-    default:
-        log4c_category_vlog(cat, LOG4C_PRIORITY_DEBUG, format, args);
-        break;
+        case RDK_LOG_FATAL:
+            log4c_category_vlog(cat, LOG4C_PRIORITY_FATAL, format, args);
+            break;
+        case RDK_LOG_ERROR:
+            log4c_category_vlog(cat, LOG4C_PRIORITY_ERROR, format, args);
+            break;
+        case RDK_LOG_WARN:
+            log4c_category_vlog(cat, LOG4C_PRIORITY_WARN, format, args);
+            break;
+        case RDK_LOG_NOTICE:
+            log4c_category_vlog(cat, LOG4C_PRIORITY_NOTICE, format, args);
+            break;
+        case RDK_LOG_INFO:
+            log4c_category_vlog(cat, LOG4C_PRIORITY_INFO, format, args);
+            break;
+        case RDK_LOG_DEBUG:
+            log4c_category_vlog(cat, LOG4C_PRIORITY_DEBUG, format, args);
+            break;
+        case RDK_LOG_TRACE:
+            log4c_category_vlog(cat, LOG4C_PRIORITY_TRACE, format, args);
+            break;
+        default:
+            log4c_category_vlog(cat, LOG4C_PRIORITY_DEBUG, format, args);
+            break;
     }
 }
 
@@ -655,7 +473,30 @@ void RDK_LOG_ControlCB(const char *moduleName, const char *subComponentName, con
         logTypeName[0] = '!';
     }
 
-    rdk_dbg_priv_SetLogLevelString(moduleName, (const char *)logTypeName);
+    int disable = 0;
+    if (logTypeName[0] == '!') {
+        disable = 1;
+        memmove(logTypeName, logTypeName + 1, strlen(logTypeName));
+    }
+
+    int prio = LOG4C_PRIORITY_INFO; // default
+    if (strcasecmp(logTypeName, "FATAL") == 0) prio = LOG4C_PRIORITY_FATAL;
+    else if (strcasecmp(logTypeName, "ERROR") == 0) prio = LOG4C_PRIORITY_ERROR;
+    else if (strcasecmp(logTypeName, "WARNING") == 0) prio = LOG4C_PRIORITY_WARN;
+    else if (strcasecmp(logTypeName, "NOTICE") == 0) prio = LOG4C_PRIORITY_NOTICE;
+    else if (strcasecmp(logTypeName, "INFO") == 0) prio = LOG4C_PRIORITY_INFO;
+    else if (strcasecmp(logTypeName, "DEBUG") == 0) prio = LOG4C_PRIORITY_DEBUG;
+    else if (strcasecmp(logTypeName, "TRACE") == 0) prio = LOG4C_PRIORITY_TRACE;
+
+    log4c_category_t* cat = log4c_category_get(moduleName);
+    if (cat) {
+        if (disable) {
+            log4c_category_set_priority(cat, parent_prio);
+        }
+        else {
+            log4c_category_set_priority(cat, prio);
+        }
+    }
 }
 
 
@@ -684,11 +525,6 @@ static int initLogger(char *category)
     {
         fprintf(stderr, "log4c_init() failed?!");
         return -1;
-    }
-    else
-    {
-        defaultCategory = log4c_category_get(category);
-        glibCategory = log4c_category_get("RI.GLib");
     }
 
     return 0;

@@ -162,7 +162,13 @@ extern "C"
 /**
  * Support for overriding debug.ini file location
  */
-#define DEBUG_INI_OVERRIDE_PATH "/opt/debug.ini"
+#ifndef DEBUG_INI_NAME
+#define DEBUG_INI_NAME "/etc/debug.ini"
+#endif
+
+#ifndef DEBUG_INI_OVERRIDE_PATH
+#define DEBUG_INI_OVERRIDE_PATH "/nvram/debug.ini"
+#endif
 #define RDK_LOGGER_INIT()	(0 == access(DEBUG_INI_OVERRIDE_PATH, F_OK)) \
 								? rdk_logger_init(DEBUG_INI_OVERRIDE_PATH) \
 								: rdk_logger_init(DEBUG_INI_NAME);
@@ -198,6 +204,16 @@ typedef enum
     ENUM_RDK_LOG_COUNT
 } rdk_LogLevel;
 
+#define RDK_LOGGER_EXT_FILENAME_SIZE 32
+#define RDK_LOGGER_EXT_LOGDIR_SIZE   32
+typedef struct rdk_logger_ext_config_t
+ {
+     char fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
+     char logdir[RDK_LOGGER_EXT_LOGDIR_SIZE];
+     long maxSize;
+     long maxCount;
+ }rdk_logger_ext_config_t;
+
 /**
  * To allow compatibility of mutiple rdke components using loglevels RDK_LOG_TRACE1..RDK_LOG_TRACE9 and function rdk_dbg_enabled
  */
@@ -232,26 +248,65 @@ const char *rdk_logLevelStrings[ENUM_RDK_LOG_COUNT] =
 #endif /* RDK_DEBUG_DEFINE_STRINGS */
 
 /**
- * @ingroup RDKLOGGER_DEBUG_API
- * @{
+ * @brief Initialize the RDK Logger.
+ * @param debugConfigFile Path to the debug.ini configuration file.
+ * @return RDK_SUCCESS on success, error code otherwise.
  */
-
 rdk_Error rdk_logger_init(const char* debugConfigFile);
 
-rdk_Error rdk_logger_deinit();
+/**
+ * @brief Extended initialization for RDK Logger.
+ * @param config Pointer to rdk_logger_ext_config_t structure.
+ * @return RDK_SUCCESS on success, error code otherwise.
+ */
+rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config);
 
-void rdk_logger_msg_printf(rdk_LogLevel level, const char *module, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
+/**
+ * @brief Deinitialize the RDK Logger.
+ * @return RDK_SUCCESS on success, error code otherwise.
+ */
+rdk_Error rdk_logger_deinit(void);
 
-void rdk_logger_msg_vsprintf(rdk_LogLevel level, const char *module,const char *format, va_list args);
+/**
+ * @brief Log a message with printf-style formatting.
+ * @param level Log level.
+ * @param module Module name.
+ * @param format Printf-style format string.
+ */
+void rdk_logger_msg_printf(rdk_LogLevel level, const char *module, const char *format, ...);
 
+/**
+ * @brief Log a message using a va_list.
+ * @param level Log level.
+ * @param module Module name.
+ * @param format Printf-style format string.
+ * @param args va_list of arguments.
+ */
+void rdk_logger_msg_vsprintf(rdk_LogLevel level, const char *module, const char *format, va_list args);
+
+/**
+ * @brief Check if a log level is enabled for a module.
+ * @param module Module name.
+ * @param level Log level.
+ * @return TRUE if enabled, FALSE otherwise.
+ */
 rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel level);
 
+/**
+ * @brief Enable or disable a log level for a module.
+ * @param module Module name.
+ * @param logLevel Log level.
+ * @param enableLogLvl TRUE to enable, FALSE to disable.
+ * @return TRUE if successful, FALSE otherwise.
+ */
 rdk_logger_Bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logLevel, rdk_logger_Bool enableLogLvl);
 
+/**
+ * @brief Log a message for onboard logging.
+ * @param module Module name.
+ * @param msg Message to log.
+ */
 void rdk_logger_log_onboard(const char *module, const char *msg, ...) __attribute__ ((format (printf, 2, 3)));
-
-/** @} */ //end of Doxygen tag RDKLOGGER_DEBUG_API
-
 
 #ifdef __cplusplus
 }
