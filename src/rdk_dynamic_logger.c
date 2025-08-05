@@ -63,12 +63,14 @@ static char * rdk_dyn_log_logLevelToString(unsigned char log_level)
             return (negate) ? "!DEBUG":"DEBUG";
         case RDK_LOG_TRACE:
             return (negate) ? "!TRACE":"TRACE";
+        case RDK_LOG_NONE:
+            return "NONE";
     }
 
     return NULL;
 }
 
-static void rdk_dyn_log_validateComponentName(const unsigned char *buf)
+static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
 {
     unsigned char log_level = 0;
     int app_len, comp_len, i = DL_SIGNATURE_LEN;
@@ -92,12 +94,12 @@ static void rdk_dyn_log_validateComponentName(const unsigned char *buf)
     loggingLevel = rdk_dyn_log_logLevelToString(log_level);
     if(NULL != loggingLevel) {
         memcpy(comp_name,buf+(++i),comp_len);
-        RDK_LOG_ControlCB(comp_name, NULL, loggingLevel, 0);
+        rdk_dbg_priv_reconfig(comp_name, loggingLevel);
         fprintf(stderr,"%s(): Set %s loglevel for the component %s of the process %s\n",__func__,loggingLevel,comp_name,__progname);
     }
 }
 
-void rdk_dyn_log_processPendingRequest()
+void rdk_dyn_log_process_pending_request()
 {
     char buf[128] = {0};
     struct sockaddr_in sender_addr;
@@ -139,7 +141,7 @@ void rdk_dyn_log_processPendingRequest()
          */
         if((0 == strcmp("127.0.0.1",inet_ntoa(sender_addr.sin_addr))) &&
                 (numbytes == buf[4]+DL_SIGNATURE_LEN+1)) {
-            rdk_dyn_log_validateComponentName(buf);
+            rdk_dyn_log_validate_component_name(buf);
         }
     }
 }
@@ -176,30 +178,9 @@ void rdk_dyn_log_init()
     fprintf(stderr, "%sg_dl_socket = %d __progname = %s \n",__func__,g_dl_socket,__progname);
 }
 
-void rdk_dyn_log_deInit()
+void rdk_dyn_log_deinit()
 {
     close(g_dl_socket);
     g_dl_socket = -1;
 }
 
-char* rdk_loglevelToString(unsigned char log_level, rdk_LogLevel isLogEnabled)
-{
-    switch(log_level){
-        case RDK_LOG_FATAL:
-            return (isLogEnabled) ? "FATAL":"!FATAL";
-        case RDK_LOG_ERROR:
-            return (isLogEnabled) ? "ERROR":"!ERROR";
-        case RDK_LOG_WARN:
-            return (isLogEnabled) ? "WARNING":"!WARNING";
-        case RDK_LOG_NOTICE:
-            return (isLogEnabled) ? "NOTICE":"!NOTICE";
-        case RDK_LOG_INFO:
-            return (isLogEnabled) ? "INFO":"!INFO";
-        case RDK_LOG_DEBUG:
-            return (isLogEnabled) ? "DEBUG":"!DEBUG";
-        case RDK_LOG_TRACE:
-            return (isLogEnabled) ? "TRACE":"!TRACE";
-    }
-
-    return NULL;
-}

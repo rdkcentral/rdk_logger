@@ -38,7 +38,7 @@
 #include <string.h>
 
 /*Resolve reboot and related macros.*/
-#include <unistd.h> 
+#include <unistd.h>
 #include <sys/reboot.h>
 #include <linux/reboot.h>
 
@@ -93,7 +93,7 @@ static void trim(char *instr, char* outstr)
  *
  * @return Returns Returns RDK_SUCCESS if the setting of environment variable is successful else it returns -1.
  */
-rdk_Error rdk_logger_env_rem_conf_details()
+rdk_Error rdk_logger_release_config()
 {
     EnvVarNode *currentNode;
     EnvVarNode *nextNode;
@@ -122,7 +122,7 @@ rdk_Error rdk_logger_env_rem_conf_details()
  * @param[in] path Path of the configuration file.
  * @return Returns Returns RDK_SUCCESS if the setting of environment variable is successful else it returns -1.
  */
-rdk_Error rdk_logger_env_add_conf_file( const char * path)
+rdk_Error rdk_logger_parse_config( const char * path)
 {
     const int line_buf_len = 256;
 
@@ -174,7 +174,7 @@ rdk_Error rdk_logger_env_add_conf_file( const char * path)
         /* Trim all whitespace from name and value strings */
         trim( name,trimname);
         trim( value,trimvalue);
-        
+
         tmp_node = g_envCache;
         while(tmp_node)
         {
@@ -182,9 +182,9 @@ rdk_Error rdk_logger_env_add_conf_file( const char * path)
             {
                 break;
             }
-            tmp_node = tmp_node->next;    
-        }   
-        
+            tmp_node = tmp_node->next;
+        }
+
         if(!tmp_node)
         {
             node = ( EnvVarNode*)malloc(sizeof(EnvVarNode));
@@ -198,14 +198,15 @@ rdk_Error rdk_logger_env_add_conf_file( const char * path)
             continue;
         }
 
+#define COMP_SIGNATURE "LOG.RDK."
+#define COMP_SIGNATURE_LEN 8
         /** Update number only for the modules, not for environment variable */
-        if ((strcmp("LOG.RDK.DEFAULT",node->name) != 0) && 
-               (strcmp("EnableMPELog",node->name) != 0) && 
-               (strcmp("SEPARATE.LOGFILE.SUPPORT",node->name) != 0))
+        if ((strcmp("LOG.RDK.DEFAULT", node->name) != 0) &&
+            (strncmp(COMP_SIGNATURE, node->name, COMP_SIGNATURE_LEN) == 0))
         {
-          number++; 
-          node->number = number; 
-        } else 
+            number++;
+            node->number = number;
+        } else
         node->number = 0;
 	
         /* Insert at the front of the list */
@@ -256,11 +257,11 @@ const char* rdk_logger_envGet(const char *name)
  * variable or return NULL in failure condition.
  */
 const char* rdk_logger_envGetValueFromNum(int number)
-{   
+{
     EnvVarNode *node = g_envCache;
 
     while (node != NULL)
-    {       
+    {
         /* Env var name match */
         if (number == node->number)
         {
@@ -329,3 +330,28 @@ const char* rdk_logger_envGetModFromNum(int Num)
     return NULL;
 }
 
+char* rdk_loglevelToString(rdk_LogLevel log_level, rdk_logger_Bool isLogEnabled)
+{
+    switch(log_level){
+        case RDK_LOG_FATAL:
+            return (isLogEnabled) ? "FATAL":"!FATAL";
+        case RDK_LOG_ERROR:
+            return (isLogEnabled) ? "ERROR":"!ERROR";
+        case RDK_LOG_WARN:
+            return (isLogEnabled) ? "WARNING":"!WARNING";
+        case RDK_LOG_NOTICE:
+            return (isLogEnabled) ? "NOTICE":"!NOTICE";
+        case RDK_LOG_INFO:
+            return (isLogEnabled) ? "INFO":"!INFO";
+        case RDK_LOG_DEBUG:
+            return (isLogEnabled) ? "DEBUG":"!DEBUG";
+        case RDK_LOG_TRACE:
+            return (isLogEnabled) ? "TRACE":"!TRACE";
+    }
+
+    return NULL;
+}
+
+
+
+/***/

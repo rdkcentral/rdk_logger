@@ -67,10 +67,8 @@
 #include "syslog_helper_ifc.h"
 #endif
 
-/// Debugging messages are enabled.  Default is enabled (1) and 0 for off.
-static int g_debugEnabled = 1;
-log4c_category_t* parent_cat = NULL;
-int parent_prio = 0;
+log4c_category_t* gRootCat = NULL;
+int gRootPriority = 0;
 extern int global_count;
 
 static int rdk_logLevel_to_log4c_priority(int level) {
@@ -122,22 +120,6 @@ static int stream_env_close(log4c_appender_t * appender);
 
 static rdk_logger_Bool g_initialized = FALSE;
 
-/** UDP logging variables. */
-rdk_logger_Bool dbg_logViaUDP = FALSE;
-int dbg_udpSocket;
-struct sockaddr_in dbg_logHostAddr;
-
-enum
-{
-    /** Used as an array index. */
-    ERR_INVALID_MOD_NAME = 0, ERR_INVALID_LOG_NAME
-};
-
-enum
-{
-    RC_ERROR, RC_OK
-};
-
 static const char *errorMsgs[] =
 { "Error: Invalid module name.", "Warning: Ignoring invalid log name(s)." };
 
@@ -171,7 +153,7 @@ static const log4c_appender_type_t log4c_appender_type_stream_env_append_plus_st
 { "stream_env_append_plus_stdout", stream_env_append_open,
         stream_env_plus_stdout_append, stream_env_close, };
 
-void rdk_dbg_priv_Init()
+void rdk_dbg_priv_init()
 {
     const char* envVar;
 
@@ -180,10 +162,10 @@ void rdk_dbg_priv_Init()
         fprintf(stderr, "%s -- initLogger failure?!\n", __FUNCTION__);
     }
 
-    parent_cat= log4c_category_get("LOG.RDK");
+    gRootCat = log4c_category_get("LOG.RDK");
 }
 
-void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long maxCount, long maxSize)
+void rdk_dbg_priv_ext_init(const char* logdir, const char* log_file_name, long maxCount, long maxSize)
 {
     char fullpath[512];
     snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, log_file_name);
@@ -224,33 +206,9 @@ void rdk_dbg_priv_ext_Init(const char* logdir, const char* log_file_name, long m
     log4c_category_set_appender(cat, app);
 }
 
-void rdk_dbg_priv_DeInit()
+void rdk_dbg_priv_deinit()
 {
-  parent_cat = NULL;
-}
-
-void rdk_dbg_priv_DumpLogConfig(const char* path)
-{
-    FILE* fp = fopen(path, "w");
-    if (!fp) return;
-
-    log4c_category_t* root = log4c_category_get("LOG.RDK");
-    if (root) {
-        fprintf(fp, "LOG.RDK: %s\n", log4c_priority_to_string(log4c_category_get_priority(root)));
-    }
-
-    extern int global_count;
-    for (int mod = 1; mod <= global_count; mod++) {
-        const char* modName = rdk_logger_envGetModFromNum(mod);
-        if (modName) {
-            log4c_category_t* cat = log4c_category_get(modName);
-            if (cat) {
-                fprintf(fp, "%s: %s\n", modName, log4c_priority_to_string(log4c_category_get_priority(cat)));
-            }
-        }
-    }
-
-    fclose(fp);
+  gRootCat = NULL;
 }
 
 /**
@@ -271,6 +229,21 @@ static void forceUpperCase(char *token)
 }
 
 /**
+ * String names that correspond to the various logging types.
+ * Note: This array *must* match the RDK_LOG_* enum.
+ */
+const char *rdk_logLevelStrings[RDK_LOG_NONE] =
+{
+    "FATAL",
+    "ERROR",
+    "WARNING",
+    "NOTICE",
+    "INFO",
+    "DEBUG",
+    "TRACE",
+};
+
+/**
  * Convert a log level name to the correspodning log level enum value.
  *
  * @param name Log level name, which must be uppercase.
@@ -279,7 +252,7 @@ static void forceUpperCase(char *token)
 static int logNameToEnum(const char *name)
 {
     int i = 0;
-    while (i < ENUM_RDK_LOG_COUNT)
+    while (i < RDK_LOG_NONE)
     {
         if (strcmp(name, rdk_logLevelStrings[i]) == 0)
         {
@@ -322,7 +295,7 @@ static void printTime(const struct tm *pTm, char *pBuff)
  * EXPORTED FUNCTIONS
  *
  ****************************************************************************/
-void rdk_dbg_priv_LogControlInit(void)
+void rdk_dbg_priv_config(void)
 {
     const char *defaultValue = rdk_logger_envGet("LOG.RDK.DEFAULT");
     if (defaultValue && defaultValue[0] != 0)
@@ -332,16 +305,33 @@ void rdk_dbg_priv_LogControlInit(void)
         levelName[sizeof(levelName)-1] = '\0';
         forceUpperCase(levelName);
 
-        log4c_category_t* parent_cat = log4c_category_get("LOG.RDK");
-        if (strcasecmp(levelName, "NONE") == 0) {
-            log4c_category_set_priority(parent_cat, LOG4C_PRIORITY_NONE);
-        } else {
+        if (!gRootCat)
+            gRootCat = log4c_category_get("LOG.RDK");
+
+        if (!gRootCat)
+        {
+            printf("LOG.RDK.DEFAULT is not defined..\n");
+            return;
+        }
+
+        if (strcasecmp(levelName, "NONE") == 0)
+        {
+            log4c_category_set_priority(gRootCat, LOG4C_PRIORITY_NONE);
+        }
+        else
+        {
             int lvl = logNameToEnum(levelName);
-            if (lvl >= 0 && lvl < ENUM_RDK_LOG_COUNT) {
-                log4c_category_set_priority(parent_cat, rdk_logLevel_to_log4c_priority(lvl));
+            if (lvl >= 0 && lvl < RDK_LOG_NONE)
+            {
+                log4c_category_set_priority(gRootCat, rdk_logLevel_to_log4c_priority(lvl));
             }
         }
-        parent_prio = log4c_category_get_priority(parent_cat);
+        gRootPriority = log4c_category_get_priority(gRootCat);
+    }
+    else 
+    {
+        printf("LOG.RDK.DEFAULT is not defined..\n");
+        return;
     }
 
     for (int mod = 1; mod <= global_count; mod++)
@@ -365,15 +355,20 @@ void rdk_dbg_priv_LogControlInit(void)
                 else
                 {
                     int lvl = logNameToEnum(levelName);
-                    if (lvl >= 0 && lvl < ENUM_RDK_LOG_COUNT)
+                    if (lvl >= 0 && lvl < RDK_LOG_NONE)
                     {
                         log4c_category_set_priority(cat, rdk_logLevel_to_log4c_priority(lvl));
+                    }
+                    else
+                    {
+                        log4c_category_set_priority(cat, LOG4C_PRIORITY_NONE);
                     }
                 }
             }
         }
     }
 }
+
 /**
  * @brief Function to check if a specific log level of a module is enabled.
  *
@@ -394,28 +389,26 @@ rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel 
 	}
 }
 
-void rdk_debug_priv_log_msg( rdk_LogLevel level,
-        const char *module_name, const char* format, va_list args)
+void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const char* format, va_list args)
 {
     /** Get the category from module name */
-    static log4c_category_t *cat_cache[RDK_MAX_MOD_COUNT] = {NULL};
     char cat_name[64] = {'\0'};
     log4c_category_t* cat = NULL;
     int prio = 0;
 
     /* Handling process request here. This is not a blocking call and it shall return immediately */
-    rdk_dyn_log_processPendingRequest();
+    rdk_dyn_log_process_pending_request();
 
     cat = log4c_category_get(module_name);
     prio = log4c_category_get_priority(cat);
-    if (cat && prio == LOG4C_PRIORITY_NOTSET && parent_cat) {
-        log4c_category_set_priority(cat, parent_prio);
-        prio = parent_prio;
+    if (cat && prio == LOG4C_PRIORITY_NOTSET && gRootCat) {
+        log4c_category_set_priority(cat, gRootPriority);
+        prio = gRootPriority;
     }
  
     if(!cat)
     {
-        cat = parent_cat;
+        cat = gRootCat;
     }
 
     if(!cat)
@@ -458,16 +451,16 @@ void rdk_debug_priv_log_msg( rdk_LogLevel level,
 }
 
 
-void RDK_LOG_ControlCB(const char *moduleName, const char *subComponentName, const char *loggingLevel, int log_status)
+void rdk_dbg_priv_reconfig(const char *pModuleName, const char *pLogLevel)
 {
     char logTypeName[20] = {'\0'};
 
-    if ((NULL == moduleName) || (NULL == loggingLevel))
+    if ((NULL == pModuleName) || (NULL == pLogLevel))
     {
         return;
     }
 
-    strncpy(logTypeName, loggingLevel, sizeof(logTypeName)-1);
+    strncpy(logTypeName, pLogLevel, sizeof(logTypeName)-1);
     if (logTypeName[0] == '~')
     {
         logTypeName[0] = '!';
@@ -487,11 +480,12 @@ void RDK_LOG_ControlCB(const char *moduleName, const char *subComponentName, con
     else if (strcasecmp(logTypeName, "INFO") == 0) prio = LOG4C_PRIORITY_INFO;
     else if (strcasecmp(logTypeName, "DEBUG") == 0) prio = LOG4C_PRIORITY_DEBUG;
     else if (strcasecmp(logTypeName, "TRACE") == 0) prio = LOG4C_PRIORITY_TRACE;
+    else if (strcasecmp(logTypeName, "NONE") == 0) prio = LOG4C_PRIORITY_NONE;
 
-    log4c_category_t* cat = log4c_category_get(moduleName);
+    log4c_category_t* cat = log4c_category_get(pModuleName);
     if (cat) {
         if (disable) {
-            log4c_category_set_priority(cat, parent_prio);
+            log4c_category_set_priority(cat, gRootPriority);
         }
         else {
             log4c_category_set_priority(cat, prio);
@@ -843,7 +837,4 @@ static int stream_env_close(log4c_appender_t* appender)
 
     return fclose(fp);
 }
-
-
-/*************************End Copied from ri_log.c******************/
 

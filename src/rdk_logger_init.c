@@ -67,27 +67,18 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
             debugConfigFile = DEBUG_CONF_FILE;
         }
 
-        rdk_dbgInit();
-        ret = rdk_logger_env_add_conf_file(debugConfigFile);
+        /* Read the config file & populate pre-configured log levels */
+        ret = rdk_logger_parse_config(debugConfigFile);
         if ( RDK_SUCCESS != ret)
         {
             printf("%s:%d Adding debug config file %s failed\n", __FUNCTION__, __LINE__, debugConfigFile);
             return ret;
         }
-        rdk_dbg_priv_LogControlInit();
+        /* Perform Logger Internal Init */
+        rdk_dbg_init();
+
+        /* Perform Dynamin Logger Internal Init */
         rdk_dyn_log_init();
-
-        snprintf(buf, BUF_LEN-1, "/tmp/%s", "debugConfigFile_read");
-        buf[BUF_LEN-1] = '\0';
-
-        if((0 == stat(buf, &st) && (0 != st.st_ino)))
-        {
-            printf("%s %s Already Stack Level Logging processed... not processing again.\n", __FUNCTION__, debugConfigFile);
-        }
-        else
-        {
-            rdk_dbgDumpLog(buf);
-        }
 
         /**
          * Requests not to send SIGPIPE on errors on stream oriented
@@ -106,7 +97,7 @@ rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
     ret = RDK_LOGGER_INIT();
     if (ret == RDK_SUCCESS)
     {
-        rdk_dbg_priv_ext_Init(config->logdir, config->fileName, config->maxCount, config->maxSize);
+        rdk_dbg_priv_ext_init(config->logdir, config->fileName, config->maxCount, config->maxSize);
     }
     return ret;
  }
@@ -120,11 +111,8 @@ rdk_Error rdk_logger_deinit()
 {
     if(isLogInited)
     {
-        //rdk_dbgDeinit();
-        rdk_dyn_log_deInit();
-        //rdk_dbg_priv_DeInit();
-        rdk_logger_env_rem_conf_details();
-        log4c_fini();
+        rdk_dyn_log_deinit();
+        rdk_logger_release_config();
         //isLogInited = 0;
     }
 

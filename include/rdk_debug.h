@@ -116,13 +116,13 @@
  * @par Logging Levels supported by RDK Logger.
  * Code | Description
  * -----|------------
- * RDK_LOG_FATAL	| Any error that is forcing a shutdown of the service or application to prevent data loss (or further data loss), reserve these only for the most heinous errors and situations where there is guaranteed to have been data corruption or loss.
- * RDK_LOG_ERROR	| Any error which is fatal to the operation but not the service (cant open a file, missing data, etc)
- * RDK_LOG_WARN		| Anything that can potentially cause application oddities, but for which the application automatically recoverring.
- * RDK_LOG_NOTICE	| Anything that largely superfluous for application-level logging.
- * RDK_LOG_INFO		| Generally useful information to log (service start/stop, configuration assumptions, etc).
- * RDK_LOG_DEBUG	| Information that is diagnostically helpful to people more than just developers.
- * RDK_LOG_TRACE        | Only when it would be "tracing" the code and trying to find one part of a function specifically.
+ * RDK_LOG_FATAL    | Any error that is forcing a shutdown of the service or application to prevent data loss (or further data loss), reserve these only for the most heinous errors and situations where there is guaranteed to have been data corruption or loss.
+ * RDK_LOG_ERROR    | Any error which is fatal to the operation but not the service (cant open a file, missing data, etc)
+ * RDK_LOG_WARN     | Anything that can potentially cause application oddities, but for which the application automatically recoverring.
+ * RDK_LOG_NOTICE   | Anything that largely superfluous for application-level logging.
+ * RDK_LOG_INFO     | Generally useful information to log (service start/stop, configuration assumptions, etc).
+ * RDK_LOG_DEBUG    | Information that is diagnostically helpful to people more than just developers.
+ * RDK_LOG_TRACE    | Only when it would be "tracing" the code and trying to find one part of a function specifically.
  *
  * @par How log files are upload to server
  * @image html rdk_logupload.jpg
@@ -159,19 +159,25 @@ extern "C"
 /**
 * Macros for ease of applications using RDK_LOGGER apis
 */
+
+/**
+ * Define the default location of configuration file location
+ */
+#define DEBUG_INI_NAME "/etc/debug.ini"
+
 /**
  * Support for overriding debug.ini file location
  */
-#ifndef DEBUG_INI_NAME
-#define DEBUG_INI_NAME "/etc/debug.ini"
-#endif
-
 #ifndef DEBUG_INI_OVERRIDE_PATH
 #define DEBUG_INI_OVERRIDE_PATH "/nvram/debug.ini"
 #endif
-#define RDK_LOGGER_INIT()	(0 == access(DEBUG_INI_OVERRIDE_PATH, F_OK)) \
-								? rdk_logger_init(DEBUG_INI_OVERRIDE_PATH) \
-								: rdk_logger_init(DEBUG_INI_NAME);
+
+/**
+ * Support for Init function
+ */
+#define RDK_LOGGER_INIT()   (0 == access(DEBUG_INI_OVERRIDE_PATH, F_OK)) \
+                                ? rdk_logger_init(DEBUG_INI_OVERRIDE_PATH) \
+                                : rdk_logger_init(DEBUG_INI_NAME);
 /**
  * Use RDK_LOG debug message as.
  * RDK_LOG (rdk_LogLevel level, const char *module, const char *format,...)
@@ -182,40 +188,18 @@ extern "C"
 #define RDK_LOG rdk_logger_msg_printf
 #define RDK_LOG1 rdk_logger_msg_vsprintf
 
-
 /**
- * @enum rdk_LogLevel
- * @brief These values represent the logging 'levels' or 'types', they are each
- * independent.
+ * Define the max length for the log file capture
  */
-typedef enum
-{
-    ENUM_RDK_LOG_BEGIN = 0, /**< Used as array index. */
-
-    RDK_LOG_FATAL = ENUM_RDK_LOG_BEGIN,
-    RDK_LOG_ERROR,
-    RDK_LOG_WARN,
-    RDK_LOG_NOTICE,
-    RDK_LOG_INFO,
-    RDK_LOG_DEBUG,
-
-    RDK_LOG_TRACE,
-
-    ENUM_RDK_LOG_COUNT
-} rdk_LogLevel;
-
 #define RDK_LOGGER_EXT_FILENAME_SIZE 32
-#define RDK_LOGGER_EXT_LOGDIR_SIZE   32
-typedef struct rdk_logger_ext_config_t
- {
-     char fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
-     char logdir[RDK_LOGGER_EXT_LOGDIR_SIZE];
-     long maxSize;
-     long maxCount;
- }rdk_logger_ext_config_t;
 
 /**
- * To allow compatibility of mutiple rdke components using loglevels RDK_LOG_TRACE1..RDK_LOG_TRACE9 and function rdk_dbg_enabled
+ * Define the max length for the log capture path
+ */
+#define RDK_LOGGER_EXT_LOGDIR_SIZE   32
+
+/**
+ * To allow compatibility of mutiple legacy RDK components using loglevels RDK_LOG_TRACE1..RDK_LOG_TRACE9
  */
 #define RDK_LOG_TRACE1 RDK_LOG_TRACE
 #define RDK_LOG_TRACE2 RDK_LOG_TRACE
@@ -227,25 +211,35 @@ typedef struct rdk_logger_ext_config_t
 #define RDK_LOG_TRACE8 RDK_LOG_TRACE
 #define RDK_LOG_TRACE9 RDK_LOG_TRACE
 
+/**
+ * An access function macro to check logging is enabled or not
+ */
 #define rdk_dbg_enabled rdk_logger_is_logLevel_enabled
 
 /**
- * String names that correspond to the various logging types.
- * Note: This array *must* match the RDK_LOG_* enum.
+ * @enum rdk_LogLevel
+ * @brief These values represent the logging 'levels' or 'types', they are each
+ * independent.
  */
-#ifdef RDK_DEBUG_DEFINE_STRINGS
-const char *rdk_logLevelStrings[ENUM_RDK_LOG_COUNT] =
+typedef enum
 {
-    "FATAL",
-    "ERROR",
-    "WARNING",
-    "NOTICE",
-    "INFO",
-    "DEBUG",
+    RDK_LOG_FATAL = 0,
+    RDK_LOG_ERROR,
+    RDK_LOG_WARN,
+    RDK_LOG_NOTICE,
+    RDK_LOG_INFO,
+    RDK_LOG_DEBUG,
+    RDK_LOG_TRACE,
+    RDK_LOG_NONE
+} rdk_LogLevel;
 
-    "TRACE",
-};
-#endif /* RDK_DEBUG_DEFINE_STRINGS */
+typedef struct rdk_logger_ext_config_t
+ {
+     char fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
+     char logdir[RDK_LOGGER_EXT_LOGDIR_SIZE];
+     long maxSize;
+     long maxCount;
+ }rdk_logger_ext_config_t;
 
 /**
  * @brief Initialize the RDK Logger.
@@ -307,6 +301,8 @@ rdk_logger_Bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logL
  * @param msg Message to log.
  */
 void rdk_logger_log_onboard(const char *module, const char *msg, ...) __attribute__ ((format (printf, 2, 3)));
+
+/** @} */ //end of Doxygen tag RDKLOGGER_UTILS_API
 
 #ifdef __cplusplus
 }
