@@ -19,15 +19,17 @@ Logging levels and modules are configured in `debug.ini`. If a module is not exp
 
 See `debug.ini.sample` for an example configuration file.
 The sample file includes comments explaining how to set log levels for each module and what each log level enables.
+
 For example:
+```
 LOG.RDK.DEFAULT=WARNING
-# All modules not listed below will log WARN, ERROR, and FATAL messages
+LOG.RDK.FOO=DEBUG
+LOG.RDK.BAR=NONE
+```
 
-LOG.RDK.SI=INFO
-# LOG.RDK.SI will log INFO, NOTICE, WARN, ERROR, and FATAL messages
-
-LOG.RDK.FOO = NONE
-#All logs will be disabled for this module
+- The component `FOO` will print DEBUG, INFO, WARNING, ERROR, and FATAL messages
+- The component `BAR` prints `nothing`
+- All the other components prints WARNING and higher log levels like ERROR, and FATAL as defined by `DEFAULT`
 
 ## Runtime Control
 
