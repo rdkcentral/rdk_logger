@@ -22,11 +22,7 @@
 
 #include <rdk_debug.h>
 
-void rdk_dyn_log_processPendingRequest(void);
-
 void rdk_dyn_log_init(void);
-
-void rdk_dyn_log_deInit(void);
-
-char* rdk_loglevelToString(unsigned char log_level, rdk_LogLevel isLogEnabled);
+void rdk_dyn_log_deinit(void);
+void rdk_dyn_log_process_pending_request(void);
 #endif /* _RDK_DBG_PRIV_DYNLOG_H */
