@@ -35,7 +35,7 @@
 #define DEVICE_ONBOARDED        "/nvram/.device_onboarded"
 #define DISABLE_ONBOARDING      "/nvram/DISABLE_ONBOARD_LOGGING"
 
-void rdk_logger_log_onboard(const char *module, const char *msg, ...)
+void rdk_log_onboard(const char *module, const char *msg, ...)
 {
     va_list arg_ptr;
     char buf[MAX_BUF_SIZE];
