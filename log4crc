@@ -32,14 +32,8 @@
 
     <layout name="comcast_dated" type="comcast_dated_nocr"/>
 
-     <appender name="rdklogfile" type="rollingfile" layout="comcast_dated">
-        <filename>/rdklogs/logs/RDKUnifiedLog.txt</filename>
-        <maxsize>1048576</maxsize>
-        <maxnum>2</maxnum>
-    </appender>
-
     <appender name="stdout" type="stream_env" layout="comcast_dated"/>
 
-    <category name="LOG.RDK" priority="warning" appender="rdklogfile"/>
+    <category name="LOG.RDK" priority="warning" appender="stdout"/>
 
 </log4c>
