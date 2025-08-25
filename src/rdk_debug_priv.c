@@ -169,7 +169,7 @@ void rdk_dbg_priv_ext_init(const char* logdir, const char* log_file_name, long m
 {
     char fullpath[512];
     snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, log_file_name);
-    printf("#DEEPTHI:Path:%s\n",fullpath);
+    printf("#:Path:%s\n",fullpath);
 
     const char* cat_name = "LOG.RDK";
     log4c_category_t* cat = log4c_category_get(cat_name);
@@ -420,7 +420,6 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
 
     if (!IS_LOGGING_ENABLED_FOR_LEVEL(module_name, level))
     {
-        printf("#DEEPTHI:LOG level not enabled\n");
         return;
     }
 
