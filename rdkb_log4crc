@@ -298,7 +298,7 @@
 
     <!--
         Logging categories available to the Platform are listed below
- 
+
          To enable additional logging add a 'priority' attribute for 1 or more 
          categories.  For example, to enable INFO logging on the pipeline 
          category, the updated line would look like:
@@ -306,7 +306,7 @@
     -->
 
    <!-- <category name="RI.GLib" priority="debug" appender="RI_rollingfileappender"/>  -->
- 
+
     <!-- CCSP Stack logging: This category is set with a low priority 
      level to enable stack messages of any level to pass through to 
      the log file
@@ -314,107 +314,106 @@
     <!--	<category name="RI.Stack" priority="debug" appender="RI_rollingfileappender"/>  -->
     <!--	<category name="RI.Stack.LOG" priority="debug" appender="RI_rollingfileappender"/>  
     	<category name="RI.Stack.LOG.RDK" priority="debug" appender="RI_rollingfileappender"/> -->
-    	<category name="LOG.RDK.TR69" priority="debug" appender="RI_TR69rollingfileappender"/>
-    <category name="LOG.RDK.MWO" priority="debug" appender="RI_MWOrollingfileappender"/>
-    <category name="LOG.RDK.WEBPA" priority="debug" appender="RI_WEBPArollingfileappender"/>
-    <category name="LOG.RDK.PAM" priority="debug" appender="RI_PAMrollingfileappender"/>
-    <category name="LOG.RDK.PSM" priority="debug" appender="RI_PSMrollingfileappender"/>
-    <category name="LOG.RDK.MOCA" priority="debug" appender="RI_MOCArollingfileappender"/>
-    <category name="LOG.RDK.CR" priority="debug" appender="RI_CRrollingfileappender"/>
-    <category name="LOG.RDK.Harvester" priority="debug" appender="RI_Harvesterrollingfileappender"/>
-    <category name="LOG.RDK.MTA" priority="debug" appender="RI_MTArollingfileappender"/>
-    <category name="LOG.RDK.CM" priority="debug" appender="RI_CMrollingfileappender"/>
-    <category name="LOG.RDK.TDM" priority="debug" appender="RI_TDMrollingfileappender"/>
-    <category name="LOG.RDK.WIFI" priority="debug" appender="RI_WIFIrollingfileappender"/>
-    <category name="LOG.RDK.CSCWFMRXM" priority="debug" appender="RI_CSCWFMRXMrollingfileappender"/>
-    <category name="LOG.RDK.CSCWFMBRG" priority="debug" appender="RI_CSCWFMBRGrollingfileappender"/>
-    <category name="LOG.RDK.CSCWFMBRD" priority="debug" appender="RI_CSCWFMBRDrollingfileappender"/>
-    <category name="LOG.RDK.CSCWFMRAD" priority="debug" appender="RI_CSCWFMRADrollingfileappender"/>
-    <category name="LOG.RDK.CSCWFMGRD" priority="debug" appender="RI_CSCWFMGRDrollingfileappender"/>
-    <category name="LOG.RDK.CSCWFMWDG" priority="debug" appender="RI_CSCWFMWDGrollingfileappender"/>
-    <category name="LOG.RDK.CSCWFMRBP" priority="debug" appender="RI_CSCWFMRBProllingfileappender"/>
-    <category name="LOG.RDK.CSCWFMMON" priority="debug" appender="RI_CSCWFMMONrollingfileappender"/>
-    <category name="LOG.RDK.SSD" priority="debug" appender="RI_SSDrollingfileappender"/>
-    <category name="LOG.RDK.LM" priority="debug" appender="RI_LMrollingfileappender"/>
-    <category name="LOG.RDK.SNMP" priority="debug" appender="RI_SNMProllingfileappender"/>
-    <category name="LOG.RDK.FU" priority="debug" appender="RI_FUrollingfileappender"/>
-    <category name="LOG.RDK.HOTSPOT" priority="debug" appender="RI_HOTSPOTrollingfileappender"/>
-    <category name="LOG.RDK.DHCPSNOOP" priority="debug" appender="RI_DHCPSNOOProllingfileappender"/>
-    <category name="LOG.RDK.NOTIFY" priority="debug" appender="RI_NOTIFYrollingfileappender"/>
-    <category name="LOG.RDK.WECB" priority="debug" appender="RI_WECBrollingfileappender"/>
-    <category name="LOG.RDK.WECBMASTER" priority="debug" appender="RI_WECBMASTERrollingfileappender"/>
-    <category name="LOG.RDK.TOUCHSTONE" priority="debug" appender="RI_TOUCHSTONErollingfileappender"/>
-    <category name="LOG.RDK.FSC" priority="debug" appender="RI_FSCrollingfileappender"/>
-    <category name="LOG.RDK.PWRMGR" priority="debug" appender="RI_PWRMGRrollingfileappender"/>
-    <category name="LOG.RDK.MESH" priority="debug" appender="RI_MESHrollingfileappender"/>
-    <category name="LOG.RDK.T2" priority="debug" appender="RI_T2rollingfileappender"/>
-    <category name="LOG.RDK.CERTSELECTOR" priority="debug" appender="RI_CERTSELECTORrollingfileappender"/>
-    <category name="LOG.RDK.MeshService" priority="debug" appender="RI_MeshServicerollingfileappender"/>
-    <category name="LOG.RDK.ETHAGENT" priority="debug" appender="RI_ETHAGENTrollingfileappender"/>
-    <category name="LOG.RDK.DHCPMGR" priority="debug" appender="RI_DHCPMGRrollingfileappender"/>
-    <category name="LOG.RDK.GWPROV" priority="debug" appender="RI_GWPROVrollingfileappender"/>
-    <category name="LOG.RDK.IMAGEHEALTHCHECKER" priority="debug" appender="RI_IMAGEHEALTHCHECKERrollingfileappender"/>
-    <category name="LOG.RDK.IHC" priority="debug" appender="RI_IHCrollingfileappender"/>
-    <category name="LOG.RDK.IHCMGMT" priority="debug" appender="RI_IHCMGMTrollingfileappender"/>
-    <category name="LOG.RDK.IHCVOIP" priority="debug" appender="RI_IHCVOIProllingfileappender"/>
-    <category name="LOG.RDK.Seshat" priority="debug" appender="RI_Seshatrollingfileappender"/>
-    <category name="LOG.RDK.SPDTST" priority="debug" appender="RI_Speedtestrollingfileappender"/>
-    <category name="LOG.RDK.AKER" priority="debug" appender="RI_AKERrollingfileappender"/>
-    <category name="LOG.RDK.PARODUS" priority="debug" appender="RI_PARODUSrollingfileappender"/>
+    	<category name="LOG.RDK.TR69" priority="info" appender="RI_TR69rollingfileappender"/>
+    <category name="LOG.RDK.MWO" priority="info" appender="RI_MWOrollingfileappender"/>
+    <category name="LOG.RDK.WEBPA" priority="info" appender="RI_WEBPArollingfileappender"/>
+    <category name="LOG.RDK.PAM" priority="info" appender="RI_PAMrollingfileappender"/>
+    <category name="LOG.RDK.PSM" priority="info" appender="RI_PSMrollingfileappender"/>
+    <category name="LOG.RDK.MOCA" priority="info" appender="RI_MOCArollingfileappender"/>
+    <category name="LOG.RDK.CR" priority="info" appender="RI_CRrollingfileappender"/>
+    <category name="LOG.RDK.Harvester" priority="info" appender="RI_Harvesterrollingfileappender"/>
+    <category name="LOG.RDK.MTA" priority="info" appender="RI_MTArollingfileappender"/>
+    <category name="LOG.RDK.CM" priority="info" appender="RI_CMrollingfileappender"/>
+    <category name="LOG.RDK.TDM" priority="info" appender="RI_TDMrollingfileappender"/>
+    <category name="LOG.RDK.WIFI" priority="info" appender="RI_WIFIrollingfileappender"/>
+    <category name="LOG.RDK.CSCWFMRXM" priority="info" appender="RI_CSCWFMRXMrollingfileappender"/>
+    <category name="LOG.RDK.CSCWFMBRG" priority="info" appender="RI_CSCWFMBRGrollingfileappender"/>
+    <category name="LOG.RDK.CSCWFMBRD" priority="info" appender="RI_CSCWFMBRDrollingfileappender"/>
+    <category name="LOG.RDK.CSCWFMRAD" priority="info" appender="RI_CSCWFMRADrollingfileappender"/>
+    <category name="LOG.RDK.CSCWFMGRD" priority="info" appender="RI_CSCWFMGRDrollingfileappender"/>
+    <category name="LOG.RDK.CSCWFMWDG" priority="info" appender="RI_CSCWFMWDGrollingfileappender"/>
+    <category name="LOG.RDK.CSCWFMRBP" priority="info" appender="RI_CSCWFMRBProllingfileappender"/>
+    <category name="LOG.RDK.CSCWFMMON" priority="info" appender="RI_CSCWFMMONrollingfileappender"/>
+    <category name="LOG.RDK.SSD" priority="info" appender="RI_SSDrollingfileappender"/>
+    <category name="LOG.RDK.LM" priority="info" appender="RI_LMrollingfileappender"/>
+    <category name="LOG.RDK.SNMP" priority="info" appender="RI_SNMProllingfileappender"/>
+    <category name="LOG.RDK.FU" priority="info" appender="RI_FUrollingfileappender"/>
+    <category name="LOG.RDK.HOTSPOT" priority="info" appender="RI_HOTSPOTrollingfileappender"/>
+    <category name="LOG.RDK.DHCPSNOOP" priority="info" appender="RI_DHCPSNOOProllingfileappender"/>
+    <category name="LOG.RDK.NOTIFY" priority="info" appender="RI_NOTIFYrollingfileappender"/>
+    <category name="LOG.RDK.WECB" priority="info" appender="RI_WECBrollingfileappender"/>
+    <category name="LOG.RDK.WECBMASTER" priority="info" appender="RI_WECBMASTERrollingfileappender"/>
+    <category name="LOG.RDK.TOUCHSTONE" priority="info" appender="RI_TOUCHSTONErollingfileappender"/>
+    <category name="LOG.RDK.FSC" priority="info" appender="RI_FSCrollingfileappender"/>
+    <category name="LOG.RDK.PWRMGR" priority="info" appender="RI_PWRMGRrollingfileappender"/>
+    <category name="LOG.RDK.MESH" priority="info" appender="RI_MESHrollingfileappender"/>
+    <category name="LOG.RDK.T2" priority="info" appender="RI_T2rollingfileappender"/>
+    <category name="LOG.RDK.CERTSELECTOR" priority="info" appender="RI_CERTSELECTORrollingfileappender"/>
+    <category name="LOG.RDK.MeshService" priority="info" appender="RI_MeshServicerollingfileappender"/>
+    <category name="LOG.RDK.ETHAGENT" priority="info" appender="RI_ETHAGENTrollingfileappender"/>
+    <category name="LOG.RDK.DHCPMGR" priority="info" appender="RI_DHCPMGRrollingfileappender"/>
+    <category name="LOG.RDK.GWPROV" priority="info" appender="RI_GWPROVrollingfileappender"/>
+    <category name="LOG.RDK.IMAGEHEALTHCHECKER" priority="info" appender="RI_IMAGEHEALTHCHECKERrollingfileappender"/>
+    <category name="LOG.RDK.IHC" priority="info" appender="RI_IHCrollingfileappender"/>
+    <category name="LOG.RDK.IHCMGMT" priority="info" appender="RI_IHCMGMTrollingfileappender"/>
+    <category name="LOG.RDK.IHCVOIP" priority="info" appender="RI_IHCVOIProllingfileappender"/>
+    <category name="LOG.RDK.Seshat" priority="info" appender="RI_Seshatrollingfileappender"/>
+    <category name="LOG.RDK.SPDTST" priority="info" appender="RI_Speedtestrollingfileappender"/>
+    <category name="LOG.RDK.AKER" priority="info" appender="RI_AKERrollingfileappender"/>
+    <category name="LOG.RDK.PARODUS" priority="info" appender="RI_PARODUSrollingfileappender"/>
     <category name="LOG.RDK.RTMESSAGE" appender="stdout"/>
-    <category name="LOG.RDK.GWPROVETHWAN" priority="debug" appender="RI_GWPROVETHWANrollingfileappender"/>
-    <category name="LOG.RDK.GWPROVGPONWAN" priority="debug" appender="RI_GWPROVGPONWANrollingfileappender"/>
-    <category name="LOG.RDK.ADVSEC" priority="debug" appender="RI_ADVSECrollingfileappender"/>
-    <category name="LOG.RDK.LIBSYSCALLWRAPPER" priority="debug" appender="RI_LIBSYSCALLWRAPPERrollingfileappender"/>
-    <category name="LOG.RDK.MAPTLOG" priority="debug" appender="RI_MAPTLOGrollingfileappender"/>
-    <category name="LOG.RDK.WANAGENT" priority="debug" appender="RI_WANAGENTrollingfileappender"/>
-    <category name="LOG.RDK.TELCOVOIPAGENT" priority="debug" appender="RI_TELCOVOIPAGENTrollingfileappender"/>
-    <category name="LOG.RDK.DSLAGENT" priority="debug" appender="RI_DSLAGENTrollingfileappender"/>
-    <category name="LOG.RDK.VLANAGENT" priority="debug" appender="RI_VLANAGENTrollingfileappender"/>
-    <category name="LOG.RDK.XTMAGENT" priority="debug" appender="RI_XTMAGENTrollingfileappender"/>
-    <category name="LOG.RDK.BLE" priority="debug" appender="RI_BLErollingfileappender"/>
-    <category name="LOG.RDK.BTRMGR" priority="debug" appender="RI_BTRMGRrollingfileappender"/>
-    <category name="LOG.RDK.BTRCORE" priority="debug" appender="RI_BTRMGRrollingfileappender"/>
-    <category name="LOG.RDK.WEBCONFIG" priority="debug" appender="RI_WEBCONFIGrollingfileappender"/>
-    <category name="LOG.RDK.MQTTCM" priority="debug" appender="RI_MQTTCMrollingfileappender"/>
-    <category name="LOG.RDK.XDNS" priority="debug" appender="RI_XDNSrollingfileappender"/>
-    <category name="LOG.RDK.CPUPROCANALYZER" priority="debug" appender="RI_CPUPROCANALYZERrollingfileappender"/>
-    <category name="LOG.RDK.HWST" priority="debug" appender="RI_HWSTrollingfileappender"/>
-    <category name="LOG.RDK.WANCNCTVTYCHK" priority="debug" appender="RI_WANCNCTVTYCHKrollingfileappender"/>
-    <category name="LOG.RDK.OVSAGENT" priority="debug" appender="RI_OVSAGENTrollingfileappender"/>
-    <category name="LOG.RDK.WANMANAGER" priority="debug" appender="RI_WANMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.FWUPGRADEMANAGER" priority="debug" appender="RI_FWUPGRADEMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.BATTERYMANAGER" priority="debug" appender="RI_BATTERYMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.VLANMANAGER" priority="debug" appender="RI_VLANMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.GPONMANAGER" priority="debug" appender="RI_GPONMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.CELLULARMANAGER" priority="debug" appender="RI_CELLULARMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.INTERDEVICEMANAGER" priority="debug" appender="RI_INTERDEVICEMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.GATEWAYMANAGER" priority="debug" appender="RI_GATEWAYMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.LANMANAGER" priority="debug" appender="RI_LANMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.PLATFORMMANAGER" priority="debug" appender="RI_PLATFORMMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.EASYMESHCTL" priority="debug" appender="RI_EASYMESHCTLrollingfileappender"/>
-    <category name="LOG.RDK.WEBCONFIGRFC" priority="debug" appender="RI_WEBCONFIGRFCrollingfileappender"/>
-    <category name="LOG.RDK.SERVICECTRL" priority="debug" appender="RI_SERVICECTRLrollingfileappender"/>
-    <category name="LOG.RDK.RDKLEDMANAGER" priority="debug" appender="RI_RDKLEDMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.REMOTEDEBUGGER" priority="debug" appender="RI_REMOTEDEBUGGERrollingfileappender"/>
-    <category name="LOG.RDK.RDKSSADAEMON" priority="debug" appender="RI_RDKSSADAEMONrollingfileappender"/>
-    <category name="LOG.RDK.RDKTHERMALMANAGER" priority="debug" appender="RI_RDKTHERMALMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.RFCMGR" priority="debug" appender="RI_RFCMGRrollingfileappender"/>
-    <category name="LOG.RDK.SKYBFD" priority="debug" appender="RI_SKYBFDrollingfileappender"/>
-    <category name="LOG.RDK.UDHCPC" priority="debug" appender="RI_UDHCPCrollingfileappender"/>
-    <category name="LOG.RDK.SKYDHCPC" priority="debug" appender="RI_SKYDHCPCrollingfileappender"/>
-    <category name="LOG.RDK.SKYDHCPC6" priority="debug" appender="RI_SKYDHCPC6rollingfileappender"/>
-    <category name="LOG.RDK.SKYLANMGR" priority="debug" appender="RI_SKYLANMGRrollingfileappender"/>
-    <category name="LOG.RDK.SKYWAN" priority="debug" appender="RI_SKYWANrollingfileappender"/>
-    <category name="LOG.RDK.VOICE" priority="debug" appender="RI_VOICErollingfileappender"/>
-    <category name="LOG.RDK.SKYIFACEMGR" priority="debug" appender="RI_SKYIFACEMGRrollingfileappender"/>
-    <category name="LOG.RDK.XDSLMANAGER" priority="debug" appender="RI_XDSLMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.XDSLIFACEMGR" priority="debug" appender="RI_XDSLIFACEMGRrollingfileappender"/>
-    <category name="LOG.RDK.VLANIFACEMGR" priority="debug" appender="RI_VLANIFACEMGRrollingfileappender"/>
-    <category name="LOG.RDK.ETHIFACEMGR" priority="debug" appender="RI_ETHIFACEMGRrollingfileappender"/>
-    <category name="LOG.RDK.TELCOVOICEIFACEMGR" priority="debug" appender="RI_TELCOVOICEIFACEMGRrollingfileappender"/>
-    <category name="LOG.RDK.PPPMANAGER" priority="debug" appender="RI_PPPMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.TELCOVOICEMANAGER" priority="debug" appender="RI_TELCOVOICEMANAGERrollingfileappender"/>
-    <category name="LOG.RDK.RDKNFCMANAGER" priority="debug" appender="RI_RDKNFCMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.GWPROVETHWAN" priority="info" appender="RI_GWPROVETHWANrollingfileappender"/>
+    <category name="LOG.RDK.GWPROVGPONWAN" priority="info" appender="RI_GWPROVGPONWANrollingfileappender"/>
+    <category name="LOG.RDK.ADVSEC" priority="info" appender="RI_ADVSECrollingfileappender"/>
+    <category name="LOG.RDK.LIBSYSCALLWRAPPER" priority="info" appender="RI_LIBSYSCALLWRAPPERrollingfileappender"/>
+    <category name="LOG.RDK.MAPTLOG" priority="info" appender="RI_MAPTLOGrollingfileappender"/>
+    <category name="LOG.RDK.WANAGENT" priority="info" appender="RI_WANAGENTrollingfileappender"/>
+    <category name="LOG.RDK.TELCOVOIPAGENT" priority="info" appender="RI_TELCOVOIPAGENTrollingfileappender"/>
+    <category name="LOG.RDK.DSLAGENT" priority="info" appender="RI_DSLAGENTrollingfileappender"/>
+    <category name="LOG.RDK.VLANAGENT" priority="info" appender="RI_VLANAGENTrollingfileappender"/>
+    <category name="LOG.RDK.XTMAGENT" priority="info" appender="RI_XTMAGENTrollingfileappender"/>
+    <category name="LOG.RDK.BLE" priority="info" appender="RI_BLErollingfileappender"/>
+    <category name="LOG.RDK.BTRMGR" priority="info" appender="RI_BTRMGRrollingfileappender"/>
+    <category name="LOG.RDK.BTRCORE" priority="info" appender="RI_BTRMGRrollingfileappender"/>
+    <category name="LOG.RDK.WEBCONFIG" priority="info" appender="RI_WEBCONFIGrollingfileappender"/>
+    <category name="LOG.RDK.MQTTCM" priority="info" appender="RI_MQTTCMrollingfileappender"/>
+    <category name="LOG.RDK.XDNS" priority="info" appender="RI_XDNSrollingfileappender"/>
+    <category name="LOG.RDK.CPUPROCANALYZER" priority="info" appender="RI_CPUPROCANALYZERrollingfileappender"/>
+    <category name="LOG.RDK.HWST" priority="info" appender="RI_HWSTrollingfileappender"/>
+    <category name="LOG.RDK.WANCNCTVTYCHK" priority="info" appender="RI_WANCNCTVTYCHKrollingfileappender"/>
+    <category name="LOG.RDK.OVSAGENT" priority="info" appender="RI_OVSAGENTrollingfileappender"/>
+    <category name="LOG.RDK.WANMANAGER" priority="info" appender="RI_WANMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.FWUPGRADEMANAGER" priority="info" appender="RI_FWUPGRADEMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.BATTERYMANAGER" priority="info" appender="RI_BATTERYMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.VLANMANAGER" priority="info" appender="RI_VLANMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.GPONMANAGER" priority="info" appender="RI_GPONMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.CELLULARMANAGER" priority="info" appender="RI_CELLULARMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.INTERDEVICEMANAGER" priority="info" appender="RI_INTERDEVICEMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.GATEWAYMANAGER" priority="info" appender="RI_GATEWAYMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.LANMANAGER" priority="info" appender="RI_LANMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.PLATFORMMANAGER" priority="info" appender="RI_PLATFORMMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.EASYMESHCTL" priority="info" appender="RI_EASYMESHCTLrollingfileappender"/>
+    <category name="LOG.RDK.WEBCONFIGRFC" priority="info" appender="RI_WEBCONFIGRFCrollingfileappender"/>
+    <category name="LOG.RDK.SERVICECTRL" priority="info" appender="RI_SERVICECTRLrollingfileappender"/>
+    <category name="LOG.RDK.RDKLEDMANAGER" priority="info" appender="RI_RDKLEDMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.REMOTEDEBUGGER" priority="info" appender="RI_REMOTEDEBUGGERrollingfileappender"/>
+    <category name="LOG.RDK.RDKSSADAEMON" priority="info" appender="RI_RDKSSADAEMONrollingfileappender"/>
+    <category name="LOG.RDK.RDKTHERMALMANAGER" priority="info" appender="RI_RDKTHERMALMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.RFCMGR" priority="info" appender="RI_RFCMGRrollingfileappender"/>
+    <category name="LOG.RDK.SKYBFD" priority="info" appender="RI_SKYBFDrollingfileappender"/>
+    <category name="LOG.RDK.UDHCPC" priority="info" appender="RI_UDHCPCrollingfileappender"/>
+    <category name="LOG.RDK.SKYDHCPC" priority="info" appender="RI_SKYDHCPCrollingfileappender"/>
+    <category name="LOG.RDK.SKYDHCPC6" priority="info" appender="RI_SKYDHCPC6rollingfileappender"/>
+    <category name="LOG.RDK.SKYLANMGR" priority="info" appender="RI_SKYLANMGRrollingfileappender"/>
+    <category name="LOG.RDK.SKYWAN" priority="info" appender="RI_SKYWANrollingfileappender"/>
+    <category name="LOG.RDK.VOICE" priority="info" appender="RI_VOICErollingfileappender"/>
+    <category name="LOG.RDK.SKYIFACEMGR" priority="info" appender="RI_SKYIFACEMGRrollingfileappender"/>
+    <category name="LOG.RDK.XDSLMANAGER" priority="info" appender="RI_XDSLMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.XDSLIFACEMGR" priority="info" appender="RI_XDSLIFACEMGRrollingfileappender"/>
+    <category name="LOG.RDK.VLANIFACEMGR" priority="info" appender="RI_VLANIFACEMGRrollingfileappender"/>
+    <category name="LOG.RDK.ETHIFACEMGR" priority="info" appender="RI_ETHIFACEMGRrollingfileappender"/>
+    <category name="LOG.RDK.TELCOVOICEIFACEMGR" priority="info" appender="RI_TELCOVOICEIFACEMGRrollingfileappender"/>
+    <category name="LOG.RDK.PPPMANAGER" priority="info" appender="RI_PPPMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.TELCOVOICEMANAGER" priority="info" appender="RI_TELCOVOICEMANAGERrollingfileappender"/>
+    <category name="LOG.RDK.RDKNFCMANAGER" priority="info" appender="RI_RDKNFCMANAGERrollingfileappender"/>
 </log4c>
-
