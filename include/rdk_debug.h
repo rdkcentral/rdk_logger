@@ -302,10 +302,7 @@ rdk_logger_Bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logL
  */
 void rdk_logger_log_onboard(const char *module, const char *msg, ...) __attribute__ ((format (printf, 2, 3)));
 
-void rdk_log_onboard(const char *, const char *, ...)
-    __attribute__((weak, alias("rdk_logger_log_onboard")))
-    __attribute__ ((format (printf, 2, 3)));
-
+#define rdk_log_onboard rdk_logger_log_onboard
 /** @} */ //end of Doxygen tag RDKLOGGER_UTILS_API
 
 #ifdef __cplusplus
