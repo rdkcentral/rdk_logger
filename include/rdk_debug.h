@@ -217,6 +217,11 @@ extern "C"
 #define rdk_dbg_enabled rdk_logger_is_logLevel_enabled
 
 /**
+  * Macro to use onboard function in other platforms
+  */
+#define rdk_log_onboard rdk_logger_log_onboard
+
+/**
  * @enum rdk_LogLevel
  * @brief These values represent the logging 'levels' or 'types', they are each
  * independent.
