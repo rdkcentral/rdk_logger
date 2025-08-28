@@ -301,10 +301,10 @@ rdk_logger_Bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logL
  * @param msg Message to log.
  */
 void rdk_logger_log_onboard(const char *module, const char *msg, ...) __attribute__ ((format (printf, 2, 3)));
-/**
-  * Macro to use onboard function in other platforms
-  */
-#define rdk_log_onboard rdk_logger_log_onboard
+
+void rdk_log_onboard(const char *, const char *, ...)
+    __attribute__((weak, alias("rdk_logger_log_onboard")))
+    __attribute__ ((format (printf, 2, 3)));
 
 /** @} */ //end of Doxygen tag RDKLOGGER_UTILS_API
 
