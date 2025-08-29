@@ -30,7 +30,7 @@ rdkLogMileStone_LDADD = $(top_builddir)/src/librdkloggers.la
 rdkLogMileStone_CFLAGS = -I$(top_srcdir)/include
 endif
 
-bin_PROGRAMS            = onboarding_log
+bin_PROGRAMS            += onboarding_log
 onboarding_log_SOURCES  = rdk_logger_onboard_main.c
 onboarding_log_LDADD    = $(top_builddir)/src/librdkloggers.la
 onboarding_log_CFLAGS   = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include

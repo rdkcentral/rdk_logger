@@ -19,7 +19,6 @@
 
 AM_CPPFLAGS = -pthread -Wall
 lib_LTLIBRARIES = librdkloggers.la
-librdkloggers_la_LIBADD = $(LOG4C_LIBS)
 librdkloggers_la_SOURCES = rdk_debug.c rdk_debug_priv.c rdk_dynamic_logger.c rdk_logger_init.c rdk_logger_util.c rdk_logger_milestone.cpp
 librdkloggers_la_SOURCES += rdk_logger_onboard.c
 librdkloggers_la_CFLAGS =  $(LOG4C_CFLAGS) $(GLIB_CFLAGS) $(SYSLOG_HELPER_CFLAGS) $(SYSTEMD_CLFAGS) -I./include -I../include -I${RDK_PROJECT_ROOT_PATH}/opensource/include/log4c -I${RDK_PROJECT_ROOT_PATH}/opensource/include -DDEBUG_CONF_FILE="\"debug.ini\""
