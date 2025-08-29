@@ -187,7 +187,7 @@ extern "C"
  */
 #define RDK_LOG rdk_logger_msg_printf
 #define RDK_LOG1 rdk_logger_msg_vsprintf
-
+#define rdk_dbg_MsgRaw rdk_logger_msg_printf
 /**
  * Define the max length for the log file capture
  */
