@@ -16,6 +16,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+#define FEATURE_SUPPORT_ONBOARD_LOGGING
+#ifdef FEATURE_SUPPORT_ONBOARD_LOGGING
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
@@ -91,3 +93,4 @@ void rdk_logger_log_onboard(const char *module, const char *msg, ...)
         }
     }
 }
+#endif
