@@ -22,7 +22,7 @@ Test Case : Testing rdk_logger function rdk_logger_msg_printf
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "rdk_debug.h"
+#include "rdk_logger.h"
 #include "gtest_app.h"
 
 void gtest_rdk_logger_msg_vsprintf(rdk_LogLevel level, const char *mod, const char *format, ...)

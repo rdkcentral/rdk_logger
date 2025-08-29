@@ -21,7 +21,7 @@ bin_PROGRAMS = rdklogctrl
 
 rdklogctrl_SOURCES=rdklogctrl.c
 rdklogctrl_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
-rdklogctrl_LDFLAGS = -I./usr/lib
+rdklogctrl_LDFLAGS = -L/usr/lib
 
 bin_PROGRAMS       += rdkLogMileStone
 rdkLogMileStone_SOURCES = rdklogmilestone.c

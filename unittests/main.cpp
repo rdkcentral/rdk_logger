@@ -18,7 +18,7 @@
  */
 #include "gtest/gtest.h"
 
-char gtestReportPath[] = "xml:/tmp/Gtest_Report/rbus_gtest_report.xml";
+char gtestReportPath[] = "xml:/tmp/Gtest_Report/rdklogger_gtest_report.xml";
 
 GTEST_API_ int main(int argc, char* argv[])
 {

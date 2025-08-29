@@ -35,7 +35,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "rdk_debug.h"
+#include "rdk_logger.h"
 #include "rdk_error.h"
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"

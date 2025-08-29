@@ -30,7 +30,7 @@
 **/
 
 
-#include <rdk_debug.h>
+#include <rdk_logger.h>
 #include <rdk_debug_priv.h>
 
 #include <string.h> // memset
