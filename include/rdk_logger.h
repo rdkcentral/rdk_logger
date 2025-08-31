@@ -245,7 +245,7 @@ rdk_Error rdk_logger_deinit(void);
  * @param module Module name.
  * @param format Printf-style format string.
  */
-void rdk_logger_msg_printf(rdk_LogLevel level, const char *module, const char *format, ...);
+void rdk_logger_msg_printf(rdk_LogLevel level, const char *module, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 
 /**
  * @brief Log a message using a va_list.
@@ -279,6 +279,14 @@ rdk_logger_Bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logL
  * @param msg Message to log.
  */
 void rdk_logger_log_onboard(const char *module, const char *msg, ...) __attribute__ ((format (printf, 2, 3)));
+
+/**
+ * @brief legacy method to Log a message with printf-style formatting;
+ * @param level Log level.
+ * @param module Module name.
+ * @param format Printf-style format string.
+ */
+void rdk_dbg_MsgRaw(rdk_LogLevel level, const char *module, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 
 /** @} */ //end of Doxygen tag RDKLOGGER_UTILS_API
 
