@@ -191,10 +191,6 @@ extern "C"
 #define rdk_log_onboard rdk_logger_log_onboard
 
 /**
- * To allow compatibility of mutiple legacy RDK components using legacy logging API 
- */
-#define rdk_dbg_MsgRaw rdk_logger_msg_printf
-/**
  * @enum rdk_LogLevel
  * @brief These values represent the logging 'levels' or 'types', they are each
  * independent.
