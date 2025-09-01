@@ -20,7 +20,7 @@
 #if !defined(_RDK_DBG_PRIV_DYNLOG_H)
 #define _RDK_DBG_PRIV_DYNLOG_H
 
-#include <rdk_debug.h>
+#include <rdk_logger.h>
 
 void rdk_dyn_log_init(void);
 void rdk_dyn_log_deinit(void);

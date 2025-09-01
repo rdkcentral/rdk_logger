@@ -21,19 +21,17 @@ bin_PROGRAMS = rdklogctrl
 
 rdklogctrl_SOURCES=rdklogctrl.c
 rdklogctrl_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
-rdklogctrl_LDFLAGS = -I./usr/lib
+rdklogctrl_LDFLAGS = -L/usr/lib
 
-if IS_MILESTONE_ENABLED
 bin_PROGRAMS       += rdkLogMileStone
 rdkLogMileStone_SOURCES = rdklogmilestone.c
-rdkLogMileStone_LDADD = $(top_builddir)/src/librdkloggers.la
+rdkLogMileStone_LDADD = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
 rdkLogMileStone_CFLAGS = -I$(top_srcdir)/include
-endif
+rdkLogMileStone_LDFLAGS = -L/usr/lib
 
-if IS_ONBOARDLOG_ENABLED
-bin_PROGRAMS            = onboarding_log
+
+bin_PROGRAMS            += onboarding_log
 onboarding_log_SOURCES  = rdk_logger_onboard_main.c
-onboarding_log_LDADD    = $(top_builddir)/src/librdkloggers.la
+onboarding_log_LDADD    = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
 onboarding_log_CFLAGS   = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
-onboarding_log_LDFLAGS  = -I./usr/lib
-endif
+onboarding_log_LDFLAGS  = -L/usr/lib

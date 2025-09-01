@@ -28,7 +28,7 @@
 
 /* Header Files */
 #include <rdk_logger_types.h>      /* Resolve basic type references. */
-#include "rdk_debug.h"      /* Resolved RDK_LOG support. */
+#include "rdk_logger.h"            /* Resolved RDK_LOG support. */
 #include "rdk_error.h"
 #include "rdk_utils.h"
 

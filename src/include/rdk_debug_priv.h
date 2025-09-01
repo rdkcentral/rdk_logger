@@ -21,7 +21,7 @@
 #define _RDK_DBG_PRIV_H
 
 #include <rdk_logger_types.h>
-#include <rdk_debug.h>
+#include <rdk_logger.h>
 #include <rdk_error.h>
 
 #ifdef __cplusplus
