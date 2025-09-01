@@ -297,6 +297,7 @@ static void printTime(const struct tm *pTm, char *pBuff)
  ****************************************************************************/
 void rdk_dbg_priv_config(void)
 {
+    int mod = 1;
     const char *defaultValue = rdk_logger_envGet("LOG.RDK.DEFAULT");
     if (defaultValue && defaultValue[0] != 0)
     {
@@ -334,7 +335,7 @@ void rdk_dbg_priv_config(void)
         return;
     }
 
-    for (int mod = 1; mod <= global_count; mod++)
+    for (mod = 1; mod <= global_count; mod++)
     {
         const char* modName = rdk_logger_envGetModFromNum(mod);
         const char* modValue = rdk_logger_envGetValueFromNum(mod);
@@ -372,7 +373,7 @@ void rdk_dbg_priv_config(void)
 /**
  * @brief Function to check if a specific log level of a module is enabled.
  *
- * @param[in] module The module name or category for for which the log level shall be checked (as mentioned in debug.ini).
+ * @param[in] module The module name or category for which the log level shall be checked (as mentioned in debug.ini).
  * @param[in] level The debug logging level.
  *
  * @return Returns TRUE, if debug log level enabled successfully else returns FALSE.

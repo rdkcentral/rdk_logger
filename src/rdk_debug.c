@@ -30,7 +30,7 @@
 **/
 
 
-#include <rdk_debug.h>
+#include <rdk_logger.h>
 #include <rdk_debug_priv.h>
 
 #include <string.h> // memset
@@ -71,7 +71,23 @@ void rdk_dbg_deinit()
  */
 void rdk_logger_msg_printf(rdk_LogLevel level, const char *module, const char *format, ...)
 {
-    int num;
+    va_list args;
+
+    va_start(args, format);
+    rdk_dbg_priv_log_msg(level, module, format, args);
+    va_end(args);
+}
+
+/**
+ * @brief Send a debugging message to the debugging window. It is appended to the log output based
+ * on configurations set in the environment file.
+ *
+ * @param[in] level The debug logging level.
+ * @param[in] module The name of the module for which this message belongs to, it is mentioned in debug.ini.
+ * @param[in] format Printf style string containing the log message.
+ */
+void rdk_dbg_MsgRaw(rdk_LogLevel level, const char *module, const char *format, ...)
+{
     va_list args;
 
     va_start(args, format);
