@@ -21,7 +21,7 @@ dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
 dnl AC_PREREQ([2.69])
-AC_INIT(rdklogger, 2.0.0)
+AC_INIT(rdklogger, 2.1.0)
 AC_CONFIG_SRCDIR([src])
 AM_CONFIG_HEADER(cfg/config.h)
 AC_CONFIG_MACRO_DIR([cfg])
