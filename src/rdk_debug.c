@@ -122,3 +122,22 @@ rdk_logger_Bool rdk_logger_enable_logLevel(const char *pModuleName, rdk_LogLevel
     return TRUE;
 }
 
+/**
+ * @brief Convert a log level string to rdk_LogLevel enum.
+ * @param level Log level as string (e.g., "INFO", "DEBUG").
+ * @return Corresponding rdk_LogLevel value, or RDK_LOG_NONE if invalid.
+ */
+rdk_LogLevel rdk_logger_level_from_string(const char* level)
+{
+    if (!level) return RDK_LOG_NONE;
+    if (strcasecmp(level, "FATAL") == 0)   return RDK_LOG_FATAL;
+    if (strcasecmp(level, "ERROR") == 0)   return RDK_LOG_ERROR;
+    if (strcasecmp(level, "WARNING") == 0) return RDK_LOG_WARN;
+    if (strcasecmp(level, "WARN") == 0)    return RDK_LOG_WARN;
+    if (strcasecmp(level, "NOTICE") == 0)  return RDK_LOG_NOTICE;
+    if (strcasecmp(level, "INFO") == 0)    return RDK_LOG_INFO;
+    if (strcasecmp(level, "DEBUG") == 0)   return RDK_LOG_DEBUG;
+    if (strcasecmp(level, "TRACE") == 0)   return RDK_LOG_TRACE;
+    if (strcasecmp(level, "NONE") == 0)    return RDK_LOG_NONE;
+    return RDK_LOG_NONE;
+}
