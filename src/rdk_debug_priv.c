@@ -116,14 +116,6 @@ static int stream_env_append(log4c_appender_t* appender, const log4c_logging_eve
 static int stream_env_plus_stdout_append(log4c_appender_t* appender, const log4c_logging_event_t* event);
 static int stream_env_close(log4c_appender_t * appender);
 
-/* GLOBALS */
-
-static rdk_logger_Bool g_initialized = FALSE;
-
-static const char *errorMsgs[] =
-{ "Error: Invalid module name.", "Warning: Ignoring invalid log name(s)." };
-
-
 /**
  * Initialize Debug API.
  */
@@ -155,8 +147,6 @@ static const log4c_appender_type_t log4c_appender_type_stream_env_append_plus_st
 
 void rdk_dbg_priv_init()
 {
-    const char* envVar;
-
     if (initLogger("LOG.RDK"))
     {
         fprintf(stderr, "%s -- initLogger failure?!\n", __FUNCTION__);
@@ -262,27 +252,6 @@ static int logNameToEnum(const char *name)
     }
 
     return -1;
-}
-
-/**
- * Extract a whitespace delimited token from a string.
- *
- * @param srcStr Pointer to the source string, this will be modified
- * to point to the first character after the token extracted.
- *
- * @param tokBuf This is a string that will be filled with the
- * token. Note: this buffer is assumed to be large enough to hold the
- * largest possible token.
- */
-static void extractToken(const char **srcStr, char *tokBuf)
-{
-    const char *src = *srcStr;
-    while (*src && !isspace(*src))
-    {
-        *tokBuf++ = *src++;
-    }
-    *tokBuf = '\0';
-    *srcStr = src;
 }
 
 static void printTime(const struct tm *pTm, char *pBuff)
@@ -392,8 +361,6 @@ rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel 
 
 void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const char* format, va_list args)
 {
-    /** Get the category from module name */
-    char cat_name[64] = {'\0'};
     log4c_category_t* cat = NULL;
     int prio = 0;
 

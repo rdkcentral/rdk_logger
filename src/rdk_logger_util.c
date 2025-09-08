@@ -347,6 +347,8 @@ char* rdk_loglevelToString(rdk_LogLevel log_level, rdk_logger_Bool isLogEnabled)
             return (isLogEnabled) ? "DEBUG":"!DEBUG";
         case RDK_LOG_TRACE:
             return (isLogEnabled) ? "TRACE":"!TRACE";
+        case RDK_LOG_NONE:
+            return "NONE";
     }
 
     return NULL;

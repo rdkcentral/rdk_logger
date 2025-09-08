@@ -284,6 +284,13 @@ void rdk_logger_log_onboard(const char *module, const char *msg, ...) __attribut
  */
 void rdk_dbg_MsgRaw(rdk_LogLevel level, const char *module, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 
+/**
+ * @brief Convert a log level string to rdk_LogLevel enum.
+ * @param level Log level as string (e.g., "INFO", "DEBUG").
+ * @return Corresponding rdk_LogLevel value, or RDK_LOG_NONE if invalid.
+ */
+rdk_LogLevel rdk_logger_level_from_string(const char* level);
+
 /** @} */ //end of Doxygen tag RDKLOGGER_UTILS_API
 
 #ifdef __cplusplus

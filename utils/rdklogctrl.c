@@ -61,33 +61,10 @@ static int validate_loglevel(const char* level)
         return -1;
 }
 
-static int validate_module_name(const char *name)
-{
-    FILE *fp = NULL;
-    char ch;
-    char comp_name[128] = {0};
-    int ret = -1;
-
-    fp = fopen("/etc/debug.ini","r");
-    if(NULL == fp)
-        return ret;
-
-    do {
-        ch = fscanf(fp, "%s", comp_name);
-        if(strstr(comp_name,name)) {
-            ret = 0;
-            break;
-        }
-    } while(ch == 1);
-
-    fclose(fp);
-    return ret;
-}
-
 int main(int argc, char *argv[])
 {
     struct sockaddr_in dest_addr;
-    int i, sockfd, numbytes, addr_len, app_len, comp_len, optval = 1;
+    int i, sockfd, numbytes, app_len, comp_len, optval = 1;
     int level = -1;
     unsigned char buf[128] = {0};
 

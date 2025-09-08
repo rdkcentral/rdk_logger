@@ -104,7 +104,8 @@ void rdk_dyn_log_process_pending_request()
     char buf[128] = {0};
     struct sockaddr_in sender_addr;
     struct timeval tv;
-    int numbytes, addr_len, ret, i = 0;
+    int numbytes, ret;
+    socklen_t addr_len;
     fd_set rfds;
 
     if(-1 == g_dl_socket)
@@ -141,7 +142,7 @@ void rdk_dyn_log_process_pending_request()
          */
         if((0 == strcmp("127.0.0.1",inet_ntoa(sender_addr.sin_addr))) &&
                 (numbytes == buf[4]+DL_SIGNATURE_LEN+1)) {
-            rdk_dyn_log_validate_component_name(buf);
+            rdk_dyn_log_validate_component_name((const unsigned char *)buf);
         }
     }
 }
