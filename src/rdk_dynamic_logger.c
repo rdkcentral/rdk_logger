@@ -94,7 +94,9 @@ static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
     loggingLevel = rdk_dyn_log_logLevelToString(log_level);
     if(NULL != loggingLevel) {
         memcpy(comp_name,buf+(++i),comp_len);
-        rdk_dbg_priv_reconfig(comp_name, loggingLevel);
+        comp_name[comp_len] = '\0';
+        rdk_LogLevel level_enum = rdk_logger_level_from_string(loggingLevel);
+        rdk_logger_enable_logLevel(comp_name, level_enum, 1);
         fprintf(stderr,"%s(): Set %s loglevel for the component %s of the process %s\n",__func__,loggingLevel,comp_name,__progname);
     }
 }
@@ -104,7 +106,8 @@ void rdk_dyn_log_process_pending_request()
     char buf[128] = {0};
     struct sockaddr_in sender_addr;
     struct timeval tv;
-    int numbytes, addr_len, ret, i = 0;
+    int numbytes, ret;
+    socklen_t addr_len;
     fd_set rfds;
 
     if(-1 == g_dl_socket)
@@ -141,7 +144,7 @@ void rdk_dyn_log_process_pending_request()
          */
         if((0 == strcmp("127.0.0.1",inet_ntoa(sender_addr.sin_addr))) &&
                 (numbytes == buf[4]+DL_SIGNATURE_LEN+1)) {
-            rdk_dyn_log_validate_component_name(buf);
+            rdk_dyn_log_validate_component_name((const unsigned char *)buf);
         }
     }
 }

@@ -57,8 +57,6 @@ static int isLogInited = 0;
 rdk_Error rdk_logger_init(const char* debugConfigFile)
 {
     rdk_Error ret;
-    struct stat st;
-    char buf[BUF_LEN] = {'\0'};
 
     if (0 == isLogInited)
     {
