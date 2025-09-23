@@ -76,13 +76,6 @@
  *
  * @image html rdk_logger_architecture.jpg
  *
- * @par RDK Logging Configuration
- * @n Default level of logging is WARNING. Logging settings can be overriden by debug.ini
- * @code
- * - LOG.RDK.<component1> = INFO
- * - LOG.RDK.<component2> = DEBUG
- * @endcode
- *
  * @par Logging Levels supported by RDK Logger.
  * Code | Description
  * -----|------------
