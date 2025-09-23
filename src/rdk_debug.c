@@ -100,6 +100,11 @@ void rdk_logger_msg_vsprintf(rdk_LogLevel level, const char *module, const char 
     rdk_dbg_priv_log_msg(level, module, format, args);
 }
 
+void rdk_dbg_MsgRaw1(rdk_LogLevel level, const char *module, const char *format, va_list args)
+{
+    rdk_dbg_priv_log_msg(level, module, format, args);
+}
+
 /**
  * @brief Function to sets a specific log level of a module.
  *
