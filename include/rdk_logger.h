@@ -270,6 +270,23 @@ rdk_logger_Bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logL
 void rdk_logger_log_onboard(const char *module, const char *msg, ...) __attribute__ ((format (printf, 2, 3)));
 
 /**
+ * @brief legacy method to Log a message with printf-style formatting;
+ * @param level Log level.
+ * @param module Module name.
+ * @param format Printf-style format string.
+ */
+void rdk_dbg_MsgRaw(rdk_LogLevel level, const char *module, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
+
+/**
+ * @brief legacy method to Log a message using a va_list.
+ * @param level Log level.
+ * @param module Module name.
+ * @param format Printf-style format string.
+ * @param args va_list of arguments.
+ */
+void rdk_dbg_MsgRaw1(rdk_LogLevel level, const char *module, const char *format, va_list args);
+
+/**
  * @brief Convert a log level string to rdk_LogLevel enum.
  * @param level Log level as string (e.g., "INFO", "DEBUG").
  * @return Corresponding rdk_LogLevel value, or RDK_LOG_NONE if invalid.
