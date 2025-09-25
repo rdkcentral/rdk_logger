@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "rdk_debug.h"
+#include "rdk_logger.h"
 int rdk_logger_debug_test()
 {
 	RDK_LOG(RDK_LOG_FATAL, "LOG.RDK.GFX",

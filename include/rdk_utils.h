@@ -36,7 +36,6 @@
 
 #include <stdio.h>
 #include <rdk_error.h>
-#include <rdk_utils.h>
 #ifdef __cplusplus
 extern "C"
 {
@@ -55,8 +54,11 @@ const char* rdk_logger_envGetValueFromNum(int number);
 
 const char* rdk_logger_envGetModFromNum(int Num);
 
-rdk_Error rdk_logger_env_add_conf_file(const char * path);
+rdk_Error rdk_logger_parse_config(const char * path);
 
+rdk_Error rdk_logger_release_config(void);
+
+char* rdk_loglevelToString(rdk_LogLevel level, rdk_logger_Bool isLogEnabled);
 /** @} */ //end of Doxygen tag RDKLOGGER_UTILS_API
 
 #ifdef __cplusplus

@@ -16,11 +16,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#ifdef FEATURE_SUPPORT_ONBOARD_LOGGING
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "rdk_debug.h"
+#include "rdk_logger.h"
 
 #define MAX_BUF_SIZE 1024
 
@@ -40,4 +39,3 @@ int main( int argc, char **argv)
 
     return 0;
 }
-#endif

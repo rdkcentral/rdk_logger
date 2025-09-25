@@ -2,15 +2,17 @@ name: l1-tests
 
 on:
   push:
-    branches: [ main, 'release/**', develop, 'topic/**' ]
+    branches: [ main, 'release/**', develop, 'topic/**', 'support/**' ]
   pull_request:
-    branches: [ main, 'release/**', develop, 'topic/**' ]
+    branches: [ main, 'release/**', develop, 'topic/**', 'support/**' ]
 
 env:
   WORK_DIR: ${{github.workspace}}
   DEP_LIB: ${{github.workspace}}/dep_lib
   RDKLOGGER_ROOT: ${{github.workspace}}/Rdklogger
-  RDKLOGGER_INSTALL_DIR: ${{github.workspace}}/Rdklogger/install
+  LD_LIBRARY_PATH: ${{github.workspace}}/install/lib
+  PKG_CONFIG_PATH: ${{github.workspace}}/install/lib/pkgconfig
+  RDKLOGGER_PREFIX: ${{github.workspace}}/install
 
 jobs:
   l1-tests:
@@ -68,7 +70,7 @@ jobs:
           tar -xzf log4c-1.2.3.tar.gz
           fi
           cd "log4c-1.2.3"
-          ./configure "--prefix=${DEP_LIB}/log4c-1.2.3/install"
+          ./configure "--prefix=${{github.workspace}}/install"
           make
           make install
 
@@ -83,9 +85,7 @@ jobs:
           autoconf
           export ac_cv_func_malloc_0_nonnull=yes
           export ac_cv_func_memset=yes
-          export LOG4C_CFLAGS="-I${{env.DEP_LIB}}/log4c-1.2.3/install/include/log4c/ -I${{env.DEP_LIB}}/log4c-1.2.3/src/ -I${{env.DEP_LIB}}/log4c-1.2.3/src/log4c -I${{env.DEP_LIB}}/log4c-1.2.3/install/include/"
-          export LOG4C_LIBS="-L${{env.DEP_LIB}}/log4c-1.2.3/install/lib"
-          ./configure --prefix=${{env.RDKLOGGER_INSTALL_DIR}}/lib --sysconfdir=${{env.RDKLOGGER_INSTALL_DIR}}/bin LOG4c_CFLAGS="-I${{env.DEP_LIB}}/log4c-1.2.3/src/ -I${{env.DEP_LIB}}/log4c-1.2.3/install/include/log4c/" LOG4C_LIBS="-L${{env.DEP_LIB}}/log4c-1.2.3/install/lib/liblog4c.so"
+          ./configure "--prefix=${{github.workspace}}/install"
           make
           make install
 
@@ -94,7 +94,7 @@ jobs:
           mkdir -p ${{env.RDKLOGGER_ROOT}}/unittests
           UNITTESTS="${{env.RDKLOGGER_ROOT}}/unittests"
           cd ${UNITTESTS}
-          cmake -DRDKLOGGER_SOURCE_PATH=${{env.RDKLOGGER_ROOT}} -DDEP_LIB_PATH=${{env.DEP_LIB}} -DRDKLOGGER_UNITTEST_DIR=${UNITTESTS} -DCMAKE_INSTALL_PREFIX:PATH=${UNITTESTS}/build -DDEBUG_CONF_FILE="\"debug.ini\"" -S . -B build
-          make -C build
+          cmake -B build -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install/usr  -DDEP_LIB_PATH=${{env.LD_LIBRARY_PATH}} -DCMAKE_VERBOSE_MAKEFILE=ON
+          make  -C build
           cmake --install build
           ./build/rdk_logger_gtest
