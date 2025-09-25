@@ -51,6 +51,7 @@ void rdk_dbg_init()
         inited = TRUE;
         rdk_dbg_priv_config();
     }
+    
 }
 
 void rdk_dbg_deinit()
