@@ -1,39 +1,13 @@
 <log4c>
-
     <config>
-
         <bufsize>0</bufsize>
-
         <debug level="0"/>
-
         <nocleanup>0</nocleanup>
-
         <reread>0</reread>
-
     </config>
-
-    <!--
-
-        Layouts
-
-         We have created custom layouts for both "basic" and "dated" formats
-
-         that have no carriage returns.  All log statements must have their
-
-         own carriage returns, if desired.
-
-         Listed below are the available layouts.
-
-    -->
-
     <layout name="basic" type="basic_nocr"/>
-
     <layout name="dated" type="dated_nocr"/>
-
     <layout name="comcast_dated" type="comcast_dated_nocr"/>
-
     <appender name="stdout" type="stream_env" layout="comcast_dated"/>
-
     <category name="LOG.RDK" priority="warning" appender="stdout"/>
-
 </log4c>
