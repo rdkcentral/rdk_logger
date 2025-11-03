@@ -209,19 +209,6 @@ typedef struct rdk_logger_ext_config_t
  }rdk_logger_ext_config_t;
 
 /**
- * @brief Sets the default appender type for the given appender.
- *
- * This function maps the provided `rdk_LogAppenderType` to a corresponding
- * appender type string (e.g., "rollingfile", "stream_env") and sets it
- * for the given appender. The appender type determines how log messages
- * are handled (e.g., written to a file, stdout, syslog, etc.).
- *
- * @param[in] app The log4c appender for which the type is to be set.
- * @param[in] appender_type The appender type (e.g., Stdout, FileOutput, Syslog).
- */
-void set_default_appender_type(log4c_appender_t* app, rdk_LogAppenderType appender_type);
-
-/**
  * @brief Sets the default layout for the given appender.
  *
  * This function maps the provided `rdk_LogLayout` to a corresponding
