@@ -209,32 +209,6 @@ typedef struct rdk_logger_ext_config_t
  }rdk_logger_ext_config_t;
 
 /**
- * @brief Sets the default layout for the given appender.
- *
- * This function maps the provided `rdk_LogLayout` to a corresponding
- * layout string (e.g., "basic", "dated", "comcast_dated") and sets it
- * for the given appender. The layout determines the format of log messages
- * (e.g., timestamp, log level, message content).
- *
- * @param[in] app The log4c appender for which the layout is to be set.
- * @param[in] layout The layout type (e.g., LAYOUT_BASIC, LAYOUT_DATED).
- */
-void set_default_layout(log4c_appender_t* app, rdk_LogLayout layout);
-
-/**
- * @brief Sets the default log level for the given category.
- *
- * This function maps the provided `rdk_LogLevel` to a corresponding
- * log4c priority and sets it for the given category. The log level
- * determines the severity of messages that will be logged (e.g., ERROR, DEBUG).
- * If the category does not exist, it will be created.
- *
- * @param[in] category_name The name of the log4c category.
- * @param[in] log_level The log level to set (e.g., RDK_LOG_ERROR, RDK_LOG_DEBUG).
- */
-void set_default_log_level(const char* category_name, rdk_LogLevel log_level);
-
-/**
  * @brief Initialize the RDK Logger.
  * @param debugConfigFile Path to the debug.ini configuration file.
  * @return RDK_SUCCESS on success, error code otherwise.
