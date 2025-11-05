@@ -144,8 +144,8 @@ jobs:
         run: |
           echo "body<<EOF" >> $GITHUB_OUTPUT
           COVERAGE=$(grep -m1 "lines" coverage.info | awk '{print $2}')
-          echo "Extracted coverage: '${COVERAGE}'" >>GITHUB_OUTPUT
-            #echo "${COVERAGE}" >> $GITHUB_OUTPUT
+          # echo "Extracted coverage: '${COVERAGE}'" >>GITHUB_OUTPUT
+          echo "line coverage : '${COVERAGE}'" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
