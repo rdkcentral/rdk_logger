@@ -142,12 +142,8 @@ jobs:
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
         id: coverage
         run: |
-          echo "body<<EOF" >> $GITHUB_OUTPUT
           COVERAGE=$(grep -m1 "lines" coverage.info | awk '{print $2}')
-          # echo "Extracted coverage: '${COVERAGE}'" >>GITHUB_OUTPUT
-          echo "line coverage : $COVERAGE" >> "$GITHUB_OUTPUT"
-          cat "$GITHUB_OUTPUT"
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "body=Line coverage: ${COVERAGE}" >> $GITHUB_OUTPUT
 
       - name: Post coverage comment on PR
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
