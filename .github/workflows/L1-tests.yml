@@ -147,15 +147,21 @@ jobs:
           cat log.txt 
           LINE_COVERAGE=$(grep -m1 "lines" log.txt | awk '{print $2}')
           FUNCTION_COVERAGE=$(grep -m1 "functions" log.txt | awk '{print $2}')
-          echo "body=Line coverage: ${LINE_COVERAGE} Function coverage:${FUNCTION_COVERAGE}" >> $GITHUB_OUTPUT
-            #echo "body=Line coverage: ${FUNCTION_COVERAGE}" >> $GITHUB_OUTPUT   
+          #echo "body=Line coverage: ${LINE_COVERAGE} Function coverage:${FUNCTION_COVERAGE}" >> $GITHUB_OUTPUT
+          #echo "body=Line coverage: ${FUNCTION_COVERAGE}" >> $GITHUB_OUTPUT
+          echo "line_coverage=${LINE_COVERAGE}" >> $GITHUB_OUTPUT
+          echo "function_coverage=${FUNCTION_COVERAGE}" >> $GITHUB_OUTPUT   
           echo "Check: Extracted for output: Line coverage: $LINE_COVERAGE"
           echo "Check: Extracted for output: Function coverage: $FUNCTION_COVERAGE"
+
       - name: Post coverage comment on PR
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
         uses: peter-evans/create-or-update-comment@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: ${{ steps.coverage.outputs.body }}
+          body: |
+            Newly added lines compared to develop: ${{ steps.lines_added.outputs.added_lines }}
+            Function coverage: ${{ steps.coverage.outputs.function_coverage }} 
+            #${{ steps.coverage.outputs.body }}
       
