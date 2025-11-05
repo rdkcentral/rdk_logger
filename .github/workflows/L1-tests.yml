@@ -143,7 +143,7 @@ jobs:
         id: coverage
         run: |
           ls -lt
-          cat coverage.info
+          grep -m1 "lines" coverage.info | awk '{print $2}'
           COVERAGE=$(grep -m1 "lines" coverage.info | awk '{print $2}')
           echo "body=Line coverage: ${COVERAGE}" >> $GITHUB_OUTPUT
           echo "Check: Extracted for output: Line coverage: $COVERAGE"
