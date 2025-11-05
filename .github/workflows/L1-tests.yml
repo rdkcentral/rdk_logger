@@ -126,4 +126,18 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: /tmp/coverage_report   
+          path: /tmp/coverage_report  
+      
+      - name: Extract coverage summary
+        if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
+        id: coverage
+        run: |
+          COVERAGE=$(grep -m1 'lines-covered' coverage.info | awk '{print $2}')
+          TOTAL=$(grep -m1 'lines-valid' coverage.info | awk '{print $2}')
+          PERCENT=$(echo "scale=2; $COVERAGE / $TOTAL * 100" | bc)
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "🧪 **Code Coverage Report for @${{ github.event.pull_request.user.login }}**" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "✅ Line coverage: ${PERCENT}%." >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
