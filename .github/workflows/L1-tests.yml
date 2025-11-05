@@ -142,10 +142,10 @@ jobs:
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
         id: coverage
         run: |
-          cat coverage.info
           lcov --list coverage.info
-          grep -m1 "lines" coverage.info | awk '{print $2}'
-          COVERAGE=$(grep -m1 "lines" coverage.info | awk '{print $2}')
+          lcov --summary coverage.info >>log.txt
+          cat log.txt 
+          COVERAGE=$(grep -m1 "lines" log.txt | awk '{print $2}')
           echo "body=Line coverage: ${COVERAGE}" >> $GITHUB_OUTPUT
           echo "Check: Extracted for output: Line coverage: $COVERAGE"
       - name: Post coverage comment on PR
