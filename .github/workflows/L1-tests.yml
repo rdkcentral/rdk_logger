@@ -145,7 +145,7 @@ jobs:
           echo "body<<EOF" >> $GITHUB_OUTPUT
           COVERAGE=$(grep -m1 "lines" coverage.info | awk '{print $2}')
           # echo "Extracted coverage: '${COVERAGE}'" >>GITHUB_OUTPUT
-          echo "line coverage : '${COVERAGE}'" >> $GITHUB_OUTPUT
+          echo "line coverage : $COVERAGE" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
@@ -155,6 +155,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            "line coverage : ${COVERAGE} "      
+          body: ${{ steps.coverage.outputs.body }}
       
