@@ -143,11 +143,7 @@ jobs:
         id: coverage
         run: |
           echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "🧪 **Code Coverage Report for @${{ github.event.pull_request.user.login }}**" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "```\nOverall coverage rate:" >> $GITHUB_OUTPUT
           echo "  lines......: 80.8% (497 of 615 lines)" >> $GITHUB_OUTPUT
-          echo "  functions..: 87.5% (42 of 48 functions)\n```" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Post coverage comment on PR
