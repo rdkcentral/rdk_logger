@@ -11,7 +11,7 @@ jobs:
       - name: Post a comment on the PR
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PR_AUTHOR_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             👋 Hello! This is an automated comment from GitHub Actions.
