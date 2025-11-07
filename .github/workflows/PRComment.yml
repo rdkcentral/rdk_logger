@@ -11,6 +11,7 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v3
       - name: Run git fetch
+          id: lines_added
         run : |
           cd ${{ github.workspace }}
           git fetch origin ${{ github.event.pull_request.base.ref }}
@@ -19,7 +20,7 @@ jobs:
           #(grep '^+' log.txt | grep -v '^+++' | wc -l) >>t.txt
           #cat t.txt
           ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }} | grep '^+' | grep -v '^+++' | wc -l)
- 
+          echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT 
           echo "check : added_lines $ADDED_LINES"
           #git fetch origin develop     
       - name: Post a comment on the PR
@@ -28,6 +29,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
+             Newly added lines compared to develop: ${{ steps.lines_added.outputs.added_lines }}
             👋 Hello! This is an automated comment from GitHub Actions.
             Let me know if you need help with anything!
 
