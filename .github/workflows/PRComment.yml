@@ -10,6 +10,7 @@ jobs:
     steps:
       - name: Checkout PR
         uses: actions/checkout@v3
+
       - name: Run git fetch
         id: lines_added
         run : |
@@ -19,13 +20,14 @@ jobs:
             ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }} | grep '^+' | grep -v '^+++' | wc -l)
             echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT 
             echo "check : added_lines $ADDED_LINES"
-              #- name: Post a comment on the PR
-              #uses: peter-evans/create-or-update-comment@v3
-              # with:
-              # token: ${{ secrets.GITHUB_TOKEN }}
-              #issue-number: ${{ github.event.pull_request.number }}
-              #body: |
-              #Newly added lines compared to develop: ${{ steps.lines_added.outputs.added_lines }}
-              #👋 Hello! This is an automated comment from GitHub Actions.
-              #Let me know if you need help with anything!
+
+      - name: Post a comment on the PR
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body : |
+              Newly added lines compared to develop: ${{ steps.lines_added.outputs.added_lines }}
+              👋 Hello! This is an automated comment from GitHub Actions.
+              Let me know if you need help with anything!
 
