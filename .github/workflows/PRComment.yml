@@ -16,8 +16,7 @@ jobs:
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git fetch origin ${{ github.event.pull_request.head.ref }}
           git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }}  >>log.txt
-          cat log.txt
-          grep '^+' log.txt | grep -v '^+++' | wc -l >>t.txt
+          (grep '^+' log.txt | grep -v '^+++' | wc -l) >>t.txt
           cat t.txt
           #ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }}...origin/${{ github.event.pull_request.head.ref }} | grep '^+' | grep -v '^+++' | wc -l)
  
