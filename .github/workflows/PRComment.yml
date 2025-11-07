@@ -8,16 +8,22 @@ jobs:
   comment:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up GitHub CLI
+        uses: cli/gh-action@v2
+
       - name: Get number of newly added lines with GitHub CLI
-          if: ${{ github.event_name == 'pull_request' }}
-          id: lines_added
-         run: |
-            gh pr diff ${{ github.event.pull_request.number }} --stat > pr_stat.txt
-             # Parse added lines from the stats output
-            ADDED_LINES=$(grep -Eo '[0-9]+ insertion' pr_stat.txt | awk '{print $1}' | paste -sd+ - | bc)
-            echo "added_lines=$ADDED_LINES" >> $GITHUB_OUTPUT
-         env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: lines_added
+        run: |
+          gh pr diff ${{ github.event.pull_request.number }} --stat > pr_stat.txt
+          # Parse added lines from the stats output
+          ADDED_LINES=$(grep -Eo '[0-9]+ insertion' pr_stat.txt | awk '{print $1}' | paste -sd+ - | bc)
+          echo "added_lines=$ADDED_LINES" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Post a comment on the PR
         uses: peter-evans/create-or-update-comment@v3
         with:
@@ -25,5 +31,5 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             👋 Hello! This is an automated comment from GitHub Actions.
+            🔢 Number of newly added lines in this PR: ${{ steps.lines_added.outputs.added_lines }}
             Let me know if you need help with anything!
-
