@@ -11,17 +11,18 @@ jobs:
       - name: Checkout PR
         uses: actions/checkout@v3
       - name: Run git fetch
-          id: lines_added
+        if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
+        id: lines_added
         run : |
-          cd ${{ github.workspace }}
-          git fetch origin ${{ github.event.pull_request.base.ref }}
-          git fetch origin ${{ github.event.pull_request.head.ref }}
+            cd ${{ github.workspace }}
+            git fetch origin ${{ github.event.pull_request.base.ref }}
+            git fetch origin ${{ github.event.pull_request.head.ref }}
           #git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }}  >>log.txt
           #(grep '^+' log.txt | grep -v '^+++' | wc -l) >>t.txt
           #cat t.txt
-          ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }} | grep '^+' | grep -v '^+++' | wc -l)
-          echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT 
-          echo "check : added_lines $ADDED_LINES"
+            ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }} | grep '^+' | grep -v '^+++' | wc -l)
+            echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT 
+            echo "check : added_lines $ADDED_LINES"
           #git fetch origin develop     
       - name: Post a comment on the PR
         uses: peter-evans/create-or-update-comment@v3
