@@ -154,6 +154,17 @@ jobs:
           echo "Check: Extracted for output: Line coverage: $LINE_COVERAGE"
           echo "Check: Extracted for output: Function coverage: $FUNCTION_COVERAGE"
 
+      - name: Calculate newly added lines compared to develop
+        if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
+        id: lines_added
+        run: |
+          ls -lt
+          git fetch origin develop
+          # Count lines starting with "+" (excluding diff headers)
+          ADDED_LINES=$(git diff --unified=0 origin/develop...HEAD | grep '^+' | grep -v '^+++' | wc -l)
+          echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT
+          echo "check : added_lines " $ADDED_LINES"
+
       - name: Post coverage comment on PR
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
         uses: peter-evans/create-or-update-comment@v3
