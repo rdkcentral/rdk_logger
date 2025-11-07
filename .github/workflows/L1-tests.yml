@@ -128,16 +128,6 @@ jobs:
           name: coverage-report
           path: /tmp/coverage_report  
       
-            # - name: Extract coverage summary
-            # if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
-            # id: coverage
-            #run: |
-            #COVERAGE=$(grep -m1 "lines" coverage.info | awk '{print $2}')
-            #echo "body<<EOF" >> $GITHUB_OUTPUT
-            # echo "🧪 **Code Coverage Report for @${{ github.event.pull_request.user.login }}**" >> $GITHUB_OUTPUT
-            #echo "" >> $GITHUB_OUTPUT
-            #echo "✅ Line coverage: ${COVERAGE}." >> $GITHUB_OUTPUT
-            #echo "EOF" >> $GITHUB_OUTPUT
       - name: Extract coverage summary
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
         id: coverage
@@ -165,7 +155,45 @@ jobs:
             ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }} | grep '^+' | grep -v '^+++' | wc -l)
             echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT
             echo "check : added_lines $ADDED_LINES"
+ ### 1. Upload coverage from base branch
+      - name: Upload coverage report
+        if: ${{ github.event_name != 'pull_request' && matrix.coverage == 'with-coverage' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-coverage-${{ github.ref_name }}
+          path: coverage.info
 
+      ### 2. Upload coverage from PR head branch for comment/inspection
+      - name: Upload PR branch coverage report
+        if: ${{ github.event_name == 'pull_request' && matrix.coverage == 'with-coverage' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-coverage-${{ github.event.pull_request.head.ref }}
+          path: coverage.info
+
+      ### 3. If on PR, download base branch coverage and compare!
+      - name: Download base branch coverage
+        if: ${{ github.event_name == 'pull_request' && matrix.coverage == 'with-coverage' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: base-coverage-${{ github.event.pull_request.base.ref }}
+          path: ./base_coverage
+
+      - name: Compare branch coverage
+        if: ${{ github.event_name == 'pull_request' && matrix.coverage == 'with-coverage' }}
+        id: compare_coverage
+        run: |
+          echo "Base branch coverage summary:"
+          lcov --summary base_coverage/coverage.info
+          echo "PR branch coverage summary:"
+          lcov --summary coverage.info
+
+          BASE_LINE_COV=$(lcov --summary base_coverage/coverage.info | grep 'lines....:' | awk '{print $2}' | tr -d '%')
+          PR_LINE_COV=$(lcov --summary coverage.info | grep 'lines....:' | awk '{print $2}' | tr -d '%')
+          DELTA=$(echo "$PR_LINE_COV - $BASE_LINE_COV" | bc)
+          echo "base_line_coverage=$BASE_LINE_COV" >> $GITHUB_OUTPUT
+          echo "pr_line_coverage=$PR_LINE_COV" >> $GITHUB_OUTPUT
+          echo "coverage_delta=$DELTA" >> $GITHUB_OUTPUT
 
       - name: Post coverage comment on PR
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
@@ -174,8 +202,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Newly added lines compared to develop: ${{ steps.lines_added.outputs.added_lines }}
-            Line coverage: ${{ steps.coverage.outputs.line_coverage }} 
-            Function coverage: ${{ steps.coverage.outputs.function_coverage }} 
+            Newly added lines compared to develop ✅ : ${{ steps.lines_added.outputs.added_lines }}
+            Line coverage ✅ : ${{ steps.coverage.outputs.line_coverage }} 
+            Function coverage ✅ : ${{ steps.coverage.outputs.function_coverage }} 
+            📊 Coverage Report Comparison
+            - Base branch line coverage: ${{ steps.compare_coverage.outputs.base_line_coverage }}%
+            - PR branch line coverage: ${{ steps.compare_coverage.outputs.pr_line_coverage }}%
+            - Coverage delta: ${{ steps.compare_coverage.outputs.coverage_delta }}%  
             #${{ steps.coverage.outputs.body }}
       
