@@ -153,18 +153,19 @@ jobs:
           echo "function_coverage=${FUNCTION_COVERAGE}" >> $GITHUB_OUTPUT   
           echo "Check: Extracted for output: Line coverage: $LINE_COVERAGE"
           echo "Check: Extracted for output: Function coverage: $FUNCTION_COVERAGE"
+      - name: Checkout PR
+        uses: actions/checkout@v3
 
-      - name: Calculate newly added lines compared to develop
-        if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
+      - name: Run git fetch
         id: lines_added
-        run: |
-          cd "$(dirname "${{ github.workspace }}")"
-          ls -lt
-          git fetch origin develop
-          # Count lines starting with "+" (excluding diff headers)
-          ADDED_LINES=$(git diff --unified=0 origin/develop...HEAD | grep '^+' | grep -v '^+++' | wc -l)
-          echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT
-          echo "check : added_lines " $ADDED_LINES"
+        run : |
+            cd ${{ github.workspace }}
+            git fetch origin ${{ github.event.pull_request.base.ref }}
+            git fetch origin ${{ github.event.pull_request.head.ref }}
+            ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }} | grep '^+' | grep -v '^+++' | wc -l)
+            echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT
+            echo "check : added_lines $ADDED_LINES"
+
 
       - name: Post coverage comment on PR
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
@@ -174,6 +175,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             Newly added lines compared to develop: ${{ steps.lines_added.outputs.added_lines }}
+            Line coverage: ${{ steps.coverage.outputs.line_coverage }} 
             Function coverage: ${{ steps.coverage.outputs.function_coverage }} 
             #${{ steps.coverage.outputs.body }}
       
