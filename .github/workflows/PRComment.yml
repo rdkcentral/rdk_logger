@@ -14,7 +14,8 @@ jobs:
         run : |
           cd ${{ github.workspace }}
           git fetch origin ${{ github.event.pull_request.base.ref }}
-          ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }}...HEAD | grep '^+' | grep -v '^+++' | wc -l)
+          git fetch origin ${{ github.event.pull_request.head.ref }}
+          ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }}...origin/${{ github.event.pull_request.head.ref }} | grep '^+' | grep -v '^+++' | wc -l)
           echo "added_lines=${ADDED_LINES}" >> $GITHUB_OUTPUT
           echo "check : added_lines " $ADDED_LINES"
           #git fetch origin develop     
