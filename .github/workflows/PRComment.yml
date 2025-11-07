@@ -15,6 +15,8 @@ jobs:
           cd ${{ github.workspace }}
           git fetch origin ${{ github.event.pull_request.base.ref }}
           git fetch origin ${{ github.event.pull_request.head.ref }}
+          git diff --unified=0 origin/${{ github.event.pull_request.base.ref }} origin/${{ github.event.pull_request.head.ref }} >>log.txt
+          cat log.txt
           ADDED_LINES=$(git diff --unified=0 origin/${{ github.event.pull_request.base.ref }}...origin/${{ github.event.pull_request.head.ref }} >>log.txt
           cat log.txt
           echo "check : added_lines " $ADDED_LINES"
