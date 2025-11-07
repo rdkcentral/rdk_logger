@@ -158,6 +158,7 @@ jobs:
         if: ${{ matrix.coverage == 'with-coverage' && github.event_name == 'pull_request' }}
         id: lines_added
         run: |
+          cd ${{github.workspace}}
           ls -lt
           git fetch origin develop
           # Count lines starting with "+" (excluding diff headers)
