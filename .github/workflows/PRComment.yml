@@ -13,7 +13,8 @@ jobs:
       - name: Run git fetch
         run : |
           cd ${{ github.workspace }}
-          git fetch origin ${{ github.event.pull_request.base.ref }}     
+          #git fetch origin ${{ github.event.pull_request.base.ref }}     
+          git fetch origin develop     
       - name: Post a comment on the PR
         uses: peter-evans/create-or-update-comment@v3
         with:
