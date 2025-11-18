@@ -1,0 +1,49 @@
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  issues: write
+
+jobs:
+  comment-via-curl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Create or update comment via REST API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MARKER: "<!-- bot-comment: my-unique-id -->"
+        run: |
+          API="https://api.github.com"
+          AUTH="Authorization: token $GITHUB_TOKEN"
+          # Build comment body
+          BODY="$(cat <<'EOF'
+$MARKER
+
+## Automated status
+- Hello from curl REST API
+- Time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+EOF
+)"
+
+          # List comments and try to find one with our marker
+          COMMENTS_URL="$API/repos/$OWNER/$REPO/issues/$PR_NUMBER/comments"
+          COMMENT_ID=$(curl -s -H "$AUTH" -H "Accept: application/vnd.github+json" "$COMMENTS_URL" \
+            | jq -r --arg marker "$MARKER" '.[] | select(.body | contains($marker)) | .id' | head -n1)
+
+          if [ -n "$COMMENT_ID" ] && [ "$COMMENT_ID" != "null" ]; then
+            echo "Updating comment $COMMENT_ID"
+            PATCH_URL="$API/repos/$OWNER/$REPO/issues/comments/$COMMENT_ID"
+            curl -s -X PATCH -H "$AUTH" -H "Accept: application/vnd.github+json" "$PATCH_URL" \
+              -d "$(jq -nc --arg b "$BODY" '{body:$b}')"
+          else
+            echo "Creating new comment"
+            curl -s -X POST -H "$AUTH" -H "Accept: application/vnd.github+json" "$COMMENTS_URL" \
+              -d "$(jq -nc --arg b "$BODY" '{body:$b}')"
+          fi
