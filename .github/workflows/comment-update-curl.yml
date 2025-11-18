@@ -22,18 +22,13 @@ jobs:
         run: |
           API="https://api.github.com"
           AUTH="Authorization: token $GITHUB_TOKEN"
-          # Build comment body
-          BODY="$(cat <<'EOF'
-$MARKER
-
-## Automated status
-- Hello from curl REST API
-- Time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-EOF
-)"
-
-          # List comments and try to find one with our marker
           COMMENTS_URL="$API/repos/$OWNER/$REPO/issues/$PR_NUMBER/comments"
+
+          TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          # Build JSON payload safely (no heredoc needed)
+          PAYLOAD=$(jq -nc --arg b "$MARKER\n\n## Automated status\n- Hello from curl REST API\n- Time: $TIME" '{body:$b}')
+
+          # Find existing comment that contains the marker
           COMMENT_ID=$(curl -s -H "$AUTH" -H "Accept: application/vnd.github+json" "$COMMENTS_URL" \
             | jq -r --arg marker "$MARKER" '.[] | select(.body | contains($marker)) | .id' | head -n1)
 
@@ -41,9 +36,9 @@ EOF
             echo "Updating comment $COMMENT_ID"
             PATCH_URL="$API/repos/$OWNER/$REPO/issues/comments/$COMMENT_ID"
             curl -s -X PATCH -H "$AUTH" -H "Accept: application/vnd.github+json" "$PATCH_URL" \
-              -d "$(jq -nc --arg b "$BODY" '{body:$b}')"
+              -d "$PAYLOAD"
           else
             echo "Creating new comment"
             curl -s -X POST -H "$AUTH" -H "Accept: application/vnd.github+json" "$COMMENTS_URL" \
-              -d "$(jq -nc --arg b "$BODY" '{body:$b}')"
+              -d "$PAYLOAD"
           fi
