@@ -54,7 +54,7 @@ void free_file_policy(rdk_LogFilePolicy* policy) {
 #endif
 // Test different log levels
 void test_log_levels(const char* module) {
-    printf("\n=== Testing Different Log Levels for %s ===\n");
+    printf("\n=== Testing Different Log Levels for %s ===\n", module);
     
     RDK_LOG(RDK_LOG_FATAL, module, "This is a FATAL message - system is unusable\n");
     RDK_LOG(RDK_LOG_ERROR, module, "This is an ERROR message - error condition\n");
