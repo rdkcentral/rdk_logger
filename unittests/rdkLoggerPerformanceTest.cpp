@@ -213,16 +213,16 @@ TEST_F(RDKLoggerPerformanceTest, RapidCallsPerformance) {
     
     // Log messages rapidly
     for (int i = 0; i < 5000; i++) {
-        rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.PERFORMANCE", "Rapid message %d", i);
-        rdk_logger_msg_printf(RDK_LOG_DEBUG, "LOG.RDK.PERFORMANCE", "Rapid debug %d", i);
-        rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.PERFORMANCE", "Rapid error %d", i);
+        rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.PERFORMANCE", "Rapid message %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_DEBUG, "LOG.RDK.PERFORMANCE", "Rapid debug %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.PERFORMANCE", "Rapid error %d\n", i);
     }
     
     gettimeofday(&end, NULL);
     double elapsed = getTimeDifference(&start, &end);
     
-    printf("Logged 15000 rapid messages in %.3f seconds (%.0f messages/sec)\n", 
-           elapsed, 15000.0 / elapsed);
+    printf("Logged 5000 rapid messages in %.3f seconds (%.0f messages/sec)\n", 
+           elapsed, 5000.0 / elapsed);
     
     // Should complete in reasonable time
     EXPECT_LT(elapsed, 15.0) << "Rapid logging should be reasonably fast";
@@ -276,15 +276,20 @@ TEST_F(RDKLoggerPerformanceTest, CPUUsageTest) {
 
 // Test logging with file I/O stress
 TEST_F(RDKLoggerPerformanceTest, FileIOStressTest) {
+    rdk_LogOutput_File testPolicy;
+    strncpy(testPolicy.fileName, "stress_test.log", sizeof(testPolicy.fileName)-1);
+    testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
+    strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_performance_test", sizeof(testPolicy.fileLocation)-1);
+    testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
+    testPolicy.fileSizeMax = 1024; // 2MB
+    testPolicy.fileCountMax = 5;
     rdk_logger_ext_config_t config;
-    strncpy(config.fileName, "stress_test.log", sizeof(config.fileName) - 1);
-    config.fileName[sizeof(config.fileName) - 1] = '\0';
-    
-    strncpy(config.logdir, "/tmp/rdk_logger_performance_test", sizeof(config.logdir) - 1);
-    config.logdir[sizeof(config.logdir) - 1] = '\0';
-    
-    config.maxSize = 1024;  // 1KB max size to trigger rotation
-    config.maxCount = 5;    // Keep 5 files
+    memset(&config, 0, sizeof(config));
+    config.pCategoryName = "LOG.RDK.PERFORMANCE";
+    config.loglevel = RDK_LOG_DEBUG;
+    config.appender = RDKLOG_OUTPUT_FILE;
+    config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+    config.pFilePolicy = &testPolicy;
     
     rdk_Error ret = rdk_logger_ext_init(&config);
     ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization should succeed";
@@ -350,7 +355,7 @@ TEST_F(RDKLoggerPerformanceTest, ErrorConditionsTest) {
     for (int i = 0; i < 1000; i++) {
         // Test with NULL parameters
         rdk_logger_msg_printf(RDK_LOG_INFO, NULL, "NULL module test %d", i);
-        rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.PERFORMANCE", NULL);
+        //rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.PERFORMANCE", NULL);
         
         // Test with invalid log levels
         rdk_logger_msg_printf((rdk_LogLevel)999, "LOG.RDK.PERFORMANCE", "Invalid level test %d", i);

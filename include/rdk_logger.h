@@ -200,13 +200,63 @@ typedef enum
     RDK_LOG_NONE
 } rdk_LogLevel;
 
+/**
+ * @enum rdk_LogOutput
+ * @brief Defines the destination type where log events are written.
+ *
+ * - RDKLOG_OUTPUT_CONSOLE:     Write logs to the process stdout/stderr stream (typically mapped via stream_env).
+ * - RDKLOG_OUTPUT_FILE: Write logs to rolling files on disk (uses rollingfile appender).
+ * - RDKLOG_OUTPUT_SYSLOG:     Forward logs to the local syslog daemon.
+ */
+typedef enum _log_output
+{
+    RDKLOG_OUTPUT_CONSOLE = 0,               /** log_console */
+    RDKLOG_OUTPUT_SYSLOG,                /** log_syslog */
+    RDKLOG_OUTPUT_FILE,                  /** log_file */
+} rdk_LogOutput;
+
+/**
+ * @enum rdk_LogFormat
+ * @brief Defines the layout/format used to render log messages.
+ *
+ * - RDKLOG_FORMAT_ONLY_TEXT:          Simple layout (priority, category, message).
+ * - RDKLOG_FORMAT_WITH_DATETIME:          Timestamped layout including date/time and milliseconds.
+ * - RDKLOG_FORMAT_WITH_THREADID:  Comcast-specific dated layout with module, level and thread id info.
+ */
+typedef enum _log_format
+{
+    RDKLOG_FORMAT_ONLY_TEXT = 0,            /** format_text */
+    RDKLOG_FORMAT_WITH_DATETIME,        /** format_datetime */
+    RDKLOG_FORMAT_WITH_THREADID         /** format_threadid */
+} rdk_LogFormat;
+
+/**
+ * @brief _file_output structure for rolling file appenders.
+ *
+ * This structure defines the configuration parameters for file-based log appenders
+ * including file naming, directory path, and rotation policy settings.
+ */
+typedef struct _file_output
+{
+    char     fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
+    char     fileLocation[RDK_LOGGER_EXT_LOGDIR_SIZE];
+    uint8_t  fileCountMax;
+    uint64_t fileSizeMax;
+} rdk_LogOutput_File;
+/**
+ * @brief Complete logger configuration structure for structured initialization.
+ *
+ * This structure contains all parameters needed for complete logger setup
+ * including appender configuration, category association, and log level settings.
+ */
 typedef struct rdk_logger_ext_config_t
- {
-     char fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
-     char logdir[RDK_LOGGER_EXT_LOGDIR_SIZE];
-     long maxSize;
-     long maxCount;
- }rdk_logger_ext_config_t;
+{
+     char* pCategoryName;              /**< Log category name (e.g., "LOG.RDK.TR69") */
+     rdk_LogLevel loglevel;           /**< Default log level for this category */
+     rdk_LogOutput appender;    /**< Type of appender (FILE, STDOUT, SYSLOG, SOCKET) */
+     rdk_LogFormat layout;            /**< Message layout format (PLAINTEXT, TIMESTAMPED, COMCAST) */
+     rdk_LogOutput_File *pFilePolicy;  /**< File policy configuration (required for RDK_LOG_OUTPUT_FILE, NULL for others) */
+} rdk_logger_ext_config_t;
 
 /**
  * @brief Initialize the RDK Logger.

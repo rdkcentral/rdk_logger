@@ -155,45 +155,223 @@ void rdk_dbg_priv_init()
     gRootCat = log4c_category_get("LOG.RDK");
 }
 
-void rdk_dbg_priv_ext_init(const char* logdir, const char* log_file_name, long maxCount, long maxSize)
+static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOutput app,
+                                                   rdk_LogFormat layout, rdk_LogOutput_File *pPolicy,
+                                                   char* appender_name_out)
 {
-    char fullpath[512];
-    snprintf(fullpath, sizeof(fullpath), "%s/%s", logdir, log_file_name);
+    char app_name[256];
 
-    const char* cat_name = "LOG.RDK";
+    if (!categoryName || !appender_name_out) {
+        fprintf(stderr, "Error: categoryName or appender_name_out is NULL\n");
+        return -1;
+    }
+
+    if (app == RDKLOG_OUTPUT_FILE && pPolicy)
+    {
+        snprintf(app_name, sizeof(app_name), "%s.app", categoryName);
+    }
+    else
+    {
+        snprintf(app_name, sizeof(app_name), "%s.stdout", categoryName);
+    }
+
+    strncpy(appender_name_out, app_name, 255);
+    appender_name_out[255] = '\0';
+
+    log4c_appender_t* appender = log4c_appender_get(app_name);
+    if (appender)
+    {
+        (void)log4c_appender_close(appender);
+        (void)log4c_appender_set_udata(appender, NULL);
+    }
+    else
+    {
+        appender = log4c_appender_new(app_name);
+        if (!appender)
+        {
+            fprintf(stderr, "Failed to create appender %s\n", app_name);
+            return -1;
+        }
+    }
+
+    const char* type_str = NULL;
+    switch(app)
+    {
+        case RDKLOG_OUTPUT_CONSOLE:    type_str = "stream_env"; break;
+        case RDKLOG_OUTPUT_FILE:      type_str = "rollingfile"; break;
+        case RDKLOG_OUTPUT_SYSLOG:    type_str = "syslog"; break;
+        default:                       type_str = "stream_env"; break;
+    }
+
+    const log4c_appender_type_t* type = log4c_appender_type_get(type_str);
+    if (type)
+    {
+        log4c_appender_set_type(appender, type);
+    }
+
+    if (app == RDKLOG_OUTPUT_FILE && pPolicy)
+    {
+        long rotationCount = pPolicy->fileCountMax > 0 ? pPolicy->fileCountMax : 1;
+        long maxBytes = pPolicy->fileSizeMax > 0 ? pPolicy->fileSizeMax : 1024 * 1024;
+
+        rollingfile_udata_t *rudata = rollingfile_make_udata();
+        if (rudata && pPolicy->fileLocation && pPolicy->fileName) 
+        {
+            rollingfile_udata_set_logdir(rudata, pPolicy->fileLocation);
+            rollingfile_udata_set_files_prefix(rudata, pPolicy->fileName);
+
+            char policy_name[256];
+            snprintf(policy_name, sizeof(policy_name), "policy_%s", log4c_appender_get_name(appender));
+
+            log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(policy_name);
+            if (!policy)
+            {
+                policy = log4c_rollingpolicy_new(policy_name);
+            }
+
+            if (policy)
+            {
+                const log4c_rollingpolicy_type_t* rtype = log4c_rollingpolicy_type_get("sizewin");
+                if (rtype)
+                {
+                    log4c_rollingpolicy_set_type(policy, rtype);
+                }
+
+                rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
+                if (sizewin_udata)
+                {
+                    sizewin_udata_set_file_maxsize(sizewin_udata, maxBytes);
+                    sizewin_udata_set_max_num_files(sizewin_udata, rotationCount);
+                    log4c_rollingpolicy_set_udata(policy, sizewin_udata);
+                }
+                rollingfile_udata_set_policy(rudata, policy);
+            }
+            log4c_appender_set_udata(appender, rudata);
+        }
+        else
+        {
+            fprintf(stderr, "ruData or logdir or fileName is NULL\n");
+            return -1;
+        }
+    }
+
+    const char* layout_str = NULL;
+    switch(layout)
+    {
+        case RDKLOG_FORMAT_ONLY_TEXT:         layout_str = "basic"; break;
+        case RDKLOG_FORMAT_WITH_DATETIME:       layout_str = "dated"; break;
+        case RDKLOG_FORMAT_WITH_THREADID:           layout_str = "comcast_dated"; break;
+        default:                               layout_str = "basic"; break;
+    }
+
+    log4c_layout_t* layout_obj = log4c_layout_get(layout_str);
+    if (layout_obj)
+    {
+        log4c_appender_set_layout(appender, layout_obj);
+    }
+
+    if (log4c_appender_open(appender) != 0)
+    {
+        fprintf(stderr, "log4c_appender_open failed for %s\n", app_name);
+        return -1;
+    }
+    return RDK_SUCCESS;
+}
+
+static rdk_Error rdk_dbg_priv_set_appender(const char* categoryName, const char* appender_name)
+{
+    if (!categoryName || !appender_name)
+    {
+        fprintf(stderr, "Error: categoryName or appender_name is NULL\n");
+        return -1;
+    }
+
+    log4c_category_t* cat = log4c_category_get(categoryName);
+    if (!cat)
+        cat = log4c_category_new(categoryName);
+    if (!cat)
+        cat = gRootCat;
+    if (!cat)
+    {
+        fprintf(stderr, "Failed to get or create log category\n");
+        return -1;
+    }
+
+    log4c_appender_t* appender = log4c_appender_get(appender_name);
+    if (!appender)
+    {
+        fprintf(stderr, "Appender not found: %s\n", appender_name);
+        return -1;
+    }
+
+    log4c_category_set_appender(cat, appender);
+    log4c_category_set_additivity(cat, 0);
+    return RDK_SUCCESS;
+}
+
+static rdk_Error rdk_dbg_priv_set_log_level(const char* category_name, rdk_LogLevel log_level)
+{
+    const char* cat_name = category_name ? category_name : "LOG.RDK";
+    log4c_category_t* cat = log4c_category_get(category_name);
+    if (!cat)
+    {
+        cat = log4c_category_new(category_name);
+    }
+    if (cat)
+    {
+        int log4c_prio = rdk_logLevel_to_log4c_priority(log_level);
+        log4c_category_set_priority(cat, log4c_prio);
+    }
+    return RDK_SUCCESS;
+}
+/**
+ * @brief Initialize RDK logger with extended configuration.
+ * This is the ONLY public API for extended logger initialization.
+ */
+rdk_Error rdk_dbg_priv_ext_init(rdk_logger_ext_config_t* config)
+{
+    char appender_name[256];
+
+    if (!config)
+    {
+        fprintf(stderr, "Error: config parameter is NULL\n");
+        return -1;
+    }
+    const char* cat_name = config->pCategoryName ? config->pCategoryName : "LOG.RDK";
     log4c_category_t* cat = log4c_category_get(cat_name);
-    if (!cat) {
+    if (!cat)
         cat = log4c_category_new(cat_name);
+    if (!cat)
+        cat = gRootCat;
+    if (!cat)
+    {
+        fprintf(stderr, "Failed to get or create log category\n");
+        return -1;
     }
 
-    log4c_appender_t* app = log4c_appender_get(fullpath);
-    if (!app) {
-        app = log4c_appender_new(fullpath);
+    rdk_Error result = rdk_dbg_priv_appender_init(cat_name, config->appender,
+                                                         config->layout, config->pFilePolicy, appender_name);
+    if (result != RDK_SUCCESS)
+    {
+        fprintf(stderr, "Failed to initialize appender for category %s\n", cat_name);
+        return result;
     }
-    log4c_appender_set_type(app, log4c_appender_type_get("rollingfile"));
 
-    rollingfile_udata_t *rudata = rollingfile_make_udata();
-    rollingfile_udata_set_logdir(rudata, logdir);
-    rollingfile_udata_set_files_prefix(rudata, log_file_name);
-
-    log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(cat_name);
-    if (!policy) {
-        policy = log4c_rollingpolicy_new(cat_name);
+    result = rdk_dbg_priv_set_appender(cat_name, appender_name);
+    if (result != RDK_SUCCESS)
+    {
+        fprintf(stderr, "Failed to set appender %s for category %s\n", appender_name, cat_name);
+        return result;
     }
-    log4c_rollingpolicy_set_type(policy, log4c_rollingpolicy_type_get("sizewin"));
 
-    rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
-    sizewin_udata_set_file_maxsize(sizewin_udata, maxSize);
-    sizewin_udata_set_max_num_files(sizewin_udata, maxCount);
-    log4c_rollingpolicy_set_udata(policy, sizewin_udata);
+    result = rdk_dbg_priv_set_log_level(cat_name, config->loglevel);
+    if(result != RDK_SUCCESS)
+    {
+        fprintf(stderr, "Failed to set log level for category%s\n", cat_name);
+        return result;
+    }
 
-    rollingfile_udata_set_policy(rudata, policy);
-    log4c_appender_set_udata(app, rudata);
-
-    log4c_layout_t* layout = log4c_layout_get("comcast_dated");
-    log4c_appender_set_layout(app, layout);
-
-    log4c_category_set_appender(cat, app);
+    return RDK_SUCCESS;
 }
 
 void rdk_dbg_priv_deinit()
@@ -298,7 +476,7 @@ void rdk_dbg_priv_config(void)
         }
         gRootPriority = log4c_category_get_priority(gRootCat);
     }
-    else 
+    else
     {
         printf("LOG.RDK.DEFAULT is not defined..\n");
         return;
@@ -369,10 +547,10 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
     cat = log4c_category_get(module_name);
     prio = log4c_category_get_priority(cat);
     if (cat && prio == LOG4C_PRIORITY_NOTSET && gRootCat) {
-        log4c_category_set_priority(cat, gRootPriority);
+        log4c_category_set_priority(cat, log4c_category_get_priority(gRootCat));
         prio = gRootPriority;
     }
- 
+
     if(!cat)
     {
         cat = gRootCat;
@@ -662,6 +840,8 @@ static int stream_env_open(log4c_appender_t* appender, int append)
     fp = stderr;
     else if (!strcmp(newName,"stdout"))
     fp = stdout;
+    else if (strlen(newName) > 7 && strcmp(newName + strlen(newName) - 7, ".stdout") == 0)
+    fp = stdout;
     else if (append)
     {
         printf("****Opening %s in append mode\n", newName);
@@ -804,4 +984,3 @@ static int stream_env_close(log4c_appender_t* appender)
 
     return fclose(fp);
 }
-

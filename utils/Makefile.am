@@ -35,3 +35,9 @@ onboarding_log_SOURCES  = rdk_logger_onboard_main.c
 onboarding_log_LDADD    = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
 onboarding_log_CFLAGS   = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
 onboarding_log_LDFLAGS  = -L/usr/lib
+
+bin_PROGRAMS            += rdk_logger_test_app
+rdk_logger_test_app_SOURCES  = rdk_logger_test_app.c
+rdk_logger_test_app_LDADD    = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
+rdk_logger_test_app_CFLAGS   = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
+rdk_logger_test_app_LDFLAGS  = -L/usr/lib
