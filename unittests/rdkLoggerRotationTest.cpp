@@ -234,7 +234,7 @@ TEST_F(RDKLoggerRotationTest, VerySmallSizeLimits) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 10; // 2MB
+            testPolicy.fileSizeMax = 10; // 10 bytes
             testPolicy.fileCountMax = 2;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
