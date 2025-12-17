@@ -148,7 +148,7 @@ TEST_F(RDKLoggerRotationTest, CountBasedRotation) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 256; // 2MB
+            testPolicy.fileSizeMax = 256; // 256 Bytes
             testPolicy.fileCountMax = 2;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -189,7 +189,7 @@ TEST_F(RDKLoggerRotationTest, InvalidConfiguration)
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 1024; // 2MB
+            testPolicy.fileSizeMax = 1024; // 1KB
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -212,7 +212,7 @@ TEST_F(RDKLoggerRotationTest, InvalidDirectory) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/nonexistent/directory", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 1024; // 2MB
+            testPolicy.fileSizeMax = 1024; // 1KB
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -360,7 +360,7 @@ TEST_F(RDKLoggerRotationTest, LongFileNames) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 1024; // 2MB
+            testPolicy.fileSizeMax = 1024; // 1KB
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -394,7 +394,7 @@ TEST_F(RDKLoggerRotationTest, LongDirectoryPaths) {
 
             strncpy(testPolicy.fileLocation, long_dir, sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 1024;
+            testPolicy.fileSizeMax = 1024; // 1 KB
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -422,7 +422,7 @@ TEST_F(RDKLoggerRotationTest, SpecialCharactersInFileNames) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 1024;
+            testPolicy.fileSizeMax = 1024; // 1 KB
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -452,7 +452,7 @@ TEST_F(RDKLoggerRotationTest, ConcurrentAccess) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 512;
+            testPolicy.fileSizeMax = 512; // 512 Bytes
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
