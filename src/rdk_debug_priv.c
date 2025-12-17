@@ -367,7 +367,7 @@ rdk_Error rdk_dbg_priv_ext_init(rdk_logger_ext_config_t* config)
     result = rdk_dbg_priv_set_log_level(cat_name, config->loglevel);
     if(result != RDK_SUCCESS)
     {
-        fprintf(stderr, "Failed to set log level for category%s\n", cat_name);
+        fprintf(stderr, "Failed to set log level for category %s\n", cat_name);
         return result;
     }
 
