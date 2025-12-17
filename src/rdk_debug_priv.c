@@ -175,6 +175,8 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
         snprintf(app_name, sizeof(app_name), "%s.stdout", categoryName);
     }
 
+    snprintf(appender_name_out, 256, app_name);
+	
     log4c_appender_t* appender = log4c_appender_get(app_name);
     if (appender)
     {
