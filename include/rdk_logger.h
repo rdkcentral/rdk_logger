@@ -252,9 +252,9 @@ typedef struct _file_output
 typedef struct rdk_logger_ext_config_t
 {
      char* pCategoryName;              /**< Log category name (e.g., "LOG.RDK.TR69") */
-     rdk_LogLevel loglevel;           /**< Default log level for this category */
-     rdk_LogOutput appender;    /**< Type of appender (FILE, STDOUT, SYSLOG, SOCKET) */
-     rdk_LogFormat layout;            /**< Message layout format (PLAINTEXT, TIMESTAMPED, COMCAST) */
+     rdk_LogLevel loglevel;            /**< Default log level for this category */
+     rdk_LogOutput appender;           /**< Type of appender */
+     rdk_LogFormat layout;             /**< Message layout format */
      rdk_LogOutput_File *pFilePolicy;  /**< File policy configuration (required for RDKLOG_OUTPUT_FILE, NULL for others) */
 } rdk_logger_ext_config_t;
 
