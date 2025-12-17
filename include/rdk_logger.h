@@ -153,12 +153,12 @@ extern "C"
 /**
  * Define the max length for the log file capture
  */
-#define RDK_LOGGER_EXT_FILENAME_SIZE 32
+#define RDK_LOGGER_EXT_FILENAME_SIZE 64
 
 /**
  * Define the max length for the log capture path
  */
-#define RDK_LOGGER_EXT_LOGDIR_SIZE   32
+#define RDK_LOGGER_EXT_LOGDIR_SIZE   256
 
 /**
  * To allow compatibility of mutiple legacy RDK components using loglevels RDK_LOG_TRACE1..RDK_LOG_TRACE9
@@ -210,7 +210,7 @@ typedef enum
  */
 typedef enum _log_output
 {
-    RDKLOG_OUTPUT_CONSOLE = 0,               /** log_console */
+    RDKLOG_OUTPUT_CONSOLE = 0,           /** log_console */
     RDKLOG_OUTPUT_SYSLOG,                /** log_syslog */
     RDKLOG_OUTPUT_FILE,                  /** log_file */
 } rdk_LogOutput;
@@ -225,7 +225,7 @@ typedef enum _log_output
  */
 typedef enum _log_format
 {
-    RDKLOG_FORMAT_ONLY_TEXT = 0,            /** format_text */
+    RDKLOG_FORMAT_ONLY_TEXT = 0,         /** format_text */
     RDKLOG_FORMAT_WITH_DATETIME,        /** format_datetime */
     RDKLOG_FORMAT_WITH_THREADID         /** format_threadid */
 } rdk_LogFormat;
