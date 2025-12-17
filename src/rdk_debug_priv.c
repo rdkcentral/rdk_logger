@@ -349,6 +349,12 @@ rdk_Error rdk_dbg_priv_ext_init(rdk_logger_ext_config_t* config)
         return -1;
     }
 
+    if (config->appender == RDKLOG_OUTPUT_FILE && config->pFilePolicy == NULL)
+    {
+        fprintf(stderr, "Error: file appender requires non-NULL file policy\n");
+        return -1;
+    }
+    
     rdk_Error result = rdk_dbg_priv_appender_init(cat_name, config->appender,
                                                          config->layout, config->pFilePolicy, appender_name);
     if (result != RDK_SUCCESS)
