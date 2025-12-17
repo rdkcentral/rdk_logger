@@ -470,7 +470,7 @@ TEST_F(RDKLoggerRotationTest, ConcurrentAccess) {
             rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "Concurrent message %d", i);
             rdk_logger_msg_printf(RDK_LOG_DEBUG, "LOG.RDK.ROTATION", "Debug message %d", i);
             rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.ROTATION", "Error message %d", i);
-            sleep(1);
+            usleep(10000); // 10 ms delay instead of 1 second to keep test fast
             }
 
             // Should handle concurrent access gracefully
