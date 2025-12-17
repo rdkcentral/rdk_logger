@@ -166,7 +166,7 @@ TEST_F(RDKLoggerRotationTest, CountBasedRotation) {
 
             for (int i = 0; i < 20; i++) {
                 rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "Message %d: %s", i, large_message);
-                sleep(1);
+                usleep(10000); // 10ms delay to avoid excessively long test runtime
             }
 
             // Check that only maxCount files exist
