@@ -99,8 +99,8 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
  * @param[in] config Pointer to extended logger configuration structure containing:
  *                   - pCategoryName: Log category/module name (required, cannot be NULL)
  *                   - loglevel: Default log level for the category
- *                   - appender: Type of log appender (FILE, STDOUT, SYSLOG, SOCKET)
- *                   - layout: Message layout format (PLAINTEXT, TIMESTAMPED, COMCAST)
+ *                   - appender: Type of log appender
+ *                   - layout: Message layout format
  *                   - pFilePolicy: File policy configuration (required for file appenders, NULL for others)
  *
  * @return RDK_SUCCESS on successful initialization, -1 on error.
