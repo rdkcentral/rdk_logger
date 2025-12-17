@@ -195,7 +195,7 @@ TEST_F(RDKLoggerRotationTest, InvalidConfiguration)
             memset(&config, 0, sizeof(config));
             config.pCategoryName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_ERROR;
-            config.appender = RDK_LOG_OUTPUT_FILE;
+            config.appender = RDKLOG_OUTPUT_FILE;
             config.layout = RDKLOG_FORMAT_WITH_DATETIME;
             config.pFilePolicy = &testPolicy;
 
