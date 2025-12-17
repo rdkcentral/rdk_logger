@@ -60,10 +60,10 @@ TEST_F(RdkLoggerExtInit, CreatesAppenderAndSetsLevel) {
 
             for (int i =0; i < 50; i++)
             {
-                RDK_LOG(RDK_LOG_TRACE, "LOG.RDK.RTMESSAGE", "errorloh\n");
-                RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "LOGGING\n");
-                RDK_LOG(RDK_LOG_WARN, "LOG.RDK.TEST", "test_LOGGING\n");
-                RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "DEBUG\n");
+                RDK_LOG(RDK_LOG_TRACE, "LOG.RDK.RTMESSAGE", "trace-logging\n");
+                RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "debug-logging\n");
+                RDK_LOG(RDK_LOG_WARN, "LOG.RDK.TEST", "warn-logging\n");
+                RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
             }
     });
 }
@@ -88,10 +88,10 @@ TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
 
             for (int i =0; i < 50; i++)
             {
-                RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "errorloh\n");
-                RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "LOGGING\n");
-                RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "test_LOGGING\n");
-                RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.TEST", "DEBUG\n");
+                RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "error-logging\n");
+                RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "debug-logging\n");
+                RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
+                RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.TEST", "debug-logging\n");
             }
     });
 }
@@ -118,10 +118,10 @@ TEST_F(RdkLoggerExtInit, ComcastDatedViaExtInit) {
 
             for (int i =0; i < 50; i++)
             {
-            RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "errorloh\n");
-            RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "LOGGING\n");
-            RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "test_LOGGING\n");
-            RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.TEST", "DEBUG\n");
+            RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "error-logging\n");
+            RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "debug-logging\n");
+            RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
+            RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.TEST", "debug-logging\n");
             }
     });
 }
