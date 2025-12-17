@@ -281,7 +281,7 @@ TEST_F(RDKLoggerPerformanceTest, FileIOStressTest) {
     testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
     strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_performance_test", sizeof(testPolicy.fileLocation)-1);
     testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-    testPolicy.fileSizeMax = 1024; // 2MB
+    testPolicy.fileSizeMax = 1024; // 1KB
     testPolicy.fileCountMax = 5;
     rdk_logger_ext_config_t config;
     memset(&config, 0, sizeof(config));
