@@ -208,11 +208,11 @@ typedef enum
  * - RDKLOG_OUTPUT_FILE: Write logs to rolling files on disk (uses rollingfile appender).
  * - RDKLOG_OUTPUT_SYSLOG:     Forward logs to the local syslog daemon.
  */
-typedef enum _log_output
+typedef enum
 {
-    RDKLOG_OUTPUT_CONSOLE = 0,           /** log_console */
-    RDKLOG_OUTPUT_SYSLOG,                /** log_syslog */
-    RDKLOG_OUTPUT_FILE,                  /** log_file */
+    RDKLOG_OUTPUT_CONSOLE = 0,
+    RDKLOG_OUTPUT_SYSLOG,
+    RDKLOG_OUTPUT_FILE
 } rdk_LogOutput;
 
 /**
@@ -221,13 +221,15 @@ typedef enum _log_output
  *
  * - RDKLOG_FORMAT_ONLY_TEXT:          Simple layout (priority, category, message).
  * - RDKLOG_FORMAT_WITH_DATETIME:          Timestamped layout including date/time and milliseconds.
- * - RDKLOG_FORMAT_WITH_THREADID:  Comcast-specific dated layout with module, level and thread id info.
+ * - RDKLOG_FORMAT_WITH_THREADID:  Comcast-specific dated layout (for example, "comcast_dated");
+ *                                     the exact fields (such as module, level, thread id, etc.)
+ *                                     depend on the configured layout implementation.
  */
-typedef enum _log_format
+typedef enum
 {
-    RDKLOG_FORMAT_ONLY_TEXT = 0,         /** format_text */
-    RDKLOG_FORMAT_WITH_DATETIME,        /** format_datetime */
-    RDKLOG_FORMAT_WITH_THREADID         /** format_threadid */
+    RDKLOG_FORMAT_ONLY_TEXT = 0,
+    RDKLOG_FORMAT_WITH_DATETIME,
+    RDKLOG_FORMAT_WITH_THREADID
 } rdk_LogFormat;
 
 /**

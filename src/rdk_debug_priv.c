@@ -163,7 +163,7 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
 
     if (!categoryName || !appender_name_out) {
         fprintf(stderr, "Error: categoryName or appender_name_out is NULL\n");
-        return -1;
+        return RDK_FAILURE;
     }
 
     if (app == RDKLOG_OUTPUT_FILE && pPolicy)
@@ -176,10 +176,15 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
     }
 
     snprintf(appender_name_out, 256, app_name);
-	
+
     log4c_appender_t* appender = log4c_appender_get(app_name);
     if (appender)
     {
+        void *old_udata = log4c_appender_get_udata(appender);
+        if (old_udata != NULL)
+        {
+            free(old_udata);
+        }
         (void)log4c_appender_close(appender);
         (void)log4c_appender_set_udata(appender, NULL);
     }
@@ -189,7 +194,7 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
         if (!appender)
         {
             fprintf(stderr, "Failed to create appender %s\n", app_name);
-            return -1;
+            return RDK_FAILURE;
         }
     }
 
@@ -247,10 +252,19 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
             }
             log4c_appender_set_udata(appender, rudata);
         }
-        else
-        {
-            fprintf(stderr, "ruData or logdir or fileName is NULL\n");
-            return -1;
+        if (!rudata) {
+            fprintf(stderr, "Error: rudata is NULL\n");
+            return RDK_FAILURE;
+        }
+
+        if (!pPolicy->logdir || strlen(pPolicy->logdir) == 0) {
+            fprintf(stderr, "Error: logdir is NULL or empty\n");
+            return RDK_FAILURE;
+        }
+
+        if (!pPolicy->fileName || strlen(pPolicy->fileName) == 0) {
+            fprintf(stderr, "Error: fileName is NULL or empty\n");
+            return RDK_FAILURE;
         }
     }
 
@@ -272,7 +286,12 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
     if (log4c_appender_open(appender) != 0)
     {
         fprintf(stderr, "log4c_appender_open failed for %s\n", app_name);
-        return -1;
+        return RDK_FAILURE;
+    }
+    if (appender_name_out && app_name)
+    {
+        strncpy(appender_name_out, app_name, 256);
+        appender_name_out[255] = '\0';
     }
     return RDK_SUCCESS;
 }
@@ -282,7 +301,7 @@ static rdk_Error rdk_dbg_priv_set_appender(const char* categoryName, const char*
     if (!categoryName || !appender_name)
     {
         fprintf(stderr, "Error: categoryName or appender_name is NULL\n");
-        return -1;
+        return RDK_FAILURE;
     }
 
     log4c_category_t* cat = log4c_category_get(categoryName);
@@ -293,14 +312,14 @@ static rdk_Error rdk_dbg_priv_set_appender(const char* categoryName, const char*
     if (!cat)
     {
         fprintf(stderr, "Failed to get or create log category\n");
-        return -1;
+        return RDK_FAILURE;
     }
 
     log4c_appender_t* appender = log4c_appender_get(appender_name);
     if (!appender)
     {
         fprintf(stderr, "Appender not found: %s\n", appender_name);
-        return -1;
+        return RDK_FAILURE;
     }
 
     log4c_category_set_appender(cat, appender);
@@ -334,7 +353,7 @@ rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
     if (!config)
     {
         fprintf(stderr, "Error: config parameter is NULL\n");
-        return -1;
+        return RDK_FAILURE;
     }
     const char* cat_name = config->pCategoryName ? config->pCategoryName : "LOG.RDK";
     log4c_category_t* cat = log4c_category_get(cat_name);
@@ -345,13 +364,13 @@ rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
     if (!cat)
     {
         fprintf(stderr, "Failed to get or create log category\n");
-        return -1;
+        return RDK_FAILURE;
     }
 
     if (config->appender == RDKLOG_OUTPUT_FILE && config->pFilePolicy == NULL)
     {
         fprintf(stderr, "Error: file appender requires non-NULL file policy\n");
-        return -1;
+        return RDK_FAILURE;
     }
     
     rdk_Error result = rdk_dbg_priv_appender_init(cat_name, config->appender,
@@ -549,6 +568,12 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
 
     /* Handling process request here. This is not a blocking call and it shall return immediately */
     rdk_dyn_log_process_pending_request();
+
+    if (!format)
+    {
+        fprintf(stderr, "Error: NULL format string passed to rdk_dbg_priv_log_msg\n");
+        return;
+    }
     cat = log4c_category_get(module_name);
     prio = log4c_category_get_priority(cat);
     if (cat && prio == LOG4C_PRIORITY_NOTSET && gRootCat) {
@@ -845,7 +870,8 @@ static int stream_env_open(log4c_appender_t* appender, int append)
     fp = stderr;
     else if (!strcmp(newName,"stdout"))
     fp = stdout;
-    else if (strlen(newName) > 7 && strcmp(newName + strlen(newName) - 7, ".stdout") == 0)
+    else if (strlen(newName) >= strlen(".stdout") &&
+             strcmp(newName + strlen(newName) - strlen(".stdout"), ".stdout") == 0)
     fp = stdout;
     else if (append)
     {

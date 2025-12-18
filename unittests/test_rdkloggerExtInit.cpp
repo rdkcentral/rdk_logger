@@ -16,24 +16,7 @@ protected:
     }
 };
 
-#define RUN_IN_FORK(test_body) \
-    pid_t pid = fork(); \
-    ASSERT_NE(pid, -1) << "fork failed"; \
-    if (pid == 0) { \
-        test_body; \
-        rdk_logger_deinit(); \
-        exit(::testing::Test::HasFailure() ? 1 : 0); \
-    } else { \
-        int status = 0; \
-        waitpid(pid, &status, 0); \
-        ASSERT_TRUE(WIFEXITED(status)); \
-        if (WEXITSTATUS(status) != 0) { \
-            FAIL() << "Child process failed with exit code " << WEXITSTATUS(status); \
-        } \
-    }
-
 TEST_F(RdkLoggerExtInit, CreatesAppenderAndSetsLevel) {
-    RUN_IN_FORK({
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "gtest_rdkunittest.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
@@ -58,19 +41,17 @@ TEST_F(RdkLoggerExtInit, CreatesAppenderAndSetsLevel) {
             log4c_appender_t* app = log4c_appender_get(fullpath);
             ASSERT_NE(app, nullptr) << "Appender not created by rdk_logger_ext_init: " << fullpath;
 
-            for (int i =0; i < 50; i++)
+            for (int i = 0; i < 50; i++)
             {
                 RDK_LOG(RDK_LOG_TRACE, "LOG.RDK.RTMESSAGE", "trace-logging\n");
                 RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "debug-logging\n");
                 RDK_LOG(RDK_LOG_WARN, "LOG.RDK.TEST", "warn-logging\n");
                 RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
             }
-    });
 }
 
 
 TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
-    RUN_IN_FORK({
             rdk_logger_ext_config_t cfg;
             memset(&cfg, 0, sizeof(cfg));
             cfg.loglevel = RDK_LOG_DEBUG;
@@ -83,7 +64,7 @@ TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed for Stdout";
 
 
-            log4c_appender_t* app = log4c_appender_get("stdout");
+            log4c_appender_t* app = log4c_appender_get("LOG.RDK.stdout");
             ASSERT_NE(app, nullptr) << "Stdout appender not found";
 
             for (int i =0; i < 50; i++)
@@ -93,12 +74,10 @@ TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
                 RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
                 RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.TEST", "debug-logging\n");
             }
-    });
 }
 
 
 TEST_F(RdkLoggerExtInit, ComcastDatedViaExtInit) {
-    RUN_IN_FORK({
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "gtest_comcast_unittest.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
@@ -123,5 +102,4 @@ TEST_F(RdkLoggerExtInit, ComcastDatedViaExtInit) {
             RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
             RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.TEST", "debug-logging\n");
             }
-    });
 }
