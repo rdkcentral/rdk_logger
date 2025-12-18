@@ -213,10 +213,12 @@ static log4c_appender_t* rdk_dbg_priv_appender_init(const char* categoryName, rd
         {
             rollingfile_udata_set_logdir(rudata, pPolicy->fileLocation);
             rollingfile_udata_set_files_prefix(rudata, pPolicy->fileName);
+            if(pPolicy->fileSizeMax > 0)
+                pPolicy->fileSizeMax = 1024*1024;
 
             char policy_name[256];
             snprintf(policy_name, sizeof(policy_name), "policy_%s", log4c_appender_get_name(appender));
-            if (pPolicy->fileSizeMax > 0  && pPolicy->fileCountMax > 0)
+            if (pPolicy->fileCountMax > 0)
             {
                 log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(policy_name);
                 if (!policy)
@@ -243,11 +245,11 @@ static log4c_appender_t* rdk_dbg_priv_appender_init(const char* categoryName, rd
                 }
                 log4c_appender_set_udata(appender, rudata);
             }
-            else
-            {
-                fprintf(stderr, "ruData or logdir or fileName is NULL\n");
-                return NULL;
-            }
+        }
+        else
+        {
+            fprintf(stderr, "ruData or logdir or fileName is NULL\n");
+            return NULL;
         }
     }
 
