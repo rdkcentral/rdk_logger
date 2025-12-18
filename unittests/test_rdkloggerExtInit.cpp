@@ -6,7 +6,7 @@
 #include "rdk_logger.h"
 #include "rdk_error.h"
 #include "log4c.h"
-
+#include "test_utils.h"
 
 class RdkLoggerExtInit : public ::testing::Test {
 protected:
@@ -17,6 +17,7 @@ protected:
 };
 
 TEST_F(RdkLoggerExtInit, CreatesAppenderAndSetsLevel) {
+    RUN_IN_FORK({
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "gtest_rdkunittest.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
@@ -48,10 +49,12 @@ TEST_F(RdkLoggerExtInit, CreatesAppenderAndSetsLevel) {
                 RDK_LOG(RDK_LOG_WARN, "LOG.RDK.TEST", "warn-logging\n");
                 RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
             }
+    });
 }
 
 
 TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
+    RUN_IN_FORK({
             rdk_logger_ext_config_t cfg;
             memset(&cfg, 0, sizeof(cfg));
             cfg.loglevel = RDK_LOG_DEBUG;
@@ -74,10 +77,12 @@ TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
                 RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
                 RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.TEST", "debug-logging\n");
             }
+    });
 }
 
 
 TEST_F(RdkLoggerExtInit, ComcastDatedViaExtInit) {
+    RUN_IN_FORK({
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "gtest_comcast_unittest.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
@@ -102,4 +107,5 @@ TEST_F(RdkLoggerExtInit, ComcastDatedViaExtInit) {
             RDK_LOG(RDK_LOG_INFO, "LOG.RDK.TEST", "info-logging\n");
             RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.TEST", "debug-logging\n");
             }
+    });
 }
