@@ -244,8 +244,8 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
                 rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
                 if (sizewin_udata)
                 {
-                    sizewin_udata_set_file_maxsize(sizewin_udata, fileSizeMax);
-                    sizewin_udata_set_max_num_files(sizewin_udata, fileCountMax);
+                    sizewin_udata_set_file_maxsize(sizewin_udata, pPolicy->fileSizeMax);
+                    sizewin_udata_set_max_num_files(sizewin_udata, pPolicy->fileCountMax);
                     log4c_rollingpolicy_set_udata(policy, sizewin_udata);
                 }
                 rollingfile_udata_set_policy(rudata, policy);
