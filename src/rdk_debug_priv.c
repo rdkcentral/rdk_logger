@@ -213,7 +213,7 @@ static log4c_appender_t* rdk_dbg_priv_appender_init(const char* categoryName, rd
         {
             rollingfile_udata_set_logdir(rudata, pPolicy->fileLocation);
             rollingfile_udata_set_files_prefix(rudata, pPolicy->fileName);
-            if(pPolicy->fileSizeMax > 0)
+            if(pPolicy->fileSizeMax <= 0)
                 pPolicy->fileSizeMax = 1024*1024;
 
             char policy_name[256];
@@ -243,8 +243,8 @@ static log4c_appender_t* rdk_dbg_priv_appender_init(const char* categoryName, rd
                     }
                     rollingfile_udata_set_policy(rudata, policy);
                 }
-                log4c_appender_set_udata(appender, rudata);
             }
+            log4c_appender_set_udata(appender, rudata);
         }
         else
         {
