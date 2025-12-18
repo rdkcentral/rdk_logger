@@ -218,7 +218,7 @@ static log4c_appender_t* rdk_dbg_priv_appender_init(const char* categoryName, rd
 
             char policy_name[256];
             snprintf(policy_name, sizeof(policy_name), "policy_%s", log4c_appender_get_name(appender));
-            if (pPolicy->fileCountMax > 0)
+            if (pPolicy->fileCountMax >= 0)
             {
                 log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(policy_name);
                 if (!policy)
