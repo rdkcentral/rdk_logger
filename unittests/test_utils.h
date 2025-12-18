@@ -4,6 +4,8 @@
 #include <gtest/gtest.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "log4c.h"
+#include "rdk_logger.h"
 
 // Macro to run test code in a forked process
 #define RUN_IN_FORK(test_body) \
