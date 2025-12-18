@@ -257,8 +257,8 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
             return RDK_FAILURE;
         }
 
-        if (!pPolicy->logdir || strlen(pPolicy->logdir) == 0) {
-            fprintf(stderr, "Error: logdir is NULL or empty\n");
+        if (!pPolicy->fileLocation || strlen(pPolicy->fileLocation) == 0) {
+            fprintf(stderr, "Error: fileLocation is NULL or empty\n");
             return RDK_FAILURE;
         }
 
