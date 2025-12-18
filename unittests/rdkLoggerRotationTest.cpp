@@ -308,8 +308,8 @@ TEST_F(RDKLoggerRotationTest, NegativeValues) {
     rdk_Error ret = rdk_logger_ext_init(&config);
     ASSERT_EQ(ret, RDK_SUCCESS) << "Should handle negative values";
 
-    EXPECT_EQ(testPolicy.maxBytesPerFile, 1024 * 1024) << "maxBytesPerFile should be set to default value (1MB)";
-    EXPECT_EQ(testPolicy.maxRotationCount, 1) << "maxRotationCount should be set to default value (1)";
+    EXPECT_EQ(testPolicy.fileSizeMax, 1024 * 1024) << "fileSizeMax should be set to default value (1MB)";
+    EXPECT_EQ(testPolicy.fileCountMax, 1) << "fileSizeMax should be set to default value (1)";
     // Generate log messages
     for (int i = 0; i < 5; i++) {
         rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "Message %d", i);
