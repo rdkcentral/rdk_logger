@@ -215,9 +215,16 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
 
     if (app == RDKLOG_OUTPUT_FILE && pPolicy)
     {
-        pPolicy->fileCountMax = pPolicy->fileCountMax > 0 ? pPolicy->fileCountMax : 1;
-        pPolicy->fileSizeMax = pPolicy->fileSizeMax > 0 ? pPolicy->fileSizeMax : 1024 * 1024;
-
+        if ((int64_t)pPolicy->fileSizeMax < 0)
+        {
+            fprintf(stderr, "fileSizeMax should be greater than zero\n");
+            return RDK_FAILURE;
+        }
+        if ((int)pPolicy->fileCountMax < 0)
+        {
+            fprintf(stderr, "fileCountMax should be greater than zero\n");
+            return RDK_FAILURE;
+        }
         rollingfile_udata_t *rudata = rollingfile_make_udata();
         if (rudata && pPolicy->fileLocation && pPolicy->fileName) 
         {
