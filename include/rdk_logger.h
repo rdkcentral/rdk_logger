@@ -242,8 +242,8 @@ typedef struct rdk_LogOutput_File
 {
     char     fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
     char     fileLocation[RDK_LOGGER_EXT_LOGDIR_SIZE];
-    uint8_t  fileCountMax;
-    uint64_t fileSizeMax;
+    int8_t  fileCountMax;
+    int64_t fileSizeMax;
 } rdk_LogOutput_File;
 /**
  * @brief Complete logger configuration structure for structured initialization.

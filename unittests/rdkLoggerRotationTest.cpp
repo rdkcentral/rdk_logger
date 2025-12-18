@@ -317,7 +317,12 @@ TEST_F(RDKLoggerRotationTest, NegativeValues) {
             config.layout = RDKLOG_FORMAT_WITH_DATETIME;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
-            ASSERT_EQ(ret, RDK_FAILURE) << "Passed negative values";
+            ASSERT_EQ(ret, RDK_SUCCESS) << "negative values";
+
+            for (int i = 0; i < 5; i++) {
+                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "Message %d", i);
+                sleep(1);
+            }
     });
     // Should handle gracefully
 }
