@@ -215,8 +215,8 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
 
     if (app == RDKLOG_OUTPUT_FILE && pPolicy)
     {
-        long rotationCount = pPolicy->fileCountMax > 0 ? pPolicy->fileCountMax : 1;
-        long maxBytes = pPolicy->fileSizeMax > 0 ? pPolicy->fileSizeMax : 1024 * 1024;
+        pPolicy->fileCountMax = pPolicy->fileCountMax > 0 ? pPolicy->fileCountMax : 1;
+        pPolicy->fileSizeMax = pPolicy->fileSizeMax > 0 ? pPolicy->fileSizeMax : 1024 * 1024;
 
         rollingfile_udata_t *rudata = rollingfile_make_udata();
         if (rudata && pPolicy->fileLocation && pPolicy->fileName) 
@@ -244,8 +244,8 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
                 rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
                 if (sizewin_udata)
                 {
-                    sizewin_udata_set_file_maxsize(sizewin_udata, maxBytes);
-                    sizewin_udata_set_max_num_files(sizewin_udata, rotationCount);
+                    sizewin_udata_set_file_maxsize(sizewin_udata, fileSizeMax);
+                    sizewin_udata_set_max_num_files(sizewin_udata, fileCountMax);
                     log4c_rollingpolicy_set_udata(policy, sizewin_udata);
                 }
                 rollingfile_udata_set_policy(rudata, policy);
