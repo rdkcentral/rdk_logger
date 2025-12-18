@@ -233,12 +233,12 @@ typedef enum
 } rdk_LogFormat;
 
 /**
- * @brief _file_output structure for rolling file appenders.
+ * @brief rdk_LogOutput_File structure for rolling file appenders.
  *
  * This structure defines the configuration parameters for file-based log appenders
  * including file naming, directory path, and rotation policy settings.
  */
-typedef struct _file_output
+typedef struct rdk_LogOutput_File
 {
     char     fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
     char     fileLocation[RDK_LOGGER_EXT_LOGDIR_SIZE];

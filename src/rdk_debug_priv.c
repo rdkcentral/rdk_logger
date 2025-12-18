@@ -295,11 +295,6 @@ static rdk_Error rdk_dbg_priv_appender_init(const char* categoryName, rdk_LogOut
         fprintf(stderr, "log4c_appender_open failed for %s\n", app_name);
         return RDK_FAILURE;
     }
-    if (appender_name_out && app_name)
-    {
-        strncpy(appender_name_out, app_name, 256);
-        appender_name_out[255] = '\0';
-    }
     return RDK_SUCCESS;
 }
 
