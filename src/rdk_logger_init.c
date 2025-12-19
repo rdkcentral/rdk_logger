@@ -40,7 +40,6 @@
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
 #include "rdk_utils.h"
-
 #define BUF_LEN 256
 static int isLogInited = 0;
 /**
@@ -89,13 +88,35 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
     return RDK_SUCCESS;
 }
 
+/**
+ * @brief Initialize RDK logger with extended configuration.
+ *
+ * This function provides a comprehensive logger initialization interface that combines
+ * the standard RDK logger initialization with extended configuration options. It first
+ * calls RDK_LOGGER_INIT() to perform basic logger setup, then applies the extended
+ * configuration parameters for specific module logging requirements.
+ *
+ * @param[in] config Pointer to extended logger configuration structure containing:
+ *                   - pCategoryName: Log category/module name (required, cannot be NULL)
+ *                   - loglevel: Default log level for the category
+ *                   - appender: Type of log appender
+ *                   - layout: Message layout format
+ *                   - pFilePolicy: File policy configuration (required for file appenders, NULL for others)
+ *
+ * @return RDK_SUCCESS on successful initialization, RDK_FAILURE on error.
+ *
+ * @note This function must be called after the basic RDK logger system is available.
+ * @note If RDK_LOGGER_INIT() fails, the extended configuration is not applied.
+ * @note For file appenders, ensure the log directory exists and has write permissions.
+ * @note This function internally calls rdk_dbg_priv_ext_init() for the actual configuration.
+ */
 rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
- {
+{
     rdk_Error ret;
     ret = RDK_LOGGER_INIT();
     if (ret == RDK_SUCCESS)
     {
-        rdk_dbg_priv_ext_init(config->logdir, config->fileName, config->maxCount, config->maxSize);
+        ret = rdk_dbg_priv_ext_init(config);
     }
     return ret;
  }

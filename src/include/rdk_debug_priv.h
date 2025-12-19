@@ -23,6 +23,8 @@
 #include <rdk_logger_types.h>
 #include <rdk_logger.h>
 #include <rdk_error.h>
+#include <log4c.h>
+#include <log4c/appender_type_rollingfile.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -31,8 +33,7 @@ extern "C"
 
 void rdk_dbg_priv_init(void);
 void rdk_dbg_priv_config(void);
-void rdk_dbg_priv_deinit(void);
-void rdk_dbg_priv_ext_init(const char* logdir, const char* log_file_name, long maxCount, long maxSize);
+rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config);
 void rdk_dbg_priv_shutdown();
 
 void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const char* format, va_list args);
