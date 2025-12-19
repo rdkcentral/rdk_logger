@@ -213,12 +213,11 @@ static log4c_appender_t* rdk_dbg_priv_appender_init(const char* categoryName, rd
         {
             rollingfile_udata_set_logdir(rudata, pPolicy->fileLocation);
             rollingfile_udata_set_files_prefix(rudata, pPolicy->fileName);
-            if(pPolicy->fileSizeMax <= 0)
-                pPolicy->fileSizeMax = 1024*1024;
+            long maxBytes = (pPolicy->fileSizeMax > 0) ? pPolicy->fileSizeMax : 1024 * 1024;
 
             char policy_name[256];
             snprintf(policy_name, sizeof(policy_name), "policy_%s", log4c_appender_get_name(appender));
-            if (pPolicy->fileCountMax >= 0)
+            if (pPolicy->fileCountMax > 0)
             {
                 log4c_rollingpolicy_t *policy = log4c_rollingpolicy_get(policy_name);
                 if (!policy)
@@ -237,7 +236,7 @@ static log4c_appender_t* rdk_dbg_priv_appender_init(const char* categoryName, rd
                     rollingpolicy_sizewin_udata_t *sizewin_udata = sizewin_make_udata();
                     if (sizewin_udata)
                     {
-                        sizewin_udata_set_file_maxsize(sizewin_udata, pPolicy->fileSizeMax);
+                        sizewin_udata_set_file_maxsize(sizewin_udata, maxBytes);
                         sizewin_udata_set_max_num_files(sizewin_udata, pPolicy->fileCountMax);
                         log4c_rollingpolicy_set_udata(policy, sizewin_udata);
                     }
@@ -296,14 +295,14 @@ static rdk_Error rdk_dbg_priv_set_log_level(const char* category_name, rdk_LogLe
  * @brief Initialize RDK logger with extended configuration.
  * This is the ONLY public API for extended logger initialization.
  */
-rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
+int32_t rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
 {
     char appender_name[256];
 
     if (!config)
     {
         fprintf(stderr, "Error: config parameter is NULL\n");
-        return RDK_FAILURE;
+        return -1;
     }
     const char* cat_name = config->pCategoryName ? config->pCategoryName : "LOG.RDK";
     log4c_category_t* cat = log4c_category_get(cat_name);
@@ -314,13 +313,13 @@ rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
     if (!cat)
     {
         fprintf(stderr, "Failed to get or create log category\n");
-        return RDK_FAILURE;
+        return -1;
     }
 
     if (config->appender == RDKLOG_OUTPUT_FILE && config->pFilePolicy == NULL)
     {
         fprintf(stderr, "Error: file appender requires non-NULL file policy\n");
-        return RDK_FAILURE;
+        return -1;
     }
     
     log4c_appender_t* appender = rdk_dbg_priv_appender_init(cat_name, config->appender,
@@ -328,7 +327,7 @@ rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
     if (appender == NULL)
     {
         fprintf(stderr, "Failed to initialize appender for category %s\n", cat_name);
-        return RDK_FAILURE;
+        return -1;
     }
     log4c_category_set_appender(cat, appender);
     log4c_category_set_additivity(cat, 0);
@@ -341,11 +340,6 @@ rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
     }
 
     return RDK_SUCCESS;
-}
-
-void rdk_dbg_priv_deinit()
-{
-  gRootCat = NULL;
 }
 
 /**
@@ -511,14 +505,14 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
     log4c_category_t* cat = NULL;
     int prio = 0;
 
-    /* Handling process request here. This is not a blocking call and it shall return immediately */
-    rdk_dyn_log_process_pending_request();
-
     if (!format)
     {
         fprintf(stderr, "Error: NULL format string passed to rdk_dbg_priv_log_msg\n");
         return;
     }
+    /* Handling process request here. This is not a blocking call and it shall return immediately */
+    rdk_dyn_log_process_pending_request();
+
     cat = log4c_category_get(module_name);
     prio = log4c_category_get_priority(cat);
     if (cat && prio == LOG4C_PRIORITY_NOTSET && gRootCat) {

@@ -220,9 +220,9 @@ typedef enum
  * @brief Defines the layout/format used to render log messages.
  *
  * - RDKLOG_FORMAT_ONLY_TEXT:          Simple layout (priority, category, message).
- * - RDKLOG_FORMAT_WITH_DATETIME:          Timestamped layout including date/time and milliseconds.
- * - RDKLOG_FORMAT_WITH_THREADID:  Comcast-specific dated layout (for example, "comcast_dated");
- *                                     the exact fields (such as module, level, thread id, etc.)
+ * - RDKLOG_FORMAT_WITH_DATETIME:      Timestamped layout including date/time and milliseconds.
+ * - RDKLOG_FORMAT_WITH_THREADID:      Comcast-specific dated layout with the exact fields
+ *                                     (such as module, level, thread id, etc.)
  *                                     depend on the configured layout implementation.
  */
 typedef enum
@@ -243,7 +243,7 @@ typedef struct rdk_LogOutput_File
     char     fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
     char     fileLocation[RDK_LOGGER_EXT_LOGDIR_SIZE];
     int8_t  fileCountMax;
-    int64_t fileSizeMax;
+    int64_t  fileSizeMax;
 } rdk_LogOutput_File;
 /**
  * @brief Complete logger configuration structure for structured initialization.
@@ -272,7 +272,7 @@ rdk_Error rdk_logger_init(const char* debugConfigFile);
  * @param config Pointer to rdk_logger_ext_config_t structure.
  * @return RDK_SUCCESS on success, error code otherwise.
  */
-rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config);
+int32_t rdk_logger_ext_init(const rdk_logger_ext_config_t* config);
 
 /**
  * @brief Deinitialize the RDK Logger.

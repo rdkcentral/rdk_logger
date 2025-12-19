@@ -31,7 +31,7 @@ TEST_F(RdkLoggerExtInit, CreatesAppenderAndSetsLevel) {
             cfg.appender = RDKLOG_OUTPUT_FILE;
             cfg.layout = RDKLOG_FORMAT_WITH_DATETIME;
             cfg.pFilePolicy = &testPolicy;
-            rdk_Error ret = rdk_logger_ext_init(&cfg);
+            int32_t ret = rdk_logger_ext_init(&cfg);
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed";
 
 
@@ -61,16 +61,16 @@ TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
             cfg.appender = RDKLOG_OUTPUT_CONSOLE;
             cfg.layout = RDKLOG_FORMAT_ONLY_TEXT;
             cfg.pFilePolicy = NULL;
-
-
-            rdk_Error ret = rdk_logger_ext_init(&cfg);
+            cfg.pCategoryName = (char*)"LOG.RDK";
+            int32_t ret = rdk_logger_ext_init(&cfg);
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed for Stdout";
-
-
-            log4c_appender_t* app = log4c_appender_get("LOG.RDK.stdout");
+            char appender_name[128];
+            const char* category_name = cfg.pCategoryName ? cfg.pCategoryName : "LOG.RDK";
+            snprintf(appender_name, sizeof(appender_name), "%s.stdout", category_name);
+            log4c_appender_t* app = log4c_appender_get(appender_name);
             ASSERT_NE(app, nullptr) << "Stdout appender not found";
 
-            for (int i =0; i < 50; i++)
+            for (int i = 0; i < 50; i++)
             {
                 RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "error-logging\n");
                 RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "debug-logging\n");
@@ -97,10 +97,10 @@ TEST_F(RdkLoggerExtInit, ComcastDatedViaExtInit) {
             cfg.layout = RDKLOG_FORMAT_WITH_THREADID;
             cfg.pFilePolicy = &testPolicy;
 
-            rdk_Error ret = rdk_logger_ext_init(&cfg);
+            int32_t ret = rdk_logger_ext_init(&cfg);
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed for Comcast layout";
 
-            for (int i =0; i < 50; i++)
+            for (int i = 0; i < 50; i++)
             {
             RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.RTMESSAGE", "error-logging\n");
             RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.RTMESSAGE", "debug-logging\n");

@@ -103,16 +103,16 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
  *                   - layout: Message layout format
  *                   - pFilePolicy: File policy configuration (required for file appenders, NULL for others)
  *
- * @return RDK_SUCCESS on successful initialization, RDK_FAILURE on error.
+ * @return RDK_SUCCESS on successful initialization, -1 on error.
  *
  * @note This function must be called after the basic RDK logger system is available.
  * @note If RDK_LOGGER_INIT() fails, the extended configuration is not applied.
  * @note For file appenders, ensure the log directory exists and has write permissions.
  * @note This function internally calls rdk_dbg_priv_ext_init() for the actual configuration.
  */
-rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
+int32_t rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
 {
-    rdk_Error ret;
+    int32_t ret;
     ret = RDK_LOGGER_INIT();
     if (ret == RDK_SUCCESS)
     {

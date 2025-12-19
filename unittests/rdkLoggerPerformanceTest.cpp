@@ -291,7 +291,7 @@ TEST_F(RDKLoggerPerformanceTest, FileIOStressTest) {
     config.layout = RDKLOG_FORMAT_WITH_DATETIME;
     config.pFilePolicy = &testPolicy;
     
-    rdk_Error ret = rdk_logger_ext_init(&config);
+    int32_t ret = rdk_logger_ext_init(&config);
     ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization should succeed";
     
     struct timeval start, end;
