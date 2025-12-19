@@ -30,7 +30,8 @@ typedef unsigned int uint32_t;
 #endif
 
 #define RDK_SUCCESS          0
-typedef uint32_t rdk_Error;
+#define RDK_FAILURE         -1
+typedef int32_t rdk_Error;
 
 
 #ifdef __cplusplus

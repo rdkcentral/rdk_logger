@@ -272,7 +272,7 @@ rdk_Error rdk_logger_init(const char* debugConfigFile);
  * @param config Pointer to rdk_logger_ext_config_t structure.
  * @return RDK_SUCCESS on success, error code otherwise.
  */
-int32_t rdk_logger_ext_init(const rdk_logger_ext_config_t* config);
+rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config);
 
 /**
  * @brief Deinitialize the RDK Logger.

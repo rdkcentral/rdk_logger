@@ -295,14 +295,14 @@ static rdk_Error rdk_dbg_priv_set_log_level(const char* category_name, rdk_LogLe
  * @brief Initialize RDK logger with extended configuration.
  * This is the ONLY public API for extended logger initialization.
  */
-int32_t rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
+rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
 {
     char appender_name[256];
 
     if (!config)
     {
         fprintf(stderr, "Error: config parameter is NULL\n");
-        return -1;
+        return RDK_FAILURE;
     }
     const char* cat_name = config->pCategoryName ? config->pCategoryName : "LOG.RDK";
     log4c_category_t* cat = log4c_category_get(cat_name);
@@ -313,13 +313,13 @@ int32_t rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
     if (!cat)
     {
         fprintf(stderr, "Failed to get or create log category\n");
-        return -1;
+        return RDK_FAILURE;
     }
 
     if (config->appender == RDKLOG_OUTPUT_FILE && config->pFilePolicy == NULL)
     {
         fprintf(stderr, "Error: file appender requires non-NULL file policy\n");
-        return -1;
+        return RDK_FAILURE;
     }
     
     log4c_appender_t* appender = rdk_dbg_priv_appender_init(cat_name, config->appender,
@@ -327,7 +327,7 @@ int32_t rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config)
     if (appender == NULL)
     {
         fprintf(stderr, "Failed to initialize appender for category %s\n", cat_name);
-        return -1;
+        return RDK_FAILURE;
     }
     log4c_category_set_appender(cat, appender);
     log4c_category_set_additivity(cat, 0);
@@ -505,13 +505,14 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
     log4c_category_t* cat = NULL;
     int prio = 0;
 
+    /* Handling process request here. This is not a blocking call and it shall return immediately */
+    rdk_dyn_log_process_pending_request();
+
     if (!format)
     {
         fprintf(stderr, "Error: NULL format string passed to rdk_dbg_priv_log_msg\n");
         return;
     }
-    /* Handling process request here. This is not a blocking call and it shall return immediately */
-    rdk_dyn_log_process_pending_request();
 
     cat = log4c_category_get(module_name);
     prio = log4c_category_get_priority(cat);

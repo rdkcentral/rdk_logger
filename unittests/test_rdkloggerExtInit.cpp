@@ -31,7 +31,7 @@ TEST_F(RdkLoggerExtInit, CreatesAppenderAndSetsLevel) {
             cfg.appender = RDKLOG_OUTPUT_FILE;
             cfg.layout = RDKLOG_FORMAT_WITH_DATETIME;
             cfg.pFilePolicy = &testPolicy;
-            int32_t ret = rdk_logger_ext_init(&cfg);
+            rdk_Error ret = rdk_logger_ext_init(&cfg);
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed";
 
 
@@ -62,7 +62,7 @@ TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
             cfg.layout = RDKLOG_FORMAT_ONLY_TEXT;
             cfg.pFilePolicy = NULL;
             cfg.pCategoryName = (char*)"LOG.RDK";
-            int32_t ret = rdk_logger_ext_init(&cfg);
+            rdk_Error ret = rdk_logger_ext_init(&cfg);
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed for Stdout";
             char appender_name[128];
             const char* category_name = cfg.pCategoryName ? cfg.pCategoryName : "LOG.RDK";
@@ -97,7 +97,7 @@ TEST_F(RdkLoggerExtInit, ComcastDatedViaExtInit) {
             cfg.layout = RDKLOG_FORMAT_WITH_THREADID;
             cfg.pFilePolicy = &testPolicy;
 
-            int32_t ret = rdk_logger_ext_init(&cfg);
+            rdk_Error ret = rdk_logger_ext_init(&cfg);
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed for Comcast layout";
 
             for (int i = 0; i < 50; i++)
