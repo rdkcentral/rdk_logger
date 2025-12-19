@@ -29,7 +29,8 @@ GTEST_API_ int main(int argc, char* argv[])
   ret = RUN_ALL_TESTS();
 
   if(ret)
+  {
       printf("Gtest returned with error : %d !!!\n",ret);
-
-  return 0;
+  }
+  return ret;
 }
