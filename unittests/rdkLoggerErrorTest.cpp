@@ -68,7 +68,7 @@ TEST_F(RDKLoggerErrorTest, NullPointerHandling) {
     // Should not crash
     
     // Test NULL module name in enable_logLevel
-    rdk_logger_Bool result = rdk_logger_enable_logLevel(NULL, RDK_LOG_INFO, TRUE);
+    rdk_logger_Bool result = rdk_logger_set_logLevel(NULL, RDK_LOG_INFO);
     EXPECT_EQ(result, FALSE) << "Should return FALSE for NULL module name";
     
     // Test NULL module name in is_logLevel_enabled
@@ -90,7 +90,7 @@ TEST_F(RDKLoggerErrorTest, EmptyStringHandling) {
     // Should not crash
     
     // Test empty module name in enable_logLevel
-    rdk_logger_Bool result = rdk_logger_enable_logLevel("", RDK_LOG_INFO, TRUE);
+    rdk_logger_Bool result = rdk_logger_set_logLevel("", RDK_LOG_INFO);
     // Should handle gracefully
     
     // Test empty module name in is_logLevel_enabled
@@ -108,7 +108,7 @@ TEST_F(RDKLoggerErrorTest, InvalidLogLevels) {
     // Should not crash, may use default level
     
     // Test invalid log level in enable_logLevel
-    rdk_logger_Bool result = rdk_logger_enable_logLevel("LOG.RDK.TEST", (rdk_LogLevel)999, TRUE);
+    rdk_logger_Bool result = rdk_logger_set_logLevel("LOG.RDK.TEST", (rdk_LogLevel)999);
     // Should handle gracefully
     
     // Test invalid log level in is_logLevel_enabled
@@ -154,7 +154,7 @@ TEST_F(RDKLoggerErrorTest, VeryLongModuleNames) {
     // Should not crash
     
     // Test very long module name in enable_logLevel
-    rdk_logger_Bool result = rdk_logger_enable_logLevel(long_module, RDK_LOG_INFO, TRUE);
+    rdk_logger_Bool result = rdk_logger_set_logLevel(long_module, RDK_LOG_INFO);
     // Should handle gracefully
     
     // Test very long module name in is_logLevel_enabled
@@ -245,15 +245,15 @@ TEST_F(RDKLoggerErrorTest, EnableLogLevelInvalidParams) {
     ASSERT_EQ(ret, RDK_SUCCESS) << "Failed to initialize logger";
     
     // Test with NULL module name
-    rdk_logger_Bool result = rdk_logger_enable_logLevel(NULL, RDK_LOG_INFO, TRUE);
+    rdk_logger_Bool result = rdk_logger_set_logLevel(NULL, RDK_LOG_INFO);
     EXPECT_EQ(result, FALSE) << "Should return FALSE for NULL module name";
     
     // Test with empty module name
-    result = rdk_logger_enable_logLevel("", RDK_LOG_INFO, TRUE);
+    result = rdk_logger_set_logLevel("", RDK_LOG_INFO);
     // Should handle gracefully
     
     // Test with invalid log level
-    result = rdk_logger_enable_logLevel("LOG.RDK.TEST", (rdk_LogLevel)999, TRUE);
+    result = rdk_logger_set_logLevel("LOG.RDK.TEST", (rdk_LogLevel)999);
     // Should handle gracefully
 }
 

@@ -29,37 +29,10 @@
 * @{
 **/
 
-
 #include <rdk_logger.h>
 #include <rdk_debug_priv.h>
-
-#include <string.h> // memset
-#include <rdk_utils.h>
+#include <string.h>
 #include <stdarg.h>
-
-/**
- * @brief Initialize the underlying MPEOS debug support. This API must be called only once per boot cycle.
- * @return None.
- */
-static rdk_logger_Bool inited = FALSE;
-void rdk_dbg_init()
-{
-
-    if (!inited)
-    {
-        rdk_dbg_priv_init();
-        inited = TRUE;
-        rdk_dbg_priv_config();
-    }
-}
-
-void rdk_dbg_deinit()
-{
-  if (inited)
-  {
-      inited = FALSE;
-  }
-}
 
 /**
  * @brief Send a debugging message to the debugging window. It is appended to the log output based
@@ -111,20 +84,23 @@ void rdk_dbg_MsgRaw1(rdk_LogLevel level, const char *module, const char *format,
  * @param[in] module The module name or category for for which the log level shall be checked
  * @param[in] level The debug logging level.
  *
- * @return Returns TRUE, if debug log level enabled successfully else returns FALSE.
+ * @return Returns true, if debug log level enabled successfully else returns false.
  */
-rdk_logger_Bool rdk_logger_enable_logLevel(const char *pModuleName, rdk_LogLevel logLevel, rdk_logger_Bool enableLogLvl)
+bool rdk_logger_set_logLevel(const char *module, rdk_LogLevel logLevel)
 {
-    if (!pModuleName)
-        return FALSE;
+    return rdk_dbg_priv_log_reconfig(module, logLevel);
+}
 
-    const char* logLevelName = rdk_loglevelToString(logLevel, enableLogLvl);
-
-    if (!logLevelName)
-        return FALSE;
-
-    rdk_dbg_priv_reconfig (pModuleName, logLevelName);
-    return TRUE;
+/**
+ * @brief Enable or disable a log level for a module.
+ * @param module Module name.
+ * @param logLevel Log level.
+ * @param enableLogLvl TRUE to enable, FALSE to disable.
+ * @return TRUE if successful, FALSE otherwise.
+ */
+bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logLevel, rdk_logger_Bool enableLogLvl)
+{
+    return rdk_dbg_priv_log_reconfig(module, logLevel);
 }
 
 /**

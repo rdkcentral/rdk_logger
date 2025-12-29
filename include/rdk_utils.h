@@ -19,51 +19,11 @@
 
 /**
  * @file rdk_utils.h
- * The header file provides RDK Utils APIs.
  */
 
-
-/**
-* @defgroup rdk_logger
-* @{
-* @defgroup include
-* @{
-**/
-
-
-#ifndef _RDK_UTILS_H_
+#ifndef _RDK_UTILS_H
 #define _RDK_UTILS_H_
 
-#include <stdio.h>
-#include <rdk_error.h>
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#include "rdk_logger.h"
 
-/**
- * @ingroup RDKLOGGER_UTILS_API
- * @{
- */
-
-const char* rdk_logger_envGet(const char *name);
-
-int rdk_logger_envGetNum(const char * mod);
-
-const char* rdk_logger_envGetValueFromNum(int number);
-
-const char* rdk_logger_envGetModFromNum(int Num);
-
-rdk_Error rdk_logger_parse_config(const char * path);
-
-rdk_Error rdk_logger_release_config(void);
-
-char* rdk_loglevelToString(rdk_LogLevel level, rdk_logger_Bool isLogEnabled);
-/** @} */ //end of Doxygen tag RDKLOGGER_UTILS_API
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _RDK_DEBUG_H_ */
-
+#endif /* _RDK_UTILS_H_ */

@@ -25,16 +25,13 @@
 
 int main( int argc, char **argv)
 {
-    char msg[MAX_BUF_SIZE];
     if(argc > 2 && (NULL != argv[1]) && (NULL != argv[2]))
     {
-        snprintf(msg,sizeof(msg), "%s\n", argv[2]);
-        rdk_logger_log_onboard(argv[1], msg);
+        rdk_logger_log_onboard(argv[1], "%s\n", argv[2]);
     }
     else if(argc > 1 && (NULL != argv[1]))
     {
-        snprintf(msg,sizeof(msg), "%s\n", argv[1]);
-        rdk_logger_log_onboard(NULL, msg);
+        rdk_logger_log_onboard(NULL, "%s\n", argv[1]);
     }
 
     return 0;

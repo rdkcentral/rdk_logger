@@ -34,15 +34,36 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdatomic.h>
 #include <unistd.h>
 #include "rdk_logger.h"
-#include "rdk_error.h"
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
-#include "rdk_utils.h"
 
-#define BUF_LEN 256
-static int isLogInited = 0;
+atomic_bool isLogInited = false;
+
+#define DEBUG_1_OVERRIDE_PATH "/opt/debug.ini"
+#define DEBUG_2_OVERRIDE_PATH "/nvram/debug.ini"
+
+static void __attribute__((constructor)) _rdk_logger_init (void)
+{
+    if (!isLogInited)
+    {
+        char* pConfPath = DEBUG_INI_NAME;
+
+        /* Default Path */
+        if (0 == access(DEBUG_1_OVERRIDE_PATH, F_OK))
+            pConfPath = DEBUG_1_OVERRIDE_PATH;
+        else if (0 == access(DEBUG_2_OVERRIDE_PATH, F_OK))
+            pConfPath = DEBUG_2_OVERRIDE_PATH;
+
+        if (RDK_SUCCESS == rdk_logger_init(pConfPath))
+            isLogInited = true;
+    }
+
+    return;
+}
+
 /**
  * @brief Initialize the logger. Sets up the environment variable storage by parsing
  * debug configuration file then Initialize the debug support to the underlying platform.
@@ -56,24 +77,15 @@ static int isLogInited = 0;
  */
 rdk_Error rdk_logger_init(const char* debugConfigFile)
 {
-    rdk_Error ret;
-
-    if (0 == isLogInited)
+    if (!isLogInited)
     {
         if (NULL == debugConfigFile)
         {
             debugConfigFile = DEBUG_CONF_FILE;
         }
 
-        /* Read the config file & populate pre-configured log levels */
-        ret = rdk_logger_parse_config(debugConfigFile);
-        if ( RDK_SUCCESS != ret)
-        {
-            printf("%s:%d Adding debug config file %s failed\n", __FUNCTION__, __LINE__, debugConfigFile);
-            return ret;
-        }
         /* Perform Logger Internal Init */
-        rdk_dbg_init();
+        rdk_dbg_priv_init(debugConfigFile);
 
         /* Perform Dynamin Logger Internal Init */
         rdk_dyn_log_init();
@@ -84,21 +96,21 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
          * error is still returned.
          */
         signal(SIGPIPE, SIG_IGN);
-        isLogInited = 1;
+        isLogInited = true;
     }
     return RDK_SUCCESS;
 }
 
 rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
- {
-    rdk_Error ret;
-    ret = RDK_LOGGER_INIT();
-    if (ret == RDK_SUCCESS)
+{
+    _rdk_logger_init();
+    if (!isLogInited)
     {
-        rdk_dbg_priv_ext_init(config->logdir, config->fileName, config->maxCount, config->maxSize);
+        return RDK_FAILURE;
     }
-    return ret;
- }
+    else
+        return rdk_dbg_priv_ext_init(config);
+}
 
 /**
  * @brief Cleanup the logger instantiation.
@@ -110,8 +122,6 @@ rdk_Error rdk_logger_deinit()
     if(isLogInited)
     {
         rdk_dyn_log_deinit();
-        rdk_logger_release_config();
-        //isLogInited = 0;
     }
 
     return RDK_SUCCESS;

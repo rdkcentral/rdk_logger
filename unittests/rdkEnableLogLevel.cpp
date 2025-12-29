@@ -34,7 +34,7 @@ TEST(rdkEnableLogLevel, NULL_log_enabled)
 
   rdk_err = rdk_logger_init(conf_file);
   ASSERT_EQ(rdk_err,RDK_SUCCESS)<<"rdk_logger_init failed with err:\""<<rdk_err<<"\", Could not open user configuration file:"<<conf_file;
-  ret = rdk_logger_enable_logLevel(NULL, RDK_LOG_FATAL, TRUE);
+  ret = rdk_logger_set_logLevel(NULL, RDK_LOG_FATAL);
   EXPECT_EQ(ret, FALSE)<<"rdk_logger_enabled_loglevel failed with return:\""<<ret<<"\"";
   //ret = rdk_logger_deinit();
   //ASSERT_EQ(ret,RDK_SUCCESS)<<"rdk_logger_deinit failed with return:\""<<ret<<"\" "<<"DEBUG_CONF_FILE is not found";
@@ -49,7 +49,7 @@ TEST(rdkEnableLogLevel, ONLYFATAL_log_enabled)
 
   rdk_err = rdk_logger_init(conf_file);
   ASSERT_EQ(rdk_err,RDK_SUCCESS)<<"rdk_logger_init failed with err:\""<<rdk_err<<"\", Could not open user configuration file:"<<conf_file;
-  ret = rdk_logger_enable_logLevel("LOG.RDK.ONLYFATAL", RDK_LOG_FATAL, TRUE);
+  ret = rdk_logger_set_logLevel("LOG.RDK.ONLYFATAL", RDK_LOG_FATAL);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_enabled_loglevel failed with return:\""<<ret<<"\"";
   rdk_logger_msg_printf(RDK_LOG_FATAL, "LOG.RDK.ONLYFATAL", "gtest case \"%s\"\n", test_info_->name());
   ret = rdk_logger_is_logLevel_enabled( "LOG.RDK.ONLYFATAL", RDK_LOG_FATAL);
@@ -66,7 +66,7 @@ TEST(rdkEnableLogLevel, ONLYERROR_log_enabled)
   char conf_file[] = GTEST_DEBUG_INI_FILE;
   rdk_err = rdk_logger_init(conf_file);
   ASSERT_EQ(rdk_err,RDK_SUCCESS)<<"rdk_logger_init failed with err:\""<<rdk_err<<"\", Could not open user configuration file:"<<conf_file;
-  ret = rdk_logger_enable_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR, TRUE);
+  ret = rdk_logger_set_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_enabled_loglevel failed with return:\""<<ret<<"\"";
   ret = rdk_logger_is_logLevel_enabled( "LOG.RDK.ONLYERROR", RDK_LOG_ERROR);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_is_logLevel_enabled for RDK_LOG_ERROR failed with return:\""<<ret<<"\"";
@@ -79,7 +79,7 @@ TEST(rdkEnableLogLevel, ONLYWARNING_log_enabled)
   char conf_file[] = GTEST_DEBUG_INI_FILE;
   rdk_err = rdk_logger_init(conf_file);
   ASSERT_EQ(rdk_err,RDK_SUCCESS)<<"rdk_logger_init failed with err:\""<<rdk_err<<"\", Could not open user configuration file:"<<conf_file;
-  ret = rdk_logger_enable_logLevel("LOG.RDK.ONLYWARNING", RDK_LOG_WARN, TRUE);
+  ret = rdk_logger_set_logLevel("LOG.RDK.ONLYWARNING", RDK_LOG_WARN);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_enabled_loglevel failed with return:\""<<ret<<"\"";
   ret = rdk_logger_is_logLevel_enabled( "LOG.RDK.ONLYWARNING", RDK_LOG_WARN);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_is_logLevel_enabled failed with return:\""<<ret<<"\"";
@@ -94,7 +94,7 @@ TEST(rdkEnableLogLevel, ONLYINFO_log_enabled)
   char conf_file[] = GTEST_DEBUG_INI_FILE;
   rdk_err = rdk_logger_init(conf_file);
   ASSERT_EQ(rdk_err,RDK_SUCCESS)<<"rdk_logger_init failed with err:\""<<rdk_err<<"\", Could not open user configuration file:"<<conf_file;
-  ret = rdk_logger_enable_logLevel("LOG.RDK.ONLYINFO", RDK_LOG_INFO, TRUE);
+  ret = rdk_logger_set_logLevel("LOG.RDK.ONLYINFO", RDK_LOG_INFO);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_enabled_loglevel failed with return:\""<<ret<<"\"";
   ret = rdk_logger_is_logLevel_enabled( "LOG.RDK.ONLYINFO", RDK_LOG_INFO);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_is_logLevel_enabled failed with return:\""<<ret<<"\"";
@@ -109,7 +109,7 @@ TEST(rdkEnableLogLevel, ONLYDEBUG_log_enabled)
   char conf_file[] = GTEST_DEBUG_INI_FILE;
   rdk_err = rdk_logger_init(conf_file);
   ASSERT_EQ(rdk_err,RDK_SUCCESS)<<"rdk_logger_init failed with err:\""<<rdk_err<<"\", Could not open user configuration file:"<<conf_file;
-  ret = rdk_logger_enable_logLevel("LOG.RDK.ONLYDEBUG", RDK_LOG_DEBUG, TRUE);
+  ret = rdk_logger_set_logLevel("LOG.RDK.ONLYDEBUG", RDK_LOG_DEBUG);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_enabled_loglevel failed with return:\""<<ret<<"\"";
   ret = rdk_logger_is_logLevel_enabled( "LOG.RDK.ONLYDEBUG", RDK_LOG_DEBUG);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_is_logLevel_enabled failed with return:\""<<ret<<"\"";
@@ -125,7 +125,7 @@ TEST(rdkEnableLogLevel, ONLYNOTICE_log_enabled)
   char conf_file[] = GTEST_DEBUG_INI_FILE;
   rdk_err = rdk_logger_init(conf_file);
   ASSERT_EQ(rdk_err,RDK_SUCCESS)<<"rdk_logger_init failed with err:\""<<rdk_err<<"\", Could not open user configuration file:"<<conf_file;
-    ret = rdk_logger_enable_logLevel("LOG.RDK.ONLYNOTICE", RDK_LOG_NOTICE, TRUE);
+    ret = rdk_logger_set_logLevel("LOG.RDK.ONLYNOTICE", RDK_LOG_NOTICE);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_enabled_loglevel failed with return:\""<<ret<<"\"";
   ret = rdk_logger_is_logLevel_enabled( "LOG.RDK.ONLYNOTICE", RDK_LOG_NOTICE);
   EXPECT_EQ(ret, TRUE)<<"rdk_logger_is_logLevel_enabled failed with return:\""<<ret<<"\"";

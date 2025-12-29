@@ -111,17 +111,34 @@
 #define _RDK_LOGGER_H_
 
 #include <stdio.h>
-#include "rdk_logger_types.h"
-#include "rdk_error.h"
+#include <stdbool.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+typedef int32_t rdk_Error;
+typedef bool rdk_logger_Bool;
 
 /**
 * Macros for ease of applications using RDK_LOGGER apis
 */
+
+/**
+ * Define the return code for logger API
+ */
+#define RDK_SUCCESS          0
+#define RDK_FAILURE         -1
+
+#ifndef TRUE
+#define TRUE (1==1)
+#endif
+
+#ifndef FALSE
+#define FALSE (1!=1)
+#endif
 
 /**
  * Define the default location of configuration file location
@@ -131,15 +148,14 @@ extern "C"
 /**
  * Support for overriding debug.ini file location
  */
-#ifndef DEBUG_INI_OVERRIDE_PATH
-#define DEBUG_INI_OVERRIDE_PATH "/nvram/debug.ini"
-#endif
+#define DEBUG_INI_OVERRIDE_PATH_1 "/opt/debug.ini"
+#define DEBUG_INI_OVERRIDE_PATH_2 "/nvram/debug.ini"
 
 /**
  * Support for Init function
  */
-#define RDK_LOGGER_INIT()   (0 == access(DEBUG_INI_OVERRIDE_PATH, F_OK)) \
-                                ? rdk_logger_init(DEBUG_INI_OVERRIDE_PATH) \
+#define RDK_LOGGER_INIT()   (0 == access(DEBUG_INI_OVERRIDE_PATH_1, F_OK)) \
+                                ? rdk_logger_init(DEBUG_INI_OVERRIDE_PATH_1) \
                                 : rdk_logger_init(DEBUG_INI_NAME);
 /**
  * Use RDK_LOG debug message as.
@@ -150,15 +166,24 @@ extern "C"
  */
 #define RDK_LOG rdk_logger_msg_printf
 #define RDK_LOG1 rdk_logger_msg_vsprintf
+
+#define RDKLOG_FATAL(format, ...)   rdk_logger_msg_printf(RDK_LOG_FATAL,  format, ##__VA_ARGS__)
+#define RDKLOG_ERROR(format, ...)   rdk_logger_msg_printf(RDK_LOG_ERROR,  format, ##__VA_ARGS__)
+#define RDKLOG_WARN(format, ...)    rdk_logger_msg_printf(RDK_LOG_WARN,   format, ##__VA_ARGS__)
+#define RDKLOG_NOTICE(format, ...)  rdk_logger_msg_printf(RDK_LOG_NOTICE, format, ##__VA_ARGS__)
+#define RDKLOG_INFO(format, ...)    rdk_logger_msg_printf(RDK_LOG_INFO,   format, ##__VA_ARGS__)
+#define RDKLOG_DEBUG(format, ...)   rdk_logger_msg_printf(RDK_LOG_DEBUG,  format, ##__VA_ARGS__)
+#define RDKLOG_TRACE(format, ...)   rdk_logger_msg_printf(RDK_LOG_TRACE,  format, ##__VA_ARGS__)
+
 /**
  * Define the max length for the log file capture
  */
-#define RDK_LOGGER_EXT_FILENAME_SIZE 32
+#define RDKLOG_MAX_FILENAME_SIZE   64
 
 /**
  * Define the max length for the log capture path
  */
-#define RDK_LOGGER_EXT_LOGDIR_SIZE   32
+#define RDKLOG_MAX_PATH_SIZE       256
 
 /**
  * To allow compatibility of mutiple legacy RDK components using loglevels RDK_LOG_TRACE1..RDK_LOG_TRACE9
@@ -200,13 +225,69 @@ typedef enum
     RDK_LOG_NONE
 } rdk_LogLevel;
 
+/**
+ * @enum rdk_LogFormat
+ * @brief Defines the layout/format used to render log messages.
+ *
+ * - RDKLOG_FORMAT_WITH_TS:              Simple layout (priority, category, message).
+ * - RDKLOG_FORMAT_WITH_TS:              Timestamped layout including date/time and milliseconds.
+ * - RDKLOG_FORMAT_DETAIL_WITH_TS:       Specific layout with the exact fields
+ *                                       (such as module, level, thread id) with time stamped
+ * - RDKLOG_FORMAT_DETAIL_WITHOUT_TS:    Same as above but without timestamp
+ */
+typedef enum
+{
+    RDKLOG_FORMAT_PLAINTEXT = 0,        /** format_plaintext */
+    RDKLOG_FORMAT_WITH_TS,              /** format_with_ts */
+    RDKLOG_FORMAT_DETAIL_WITH_TS,       /** format_detail_with_ts */
+    RDKLOG_FORMAT_DETAIL_WITHOUT_TS     /** format_detail_without_ts */
+} rdk_LogFormat;
+
+/**
+ * @enum rdk_LogOutput
+ * @brief Defines the destination type where log events are written.
+ *
+ * - RDKLOG_OUTPUT_CONSOLE:     Write logs to the process stdout/stderr stream (typically mapped via stream_env).
+ * - RDKLOG_OUTPUT_FILE:        Write logs to rolling files on disk (uses rollingfile appender).
+ * - RDKLOG_OUTPUT_JOURNAL:     Write logs to systemd journal
+ * - RDKLOG_OUTPUT_SYSLOG:      Write logs to the local syslog daemon.
+ */
+typedef enum
+{
+    RDKLOG_OUTPUT_CONSOLE = 0,           /** to_console */
+    RDKLOG_OUTPUT_SYSLOG,                /** to_syslog */
+    RDKLOG_OUTPUT_JOURNAL,               /** to_journal */
+    RDKLOG_OUTPUT_FILE                   /** to_file */
+} rdk_LogOutput;
+
+/**
+ * @brief rdk_LogOutput_File structure for rolling file appenders.
+ *
+ * This structure defines the configuration parameters for file-based log appenders
+ * including file naming, directory path, and rotation policy settings.
+ */
+typedef struct rdk_LogOutput_File
+{
+    char     fileName[RDKLOG_MAX_FILENAME_SIZE];
+    char     fileLocation[RDKLOG_MAX_PATH_SIZE];
+    int8_t  fileCountMax;
+    int64_t  fileSizeMax;
+} rdk_LogOutput_File;
+
+/**
+ * @brief Complete logger configuration structure for structured initialization.
+ *
+ * This structure contains all parameters needed for complete logger setup
+ * including appender configuration, category association, and log level settings.
+ */
 typedef struct rdk_logger_ext_config_t
- {
-     char fileName[RDK_LOGGER_EXT_FILENAME_SIZE];
-     char logdir[RDK_LOGGER_EXT_LOGDIR_SIZE];
-     long maxSize;
-     long maxCount;
- }rdk_logger_ext_config_t;
+{
+     char* pModuleName;                /**< Log module name (e.g., "LOG.RDK.TR69") */
+     rdk_LogLevel loglevel;            /**< Default log level for this category */
+     rdk_LogOutput output;             /**< Type of output/appender */
+     rdk_LogFormat format;             /**< Type of log format */
+     rdk_LogOutput_File *pFilePolicy;  /**< File policy configuration (required for RDKLOG_OUTPUT_FILE, NULL for others) */
+} rdk_logger_ext_config_t;
 
 /**
  * @brief Initialize the RDK Logger.
@@ -251,7 +332,7 @@ void rdk_logger_msg_vsprintf(rdk_LogLevel level, const char *module, const char 
  * @param level Log level.
  * @return TRUE if enabled, FALSE otherwise.
  */
-rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel level);
+bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel level);
 
 /**
  * @brief Enable or disable a log level for a module.
@@ -260,7 +341,7 @@ rdk_logger_Bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel 
  * @param enableLogLvl TRUE to enable, FALSE to disable.
  * @return TRUE if successful, FALSE otherwise.
  */
-rdk_logger_Bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logLevel, rdk_logger_Bool enableLogLvl);
+bool rdk_logger_set_logLevel(const char *module, rdk_LogLevel logLevel);
 
 /**
  * @brief Log a message for onboard logging.
@@ -285,6 +366,15 @@ void rdk_dbg_MsgRaw(rdk_LogLevel level, const char *module, const char *format, 
  * @param args va_list of arguments.
  */
 void rdk_dbg_MsgRaw1(rdk_LogLevel level, const char *module, const char *format, va_list args);
+
+/**
+ * @brief Enable or disable a log level for a module.
+ * @param module Module name.
+ * @param logLevel Log level.
+ * @param enableLogLvl TRUE to enable, FALSE to disable.
+ * @return TRUE if successful, FALSE otherwise.
+ */
+bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logLevel, rdk_logger_Bool enableLogLvl);
 
 /**
  * @brief Convert a log level string to rdk_LogLevel enum.

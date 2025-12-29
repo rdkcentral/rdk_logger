@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-
+AUTOMAKE_OPTIONS = subdir-objects
 bin_PROGRAMS = rdklogctrl
 
 rdklogctrl_SOURCES=rdklogctrl.c
@@ -24,14 +24,12 @@ rdklogctrl_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/
 rdklogctrl_LDFLAGS = -L/usr/lib
 
 bin_PROGRAMS       += rdkLogMileStone
-rdkLogMileStone_SOURCES = rdklogmilestone.c
-rdkLogMileStone_LDADD = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
+rdkLogMileStone_SOURCES = rdklogmilestone.c $(top_srcdir)/src/rdk_logger_milestone.c
 rdkLogMileStone_CFLAGS = -I$(top_srcdir)/include
 rdkLogMileStone_LDFLAGS = -L/usr/lib
 
 
 bin_PROGRAMS            += onboarding_log
-onboarding_log_SOURCES  = rdk_logger_onboard_main.c
-onboarding_log_LDADD    = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
-onboarding_log_CFLAGS   = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
+onboarding_log_SOURCES  = rdk_logger_onboard_main.c $(top_srcdir)/src/rdk_logger_onboard.c
+onboarding_log_CFLAGS   = -I$(top_srcdir)/include
 onboarding_log_LDFLAGS  = -L/usr/lib
