@@ -27,4 +27,8 @@
 
 #include "rdk_logger.h"
 
+/* For legacy projects that does not include essential headers but relying on rdk_debug.h */
+#include <pthread.h>
+#include <time.h>
+
 #endif /* _RDK_DEBUG_H_ */

@@ -34,32 +34,19 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <stdatomic.h>
-#include <unistd.h>
+#include <pthread.h>
 #include "rdk_logger.h"
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
 
-atomic_bool isLogInited = false;
+static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define DEBUG_1_OVERRIDE_PATH "/opt/debug.ini"
-#define DEBUG_2_OVERRIDE_PATH "/nvram/debug.ini"
+bool isLogInited = false;
 
 static void __attribute__((constructor)) _rdk_logger_init (void)
 {
-    if (!isLogInited)
-    {
-        char* pConfPath = DEBUG_INI_NAME;
-
-        /* Default Path */
-        if (0 == access(DEBUG_1_OVERRIDE_PATH, F_OK))
-            pConfPath = DEBUG_1_OVERRIDE_PATH;
-        else if (0 == access(DEBUG_2_OVERRIDE_PATH, F_OK))
-            pConfPath = DEBUG_2_OVERRIDE_PATH;
-
-        if (RDK_SUCCESS == rdk_logger_init(pConfPath))
-            isLogInited = true;
-    }
+    /* Perform Logger Internal Init */
+    rdk_dbg_priv_init();
 
     return;
 }
@@ -77,6 +64,8 @@ static void __attribute__((constructor)) _rdk_logger_init (void)
  */
 rdk_Error rdk_logger_init(const char* debugConfigFile)
 {
+    rdk_Error ret = RDK_SUCCESS;
+    pthread_mutex_lock(&gInitMutex);
     if (!isLogInited)
     {
         if (NULL == debugConfigFile)
@@ -85,31 +74,44 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
         }
 
         /* Perform Logger Internal Init */
-        rdk_dbg_priv_init(debugConfigFile);
+        ret = rdk_dbg_priv_config(debugConfigFile);
 
-        /* Perform Dynamin Logger Internal Init */
-        rdk_dyn_log_init();
+        if (RDK_SUCCESS == ret)
+        {
+            /* Perform Dynamic Logger Internal Init */
+            rdk_dyn_log_init();
 
-        /**
-         * Requests not to send SIGPIPE on errors on stream oriented
-         * sockets when the other end breaks the connection. The EPIPE
-         * error is still returned.
-         */
-        signal(SIGPIPE, SIG_IGN);
-        isLogInited = true;
+            isLogInited = true;
+            /**
+             * Requests not to send SIGPIPE on errors on stream oriented
+             * sockets when the other end breaks the connection. The EPIPE
+             * error is still returned.
+             */
+            signal(SIGPIPE, SIG_IGN);
+        }
+        else
+        {
+            printf("Parsing debug config file %s failed\n", debugConfigFile);
+        }
     }
-    return RDK_SUCCESS;
+    pthread_mutex_unlock(&gInitMutex);
+    return ret;
 }
 
 rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
 {
-    _rdk_logger_init();
-    if (!isLogInited)
+    rdk_Error ret = RDK_SUCCESS;
+
+    ret = RDK_LOGGER_INIT();
+
+    if (RDK_SUCCESS == ret)
     {
-        return RDK_FAILURE;
+        pthread_mutex_lock(&gInitMutex);
+        ret = rdk_dbg_priv_ext_init(config);
+        pthread_mutex_unlock(&gInitMutex);
     }
-    else
-        return rdk_dbg_priv_ext_init(config);
+
+    return ret;
 }
 
 /**
@@ -119,10 +121,12 @@ rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
  */
 rdk_Error rdk_logger_deinit()
 {
-    if(isLogInited)
+    pthread_mutex_lock(&gInitMutex);
+    if (isLogInited)
     {
         rdk_dyn_log_deinit();
     }
+    pthread_mutex_unlock(&gInitMutex);
 
     return RDK_SUCCESS;
 }
