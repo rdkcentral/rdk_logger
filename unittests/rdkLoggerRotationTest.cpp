@@ -112,10 +112,10 @@ TEST_F(RDKLoggerRotationTest, ExtendedInitialization) {
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_TRACE;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
             ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization should succeed";
@@ -136,10 +136,10 @@ TEST_F(RDKLoggerRotationTest, CountBasedRotation) {
             testPolicy.fileCountMax = 2;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_TRACE;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
             ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization should succeed";
@@ -177,10 +177,10 @@ TEST_F(RDKLoggerRotationTest, InvalidConfiguration)
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_ERROR;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
 
             err = rdk_logger_ext_init(&config);
@@ -200,10 +200,10 @@ TEST_F(RDKLoggerRotationTest, InvalidDirectory) {
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_ERROR;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
             // Should handle gracefully (may fail or create directory)
@@ -222,10 +222,10 @@ TEST_F(RDKLoggerRotationTest, VerySmallSizeLimits) {
             testPolicy.fileCountMax = 2;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_INFO;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
             ASSERT_EQ(ret, RDK_SUCCESS) << "Should handle very small size limits";
@@ -251,10 +251,10 @@ TEST_F(RDKLoggerRotationTest, VeryLargeSizeLimits) {
             testPolicy.fileCountMax = 10;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_INFO;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_THREADID;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_DETAIL_WITH_TS;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
             ASSERT_EQ(ret, RDK_SUCCESS) << "Should handle very large size limits";
@@ -281,10 +281,10 @@ TEST_F(RDKLoggerRotationTest, ZeroCountLimits) {
             testPolicy.fileCountMax = 0;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_INFO;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_ONLY_TEXT;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_PLAINTEXT;
             config.pFilePolicy = &testPolicy;
 
             rdk_Error ret = rdk_logger_ext_init(&config);
@@ -311,10 +311,10 @@ TEST_F(RDKLoggerRotationTest, NegativeValues) {
             testPolicy.fileCountMax = -1;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_INFO;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
             ASSERT_EQ(ret, RDK_SUCCESS) << "negative values";
@@ -331,7 +331,7 @@ TEST_F(RDKLoggerRotationTest, LongFileNames) {
     RUN_IN_FORK({
             rdk_LogOutput_File testPolicy;
             // Create a very long file name
-            char long_filename[RDK_LOGGER_EXT_FILENAME_SIZE];
+            char long_filename[RDKLOG_MAX_FILENAME_SIZE];
             memset(long_filename, 'A', sizeof(long_filename) - 5);
             strcpy(long_filename + sizeof(long_filename) - 5, ".log");
             long_filename[sizeof(long_filename) - 1] = '\0';
@@ -344,10 +344,10 @@ TEST_F(RDKLoggerRotationTest, LongFileNames) {
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_TRACE;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
             ASSERT_EQ(ret, RDK_SUCCESS) << "Should handle long file names";
@@ -367,7 +367,7 @@ TEST_F(RDKLoggerRotationTest, LongDirectoryPaths) {
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "test.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
-            char long_dir[RDK_LOGGER_EXT_LOGDIR_SIZE];
+            char long_dir[RDKLOG_MAX_PATH_SIZE];
             memset(long_dir, 'A', sizeof(long_dir) - 1);
             long_dir[sizeof(long_dir) - 1] = '\0';
 
@@ -377,10 +377,10 @@ TEST_F(RDKLoggerRotationTest, LongDirectoryPaths) {
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_TRACE;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&config);
             // Should handle gracefully (may fail due to path length)
@@ -405,10 +405,10 @@ TEST_F(RDKLoggerRotationTest, SpecialCharactersInFileNames) {
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_TRACE;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_ONLY_TEXT;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_PLAINTEXT;
             config.pFilePolicy = &testPolicy;
 
             rdk_Error ret = rdk_logger_ext_init(&config);
@@ -435,10 +435,10 @@ TEST_F(RDKLoggerRotationTest, ConcurrentAccess) {
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
-            config.pCategoryName = "LOG.RDK.ROTATION";
+            config.pModuleName = "LOG.RDK.ROTATION";
             config.loglevel = RDK_LOG_DEBUG;
-            config.appender = RDKLOG_OUTPUT_FILE;
-            config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS;
             config.pFilePolicy = &testPolicy;
 
             rdk_Error ret = rdk_logger_ext_init(&config);

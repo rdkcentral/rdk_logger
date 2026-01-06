@@ -108,11 +108,11 @@ TEST(rdkloggerInit, DISABLED_rdkLoggerReInit_GetSet_enabled_deinit)
   ret = rdk_logger_is_logLevel_enabled( "LOG.RDK.ONLYERROR", RDK_LOG_ERROR);
   EXPECT_EQ(ret,TRUE)<<"rdk_logger_is_logLevel_enabled for RDK_LOG_ERROR failed with return:\""<<ret<<"\"";
   rdk_logger_msg_printf (RDK_LOG_ERROR, "LOG.RDK.ONLYERROR", "1 gtest case \"%s\"\n",test_info_->name());
-  ret_dbg = rdk_logger_enable_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR, 0);
-  EXPECT_EQ(ret_dbg, FALSE)<<"rdk_logger_enable_logLevel failed with return:\""<<ret_dbg<<"\"";
+  ret_dbg = rdk_logger_set_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR);
+  EXPECT_EQ(ret_dbg, FALSE)<<"rdk_logger_set_logLevel failed with return:\""<<ret_dbg<<"\"";
   rdk_logger_msg_printf (RDK_LOG_ERROR, "LOG.RDK.ONLYERROR", "2 cgtest case \"%s\" %s\n",test_info_->name(),"--This log should not print--");
-  ret_dbg = rdk_logger_enable_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR, 1);
-  EXPECT_EQ(ret_dbg, TRUE)<<"rdk_logger_enable_logLevel failed with return:\""<<ret_dbg<<"\"";
+  ret_dbg = rdk_logger_set_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR);
+  EXPECT_EQ(ret_dbg, TRUE)<<"rdk_logger_set_logLevel failed with return:\""<<ret_dbg<<"\"";
   rdk_logger_msg_printf (RDK_LOG_ERROR, "LOG.RDK.ONLYERROR", "3 gtest case \"%s\"\n",test_info_->name());
   ret = rdk_logger_deinit();
   ASSERT_EQ(ret,RDK_SUCCESS)<<"rdk_logger_deinit failed with return:"<<ret;
@@ -122,11 +122,11 @@ TEST(rdkloggerInit, DISABLED_rdkLoggerReInit_GetSet_enabled_deinit)
   ret = rdk_logger_is_logLevel_enabled( "LOG.RDK.ONLYERROR", RDK_LOG_ERROR);
   EXPECT_EQ(ret,TRUE)<<"rdk_logger_is_logLevel_enabled for RDK_LOG_ERROR failed with return:\""<<ret<<"\"";
   rdk_logger_msg_printf (RDK_LOG_ERROR, "LOG.RDK.ONLYERROR", "4 gtest case \"%s\" %s\n",test_info_->name(),"-- print this--");
-  ret = rdk_logger_enable_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR, 0);
-  EXPECT_EQ(ret, FALSE)<<"rdk_logger_enable_logLevel failed with return:\""<<ret<<"\"";
+  ret = rdk_logger_set_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR);
+  EXPECT_EQ(ret, FALSE)<<"rdk_logger_set_logLevel failed with return:\""<<ret<<"\"";
   rdk_logger_msg_printf (RDK_LOG_ERROR, "LOG.RDK.ONLYERROR", "5 gtest case \"%s\" %s\n",test_info_->name(),"--This log should not print--");
-  ret_dbg = rdk_logger_enable_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR, 1);
-  EXPECT_EQ(ret_dbg, TRUE)<<"rdk_logger_enable_logLevel failed with return:\""<<ret_dbg<<"\"";
+  ret_dbg = rdk_logger_set_logLevel("LOG.RDK.ONLYERROR", RDK_LOG_ERROR);
+  EXPECT_EQ(ret_dbg, TRUE)<<"rdk_logger_set_logLevel failed with return:\""<<ret_dbg<<"\"";
 //FIX ME  
   rdk_logger_msg_printf (RDK_LOG_ERROR, "LOG.RDK.ONLYERROR", "gtest case \"%s\" %s\n",test_info_->name(),"-- print this--");
   ret = rdk_logger_deinit();

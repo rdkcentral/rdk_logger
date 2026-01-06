@@ -4,7 +4,6 @@
 #include <sys/wait.h>
 #include <gtest/gtest.h>
 #include "rdk_logger.h"
-#include "rdk_error.h"
 #include "log4c.h"
 #include "test_utils.h"
 
@@ -28,8 +27,8 @@ TEST_F(RdkLoggerExtInit, CreatesAppenderAndSetsLevel) {
             rdk_logger_ext_config_t cfg;
             memset(&cfg, 0, sizeof(cfg));
             cfg.loglevel = RDK_LOG_TRACE;
-            cfg.appender = RDKLOG_OUTPUT_FILE;
-            cfg.layout = RDKLOG_FORMAT_WITH_DATETIME;
+            cfg.output = RDKLOG_OUTPUT_FILE;
+            cfg.format = RDKLOG_FORMAT_WITH_TS;
             cfg.pFilePolicy = &testPolicy;
             rdk_Error ret = rdk_logger_ext_init(&cfg);
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed";
@@ -58,14 +57,14 @@ TEST_F(RdkLoggerExtInit, StdoutAppenderAndLayout) {
             rdk_logger_ext_config_t cfg;
             memset(&cfg, 0, sizeof(cfg));
             cfg.loglevel = RDK_LOG_DEBUG;
-            cfg.appender = RDKLOG_OUTPUT_CONSOLE;
-            cfg.layout = RDKLOG_FORMAT_ONLY_TEXT;
+            cfg.output = RDKLOG_OUTPUT_CONSOLE;
+            cfg.format = RDKLOG_FORMAT_PLAINTEXT;
             cfg.pFilePolicy = NULL;
-            cfg.pCategoryName = (char*)"LOG.RDK";
+            cfg.pModuleName = (char*)"LOG.RDK";
             rdk_Error ret = rdk_logger_ext_init(&cfg);
             ASSERT_EQ(ret, RDK_SUCCESS) << "rdk_logger_ext_init failed for Stdout";
             char appender_name[128];
-            const char* category_name = cfg.pCategoryName ? cfg.pCategoryName : "LOG.RDK";
+            const char* category_name = cfg.pModuleName ? cfg.pModuleName : "LOG.RDK";
             snprintf(appender_name, sizeof(appender_name), "%s.stdout", category_name);
             log4c_appender_t* app = log4c_appender_get(appender_name);
             ASSERT_NE(app, nullptr) << "Stdout appender not found";
@@ -93,8 +92,8 @@ TEST_F(RdkLoggerExtInit, ComcastDatedViaExtInit) {
             rdk_logger_ext_config_t cfg;
             memset(&cfg, 0, sizeof(cfg));
             cfg.loglevel = RDK_LOG_ERROR;
-            cfg.appender = RDKLOG_OUTPUT_FILE;
-            cfg.layout = RDKLOG_FORMAT_WITH_THREADID;
+            cfg.output = RDKLOG_OUTPUT_FILE;
+            cfg.format = RDKLOG_FORMAT_DETAIL_WITH_TS;
             cfg.pFilePolicy = &testPolicy;
 
             rdk_Error ret = rdk_logger_ext_init(&cfg);

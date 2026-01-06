@@ -34,14 +34,23 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
+#include <pthread.h>
 #include "rdk_logger.h"
-#include "rdk_error.h"
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
-#include "rdk_utils.h"
-#define BUF_LEN 256
-static int isLogInited = 0;
+
+static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
+
+bool isLogInited = false;
+
+static void __attribute__((constructor)) _rdk_logger_init (void)
+{
+    /* Perform Logger Internal Init */
+    rdk_dbg_priv_init();
+
+    return;
+}
+
 /**
  * @brief Initialize the logger. Sets up the environment variable storage by parsing
  * debug configuration file then Initialize the debug support to the underlying platform.
@@ -55,71 +64,55 @@ static int isLogInited = 0;
  */
 rdk_Error rdk_logger_init(const char* debugConfigFile)
 {
-    rdk_Error ret;
-
-    if (0 == isLogInited)
+    rdk_Error ret = RDK_SUCCESS;
+    pthread_mutex_lock(&gInitMutex);
+    if (!isLogInited)
     {
         if (NULL == debugConfigFile)
         {
             debugConfigFile = DEBUG_CONF_FILE;
         }
 
-        /* Read the config file & populate pre-configured log levels */
-        ret = rdk_logger_parse_config(debugConfigFile);
-        if ( RDK_SUCCESS != ret)
-        {
-            printf("%s:%d Adding debug config file %s failed\n", __FUNCTION__, __LINE__, debugConfigFile);
-            return ret;
-        }
         /* Perform Logger Internal Init */
-        rdk_dbg_init();
+        ret = rdk_dbg_priv_config(debugConfigFile);
 
-        /* Perform Dynamin Logger Internal Init */
-        rdk_dyn_log_init();
+        if (RDK_SUCCESS == ret)
+        {
+            /* Perform Dynamic Logger Internal Init */
+            rdk_dyn_log_init();
 
-        /**
-         * Requests not to send SIGPIPE on errors on stream oriented
-         * sockets when the other end breaks the connection. The EPIPE
-         * error is still returned.
-         */
-        signal(SIGPIPE, SIG_IGN);
-        isLogInited = 1;
+            isLogInited = true;
+            /**
+             * Requests not to send SIGPIPE on errors on stream oriented
+             * sockets when the other end breaks the connection. The EPIPE
+             * error is still returned.
+             */
+            signal(SIGPIPE, SIG_IGN);
+        }
+        else
+        {
+            printf("Parsing debug config file %s failed\n", debugConfigFile);
+        }
     }
-    return RDK_SUCCESS;
+    pthread_mutex_unlock(&gInitMutex);
+    return ret;
 }
 
-/**
- * @brief Initialize RDK logger with extended configuration.
- *
- * This function provides a comprehensive logger initialization interface that combines
- * the standard RDK logger initialization with extended configuration options. It first
- * calls RDK_LOGGER_INIT() to perform basic logger setup, then applies the extended
- * configuration parameters for specific module logging requirements.
- *
- * @param[in] config Pointer to extended logger configuration structure containing:
- *                   - pCategoryName: Log category/module name (required, cannot be NULL)
- *                   - loglevel: Default log level for the category
- *                   - appender: Type of log appender
- *                   - layout: Message layout format
- *                   - pFilePolicy: File policy configuration (required for file appenders, NULL for others)
- *
- * @return RDK_SUCCESS on successful initialization, RDK_FAILURE on error.
- *
- * @note This function must be called after the basic RDK logger system is available.
- * @note If RDK_LOGGER_INIT() fails, the extended configuration is not applied.
- * @note For file appenders, ensure the log directory exists and has write permissions.
- * @note This function internally calls rdk_dbg_priv_ext_init() for the actual configuration.
- */
 rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
 {
-    rdk_Error ret;
+    rdk_Error ret = RDK_SUCCESS;
+
     ret = RDK_LOGGER_INIT();
-    if (ret == RDK_SUCCESS)
+
+    if (RDK_SUCCESS == ret)
     {
+        pthread_mutex_lock(&gInitMutex);
         ret = rdk_dbg_priv_ext_init(config);
+        pthread_mutex_unlock(&gInitMutex);
     }
+
     return ret;
- }
+}
 
 /**
  * @brief Cleanup the logger instantiation.
@@ -128,12 +121,12 @@ rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
  */
 rdk_Error rdk_logger_deinit()
 {
-    if(isLogInited)
+    pthread_mutex_lock(&gInitMutex);
+    if (isLogInited)
     {
         rdk_dyn_log_deinit();
-        rdk_logger_release_config();
-        //isLogInited = 0;
     }
+    pthread_mutex_unlock(&gInitMutex);
 
     return RDK_SUCCESS;
 }

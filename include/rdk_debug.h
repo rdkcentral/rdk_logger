@@ -27,4 +27,12 @@
 
 #include "rdk_logger.h"
 
+/* For legacy projects that does not include essential headers but relying on rdk_debug.h */
+#include <pthread.h>
+#include <time.h>
+
+#ifndef DEBUG_INI_OVERRIDE_PATH
+#define DEBUG_INI_OVERRIDE_PATH "/nvram/debug.ini"
+#endif
+
 #endif /* _RDK_DEBUG_H_ */

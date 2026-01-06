@@ -19,147 +19,43 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "rdk_logger.h"
 int rdk_logger_debug_test()
 {
-	RDK_LOG(RDK_LOG_FATAL, "LOG.RDK.GFX",
-		"Fatal\n");
+    char buffer[55]; // Assume this is filled with 55 bytes of data
+    for(int j=0; j<55; j++) buffer[j] = 'A' + (j % 26);
 
-	RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.GFX",
-		"Error\n");
+    for (int i = 0; i < 5; i++) {
+        rdk_logger_msg_printf(RDK_LOG_INFO,  "LOG.RDK.AA", "Pre %s info %d\n", buffer, i);
+        rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.AA", "Pre error %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_INFO,  "LOG.RDK.BB", "Pre info  %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.BB", "Pre error %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_INFO,  "LOG.RDK.CC", "Pre info  %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.CC", "Pre error %d\n", i);
+    }
 
-	RDK_LOG(RDK_LOG_WARN, "LOG.RDK.GFX",
-		"Warning\n");
+    printf ("2nd loop\n");
+    rdk_logger_ext_config_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.pModuleName = "LOG.RDK.BB";
+    cfg.loglevel = RDK_LOG_TRACE;
+    cfg.output = RDKLOG_OUTPUT_SYSLOG;
+    cfg.format = RDKLOG_FORMAT_PLAINTEXT;
+    cfg.pFilePolicy = NULL;
+    rdk_Error ret = rdk_logger_ext_init(&cfg);
 
-	RDK_LOG(RDK_LOG_INFO, "LOG.RDK.GFX",
-		"Info\n");
+    cfg.pModuleName = "LOG.RDK.CC";
+    cfg.format = RDKLOG_FORMAT_DETAIL_WITH_TS;
+    ret = rdk_logger_ext_init(&cfg);
 
-	RDK_LOG(RDK_LOG_NOTICE, "LOG.RDK.GFX",
-		"Notice\n");
-
-	RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.GFX",
-		"Debug\n");
-
-	RDK_LOG(RDK_LOG_TRACE, "LOG.RDK.GFX",
-		"Trace1\n");
-
-	RDK_LOG(RDK_LOG_FATAL, "LOG.RDK.SYS",
-		"Fatal\n");
-
-	RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.SYS",
-		"Error\n");
-
-	RDK_LOG(RDK_LOG_WARN, "LOG.RDK.SYS",
-		"Warning\n");
-
-	RDK_LOG(RDK_LOG_INFO, "LOG.RDK.SYS",
-		"Info\n");
-
-	RDK_LOG(RDK_LOG_NOTICE, "LOG.RDK.SYS",
-		"Notice\n");
-
-	RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.SYS",
-		"Debug\n");
-
-	RDK_LOG(RDK_LOG_TRACE, "LOG.RDK.SYS",
-		"Trace1\n");
-
-	RDK_LOG(RDK_LOG_FATAL, "LOG.RDK.QAMSRC",
-		"Fatal\n");
-
-	RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.QAMSRC",
-		"Error\n");
-
-	RDK_LOG(RDK_LOG_WARN, "LOG.RDK.QAMSRC",
-		"Warning\n");
-
-	RDK_LOG(RDK_LOG_NOTICE, "LOG.RDK.QAMSRC",
-		"Notice\n");
-
-	RDK_LOG(RDK_LOG_INFO, "LOG.RDK.QAMSRC",
-		"Info\n");
-
-	RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.QAMSRC",
-		"Debug\n");
-
-	RDK_LOG(RDK_LOG_TRACE, "LOG.RDK.QAMSRC",
-		"Trace1\n");
-
-	RDK_LOG(RDK_LOG_FATAL, "LOG.RDK.INBSI",
-		"Fatal\n");
-
-	RDK_LOG(RDK_LOG_ERROR, "LOG.RDK.INBSI",
-		"Error\n");
-
-	RDK_LOG(RDK_LOG_WARN, "LOG.RDK.INBSI",
-		"Warning\n");
-
-	RDK_LOG(RDK_LOG_NOTICE, "LOG.RDK.INBSI",
-		"Notice\n");
-
-	RDK_LOG(RDK_LOG_INFO, "LOG.RDK.INBSI",
-		"Info\n");
-
-	RDK_LOG(RDK_LOG_DEBUG, "LOG.RDK.INBSI",
-		"Debug\n");
-
-	RDK_LOG(RDK_LOG_TRACE, "LOG.RDK.INBSI",
-		"Trace1\n");
-
-	if (TRUE == rdk_dbg_enabled( "LOG.RDK.QAMSRC", RDK_LOG_FATAL))
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_FATAL Enabled.\n");
-	}
-	else
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_FATAL Disabled.\n");
-	}
-
-	if (TRUE == rdk_dbg_enabled( "LOG.RDK.QAMSRC", RDK_LOG_ERROR))
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_ERROR Enabled.\n");
-	}
-	else
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_ERROR Disabled.\n");
-	}
-
-	if (TRUE == rdk_dbg_enabled( "LOG.RDK.QAMSRC", RDK_LOG_WARN))
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_WARN Enabled.\n");
-	}
-	else
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_WARN Disabled.\n");
-	}
-
-	if (TRUE == rdk_dbg_enabled( "LOG.RDK.QAMSRC", RDK_LOG_INFO))
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_INFO Enabled.\n");
-	}
-	else
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_INFO Disabled.\n");
-	}
-
-	if (TRUE == rdk_dbg_enabled( "LOG.RDK.QAMSRC", RDK_LOG_DEBUG))
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_DEBUG Enabled.\n");
-	}
-	else
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_DEBUG Disabled.\n");
-	}
-
-	if (TRUE == rdk_dbg_enabled( "LOG.RDK.QAMSRC", RDK_LOG_TRACE))
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_TRACE Enabled.\n");
-	}
-	else
-	{
-		printf("LOG.RDK.QAMSRC  RDK_LOG_TRACE Disabled.\n");
-	}
-
-	printf ( "\n test complete\n");
-	return 0;
+    for (int i = 0; i < 5; i++) {
+        rdk_logger_msg_printf(RDK_LOG_INFO,  "LOG.RDK.AA", "Post %s info %d\n", buffer, i);
+        rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.AA", "Post error %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_INFO,  "LOG.RDK.BB", "Post info  %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.BB", "Post error %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_INFO,  "LOG.RDK.CC", "Post info  %d\n", i);
+        rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.CC", "Post error %d\n", i);
+    }
+    return 0;
 }

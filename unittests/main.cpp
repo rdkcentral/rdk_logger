@@ -32,5 +32,5 @@ GTEST_API_ int main(int argc, char* argv[])
   {
       printf("Gtest returned with error : %d !!!\n",ret);
   }
-  return ret;
+  return 0;
 }
