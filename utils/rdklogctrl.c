@@ -24,37 +24,32 @@ static void usage(const char* app_name)
     printf("app_name    -> Application name, as per listed by 'ps' command\n");
     printf("module_name -> Module name.\n");
     printf("               For RDK component, the 'Module name' is expected to start with 'LOG.RDK.' string\n");
-    printf("               For CPC component like 'Reciever', the module name can be either 'LOG.RDK.' or 'XREConnection', 'RmfMediaPlayer', etc.\n");
+    printf("               For CPC component like 'Receiver', the module name can be either 'LOG.RDK.' or 'XREConnection', 'RmfMediaPlayer', etc.\n");
     printf("loglevel    -> Log Level of the Component to be modified\n");
     printf("               Possible values - FATAL, ERROR, WARN, NOTICE, INFO, DEBUG, TRACE, NONE\n");
-    printf("               Turn off any loglevel using '~' symbol.\n");
-    printf("               (i.e) '~ERROR' would turn off error logs alone for that component\n");
 }
 
-static int validate_loglevel(const char* level)
+static int8_t validate_loglevel(const char* level)
 {
     char *loglevel = (char *)level;
-    unsigned char negate = 0;
 
-    if(loglevel[0] == '~') {
-        loglevel++;
-        negate = 0x80;
-    }
+    if (!level)
+        return -1;
 
     if(0 == strncmp(loglevel, "FATAL", 5))
-        return negate|RDK_LOG_FATAL;
+        return RDK_LOG_FATAL;
     else if(0 == strncmp(loglevel, "ERROR", 5))
-        return negate|RDK_LOG_ERROR;
+        return RDK_LOG_ERROR;
     else if(0 == strncmp(loglevel, "WARN", 4))
-        return negate|RDK_LOG_WARN;
+        return RDK_LOG_WARN;
     else if(0 == strncmp(loglevel, "NOTICE", 6))
-        return negate|RDK_LOG_NOTICE;
+        return RDK_LOG_NOTICE;
     else if(0 == strncmp(loglevel, "INFO", 4))
-        return negate|RDK_LOG_INFO;
+        return RDK_LOG_INFO;
     else if(0 == strncmp(loglevel, "DEBUG", 5))
-        return negate|RDK_LOG_DEBUG;
+        return RDK_LOG_DEBUG;
     else if(0 == strncmp(loglevel, "TRACE", 6))
-        return negate|RDK_LOG_TRACE;
+        return RDK_LOG_TRACE;
     else if(0 == strncmp(loglevel, "NONE", 4))
         return RDK_LOG_NONE;
     else
@@ -65,7 +60,7 @@ int main(int argc, char *argv[])
 {
     struct sockaddr_in dest_addr;
     int i, sockfd, numbytes, app_len, comp_len, optval = 1;
-    int level = -1;
+    int8_t level = -1;
     unsigned char buf[128] = {0};
 
     if (argc != 4) {
@@ -109,7 +104,7 @@ int main(int argc, char *argv[])
     memcpy(buf,DL_SIGNATURE,i);
 
     /* Log level */
-    buf[++i] = (unsigned char)level;
+    buf[++i] = (uint8_t)level;
 
     /* App name length */
     app_len = strlen(argv[1]);

@@ -34,7 +34,6 @@ add_executable(
   rdkloggerMsgVsprintf.cpp
   rdkloggerMsgRaw.cpp
   rdkloggerMsgRaw1.cpp
-  rdkIsDbgEnabled.cpp
   rdkLoggerDynamic.cpp
   rdkLoggerUtilityTest.cpp
   rdkLoggerConfigTest.cpp
@@ -44,7 +43,6 @@ add_executable(
   rdkLoggerRotationTest.cpp
   rdkLoggerErrorTest.cpp
   rdkLoggerPerformanceTest.cpp
-  rdkLoggerStreamEnvTest.cpp
   main.cpp
 )
 add_compile_definitions(LOGMILESTONE=ON)

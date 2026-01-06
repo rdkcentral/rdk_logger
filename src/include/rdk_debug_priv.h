@@ -20,27 +20,18 @@
 #if !defined(_RDK_DBG_PRIV_H)
 #define _RDK_DBG_PRIV_H
 
-#include <rdk_logger_types.h>
 #include <rdk_logger.h>
-#include <rdk_error.h>
-#include <log4c.h>
-#include <log4c/appender_type_rollingfile.h>
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 void rdk_dbg_priv_init(void);
-void rdk_dbg_priv_config(void);
-rdk_Error rdk_dbg_priv_ext_init(const rdk_logger_ext_config_t* config);
-void rdk_dbg_priv_shutdown();
-
+rdk_Error rdk_dbg_priv_config(const char *pConfigFile);
+void rdk_dbg_priv_deinit(void);
+rdk_Error rdk_dbg_priv_ext_init (const rdk_logger_ext_config_t* config);
 void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const char* format, va_list args);
-void rdk_dbg_priv_reconfig(const char *pModuleName, const char *pLogLevel);
-
-void rdk_dbg_init();
-void rdk_dbg_deinit();
+bool rdk_dbg_priv_log_reconfig(const char *pModuleName, rdk_LogLevel level);
 
 #ifdef __cplusplus
 }

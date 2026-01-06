@@ -285,10 +285,10 @@ TEST_F(RDKLoggerPerformanceTest, FileIOStressTest) {
     testPolicy.fileCountMax = 5;
     rdk_logger_ext_config_t config;
     memset(&config, 0, sizeof(config));
-    config.pCategoryName = "LOG.RDK.PERFORMANCE";
+    config.pModuleName = "LOG.RDK.PERFORMANCE";
     config.loglevel = RDK_LOG_DEBUG;
-    config.appender = RDKLOG_OUTPUT_FILE;
-    config.layout = RDKLOG_FORMAT_WITH_DATETIME;
+    config.output = RDKLOG_OUTPUT_FILE;
+    config.format = RDKLOG_FORMAT_WITH_TS;
     config.pFilePolicy = &testPolicy;
     
     int32_t ret = rdk_logger_ext_init(&config);

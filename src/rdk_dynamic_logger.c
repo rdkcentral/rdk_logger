@@ -30,6 +30,7 @@
 #include <sys/time.h>
 
 #include "rdk_dynamic_logger.h"
+#include "rdk_debug_priv.h"
 
 #define DL_PORT 12035
 #define DL_SIGNATURE "COMC"
@@ -38,43 +39,26 @@
 static int g_dl_socket = -1;
 extern char *__progname;
 
-static char * rdk_dyn_log_logLevelToString(unsigned char log_level)
+static char * rdk_dyn_log_logLevelToString(rdk_LogLevel log_level)
 {
-    int negate = 0;
-    unsigned char negate_mask = 0x80;
-
-    if(negate_mask == (log_level & negate_mask)) {
-        negate = 1;
-        log_level = log_level & (~negate_mask) ;
-    }
-
     switch(log_level){
-        case RDK_LOG_FATAL:
-            return (negate) ? "!FATAL":"FATAL";
-        case RDK_LOG_ERROR:
-            return (negate) ? "!ERROR":"ERROR";
-        case RDK_LOG_WARN:
-            return (negate) ? "!WARNING":"WARNING";
-        case RDK_LOG_NOTICE:
-            return (negate) ? "!NOTICE":"NOTICE";
-        case RDK_LOG_INFO:
-            return (negate) ? "!INFO":"INFO";
-        case RDK_LOG_DEBUG:
-            return (negate) ? "!DEBUG":"DEBUG";
-        case RDK_LOG_TRACE:
-            return (negate) ? "!TRACE":"TRACE";
-        case RDK_LOG_NONE:
-            return "NONE";
+        case RDK_LOG_FATAL:  return "FATAL";
+        case RDK_LOG_ERROR:  return "ERROR";
+        case RDK_LOG_WARN:   return "WARNING";
+        case RDK_LOG_NOTICE: return "NOTICE";
+        case RDK_LOG_INFO:   return "INFO";
+        case RDK_LOG_DEBUG:  return "DEBUG";
+        case RDK_LOG_TRACE:  return "TRACE";
+        case RDK_LOG_NONE:   return "NONE";
     }
-
-    return NULL;
+    return "NONE";
 }
 
 static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
 {
     unsigned char log_level = 0;
     int app_len, comp_len, i = DL_SIGNATURE_LEN;
-    char *loggingLevel = NULL, comp_name[64] = {0};
+    char comp_name[64] = {0};
 
     if(0 != memcmp(buf,DL_SIGNATURE,i)) {
         return;
@@ -91,12 +75,20 @@ static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
     i += app_len;
     comp_len = buf[i];
 
-    loggingLevel = rdk_dyn_log_logLevelToString(log_level);
-    if(NULL != loggingLevel) {
+    rdk_LogLevel loggingLevel = (rdk_LogLevel) log_level;
+
+    if((loggingLevel >= RDK_LOG_FATAL) && (loggingLevel <= RDK_LOG_NONE))
+    {
         memcpy(comp_name,buf+(++i),comp_len);
-        rdk_dbg_priv_reconfig(comp_name, loggingLevel);
-        fprintf(stderr,"%s(): Set %s loglevel for the component %s of the process %s\n",__func__,loggingLevel,comp_name,__progname);
+        rdk_dbg_priv_log_reconfig(comp_name, loggingLevel);
+        fprintf(stderr, "Log level change request to %s (%u) for the component %s, is success\n", rdk_dyn_log_logLevelToString(loggingLevel), loggingLevel, comp_name);
     }
+    else
+    {
+        fprintf(stderr, "Log level change request with Invalid input (%u)\n", loggingLevel);
+    }
+
+    return;
 }
 
 void rdk_dyn_log_process_pending_request()
@@ -176,7 +168,7 @@ void rdk_dyn_log_init()
         return;
     }
 
-    fprintf(stderr, "%sg_dl_socket = %d __progname = %s \n",__func__,g_dl_socket,__progname);
+    //fprintf(stderr, "%sg_dl_socket = %d __progname = %s \n",__func__,g_dl_socket,__progname);
 }
 
 void rdk_dyn_log_deinit()
