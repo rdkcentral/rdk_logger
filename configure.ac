@@ -20,13 +20,17 @@
 dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(rdklogger, [2.4.0])
+dnl AC_PREREQ([2.69])
+AC_INIT(rdklogger, 1.0, balaji_punnuru@cable.comcast.com,rmfwebkitifc)
 AC_CONFIG_SRCDIR([src])
-AC_CONFIG_HEADERS(config.h)
+AM_CONFIG_HEADER(cfg/config.h)
 AC_CONFIG_MACRO_DIR([cfg])
 AC_CONFIG_AUX_DIR([cfg])
 AM_INIT_AUTOMAKE([foreign no-dist-gzip dist-bzip2 1.9])
 LT_INIT
+IS_DYNAMIC_ENABLED=""
+IS_MILESTONE_ENABLED=""
+IS_ONBOARDLOG_ENABLED=""
 
 dnl subdirectories.
 
@@ -49,25 +53,69 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])],
 dnl **********************************
 dnl checks for dependencies
 dnl **********************************
-# Optional check: only use systemd if it is found
-PKG_CHECK_MODULES([SYSTEMD], [libsystemd >= 209], [
-    AC_DEFINE([HAVE_SYSTEMD], [1], [Define if libsystemd is available])
-    # The header is part of libsystemd, but we can verify it explicitly
-    AC_CHECK_HEADERS([systemd/sd-journal.h])
-], [
-    AC_MSG_WARN([libsystemd not found; systemd support will be disabled])
-])
+SYSLOG_HELPER_CFLAGS=" "
+SYSLOG_HELPER_LDFLAGS=" "
 
-# Substitute variables for Makefile.am
-AC_SUBST([SYSTEMD_CFLAGS])
-AC_SUBST([SYSTEMD_LIBS])
+AC_ARG_ENABLE([systemd-syslog-helper],
+        AS_HELP_STRING([--enable-systemd-syslog-helper],[enable systemd syslog logging]),
+        [
+                case "${enableval}" in
+                yes) SYSLOG_HELPER_CFLAGS="-DSYSTEMD_SYSLOG_HELPER"
+                     SYSLOG_HELPER_LDFLAGS="-lsysloghelper" ;;
+                no) AC_MSG_ERROR([systemd syslog logging  is disabled]) ;;
+                *) AC_MSG_ERROR([bad value ${enableval} for --enable-systemd-syslog-helper ]) ;;
+                esac
+                ],
+        [echo "systemd syslog logging  is disable"])
+
+AC_SUBST(SYSLOG_HELPER_CFLAGS)
+AC_SUBST(SYSLOG_HELPER_LDFLAGS)
+
+SYSTEMD_CFLAGS=" "
+SYSTEMD_LDFLAGS=" "
+AC_ARG_ENABLE([journal],
+        AS_HELP_STRING([--enable-journal],[enable systemd journal logging]),
+        [
+                case "${enableval}" in
+                yes) SYSTEMD_CFLAGS="-DSYSTEMD_JOURNAL"
+                     SYSTEMD_LDFLAGS="-lsystemd" ;;
+                no) AC_MSG_ERROR([systemd journal logging  is disabled]) ;;
+                *) AC_MSG_ERROR([bad value ${enableval} for --enable-journal ]) ;;
+                esac
+                ],
+        [echo "journal logging  is disable"])
+
+AC_SUBST(SYSTEMD_CFLAGS)
+AC_SUBST(SYSTEMD_LDFLAGS)
+
+AC_ARG_ENABLE([milestone],
+        AS_HELP_STRING([--enable-milestone],[enable milestone (default is no)]),
+        [
+          case "${enableval}" in
+           yes) IS_MILESTONE_ENABLED=true ;;
+           no)  IS_MILESTONE_ENABLED=false ;;
+          *) AC_MSG_ERROR([bad value ${enableval} for --enable-milestone]) ;;
+           esac
+           ],
+        [echo "Milestone support is disabled"])
+AM_CONDITIONAL([IS_MILESTONE_ENABLED], [test x$IS_MILESTONE_ENABLED = xtrue])
+
+AC_ARG_ENABLE([onboardlog],
+        AS_HELP_STRING([--enable-onboardlog],[enable onboardlog (default is no)]),
+        [
+          case "${enableval}" in
+           yes) IS_ONBOARDLOG_ENABLED=true ;;
+           no)  IS_ONBOARDLOG_ENABLED=false ;;
+          *) AC_MSG_ERROR([bad value ${enableval} for --enable-onboardlog]) ;;
+           esac
+           ],
+        [echo "Milestone support is disabled"])
+AM_CONDITIONAL([IS_ONBOARDLOG_ENABLED], [test x$IS_ONBOARDLOG_ENABLED = xtrue])
+
+AC_HEADER_STDC
 
 dnl Checks for header files.
 AC_CHECK_HEADERS([limits.h memory.h stdlib.h string.h sys/socket.h unistd.h])
-
-dnl Checks for syslog header file & functions.
-AC_CHECK_HEADERS([syslog.h])
-AC_CHECK_FUNCS([openlog syslog closelog])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl AC_CHECK_HEADER_STDBOOL
@@ -80,7 +128,7 @@ AC_CHECK_FUNCS([memset strdup strerror])
 PKG_CHECK_MODULES([LOG4C], [log4c >= 1.2.3])
 
 AC_CONFIG_FILES([Makefile
-                 cfg/Makefile
+		 cfg/Makefile
                  src/Makefile
                  test/Makefile
                  utils/Makefile
