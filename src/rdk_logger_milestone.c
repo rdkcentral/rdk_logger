@@ -20,15 +20,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <string>
 #include <time.h>
 #include <sys/time.h>
 #include "rdk_logger_milestone.h"
 
-#ifdef LOGMILESTONE
+#ifndef MILESTONE_LOG_FILENAME
 #define MILESTONE_LOG_FILENAME "/opt/logs/rdk_milestones.log"
-#else
-#define MILESTONE_LOG_FILENAME "/rdklogs/logs/rdk_milestones.log"
 #endif
 
 unsigned long long getUptimeMS(void)

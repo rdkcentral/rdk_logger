@@ -18,7 +18,7 @@
 */
 
 #include <stdio.h>
-#include "rdk_debug.h"
+#include "rdk_logger.h"
 
 int rdk_logger_debug_test();
 

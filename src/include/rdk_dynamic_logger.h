@@ -20,13 +20,9 @@
 #if !defined(_RDK_DBG_PRIV_DYNLOG_H)
 #define _RDK_DBG_PRIV_DYNLOG_H
 
-#include <rdk_debug.h>
-
-void rdk_dyn_log_processPendingRequest(void);
+#include <rdk_logger.h>
 
 void rdk_dyn_log_init(void);
-
-void rdk_dyn_log_deInit(void);
-
-char* rdk_loglevelToString(unsigned char log_level, rdk_LogLevel isLogEnabled);
+void rdk_dyn_log_deinit(void);
+void rdk_dyn_log_process_pending_request(void);
 #endif /* _RDK_DBG_PRIV_DYNLOG_H */
