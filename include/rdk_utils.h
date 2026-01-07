@@ -17,14 +17,51 @@
  * limitations under the License.
 */
 
+/**
+ * @file rdk_utils.h
+ * The header file provides RDK Utils APIs.
+ */
+
+
+/**
+* @defgroup rdk_logger
+* @{
+* @defgroup include
+* @{
+**/
+
+
+#ifndef _RDK_UTILS_H_
+#define _RDK_UTILS_H_
+
 #include <stdio.h>
-#include "rdk_debug.h"
-
-int rdk_logger_debug_test();
-
-int main()
+#include <rdk_error.h>
+#include <rdk_utils.h>
+#ifdef __cplusplus
+extern "C"
 {
-	rdk_logger_init(NULL);
-	rdk_logger_debug_test();
-	return 0;
+#endif
+
+/**
+ * @ingroup RDKLOGGER_UTILS_API
+ * @{
+ */
+
+const char* rdk_logger_envGet(const char *name);
+
+int rdk_logger_envGetNum(const char * mod);
+
+const char* rdk_logger_envGetValueFromNum(int number);
+
+const char* rdk_logger_envGetModFromNum(int Num);
+
+rdk_Error rdk_logger_env_add_conf_file(const char * path);
+
+/** @} */ //end of Doxygen tag RDKLOGGER_UTILS_API
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* _RDK_DEBUG_H_ */
+

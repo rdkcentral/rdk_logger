@@ -17,14 +17,35 @@
  * limitations under the License.
 */
 
-#include <stdio.h>
-#include "rdk_debug.h"
+#if !defined(_RDK_LOGGER_TYPES_H_)
+#define _RDK_LOGGER_TYPES_H_
 
-int rdk_logger_debug_test();
+#ifndef __ASSEMBLY__
 
-int main()
+#include <time.h>
+#include <pthread.h>
+#include <stdarg.h>
+#include <stdint.h> /* uint32_t etc. */
+
+#ifdef __cplusplus
+extern "C"
 {
-	rdk_logger_init(NULL);
-	rdk_logger_debug_test();
-	return 0;
+#endif
+
+typedef int32_t rdk_logger_Bool;
+
+#ifndef TRUE
+#define TRUE (1==1)
+#endif
+
+#ifndef FALSE
+#define FALSE (1!=1)
+#endif
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* _RDK_LOGGER_TYPES_H_ */
+
+#endif /*__ASSEMBLY__*/ /*FD-20090114*/

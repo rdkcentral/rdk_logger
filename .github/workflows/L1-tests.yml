@@ -2,17 +2,15 @@ name: l1-tests
 
 on:
   push:
-    branches: [ main, 'release/**', develop, 'topic/**', 'support/**' ]
+    branches: [ main, 'release/**', develop, 'topic/**' ]
   pull_request:
-    branches: [ main, 'release/**', develop, 'topic/**', 'support/**' ]
+    branches: [ main, 'release/**', develop, 'topic/**' ]
 
 env:
   WORK_DIR: ${{github.workspace}}
   DEP_LIB: ${{github.workspace}}/dep_lib
   RDKLOGGER_ROOT: ${{github.workspace}}/Rdklogger
-  LD_LIBRARY_PATH: ${{github.workspace}}/install/lib
-  PKG_CONFIG_PATH: ${{github.workspace}}/install/lib/pkgconfig
-  RDKLOGGER_PREFIX: ${{github.workspace}}/install
+  RDKLOGGER_INSTALL_DIR: ${{github.workspace}}/Rdklogger/install
 
 jobs:
   l1-tests:
@@ -40,7 +38,6 @@ jobs:
           sudo apt install -y cmake
           &&
           sudo apt install -y tree automake libsqlite3-dev libcurl4-openssl-dev valgrind libgtest-dev lcov clang libsystemd-dev libboost-all-dev libwebsocketpp-dev meson libcunit1 libcunit1-dev
-
 
       - name: Build gtest
         run: |
@@ -71,7 +68,7 @@ jobs:
           tar -xzf log4c-1.2.3.tar.gz
           fi
           cd "log4c-1.2.3"
-          ./configure "--prefix=${{github.workspace}}/install"
+          ./configure "--prefix=${DEP_LIB}/log4c-1.2.3/install"
           make
           make install
 
@@ -86,44 +83,18 @@ jobs:
           autoconf
           export ac_cv_func_malloc_0_nonnull=yes
           export ac_cv_func_memset=yes
-           # Enable coverage flags if applicable
-          if [ "${{matrix.coverage}}" = "with-coverage" ]; then
-            export CFLAGS="-DLOGMILESTONE=ON -DONBOARDING_FILE=ON  --coverage"
-            export CXXFLAGS="-DLOGMILESTONE=ON -DONBOARDING_FILE=ON --coverage"
-            export LDFLAGS="--coverage"
-          fi
-          ./configure "--prefix=${{github.workspace}}/install"
+          export LOG4C_CFLAGS="-I${{env.DEP_LIB}}/log4c-1.2.3/install/include/log4c/ -I${{env.DEP_LIB}}/log4c-1.2.3/src/ -I${{env.DEP_LIB}}/log4c-1.2.3/src/log4c -I${{env.DEP_LIB}}/log4c-1.2.3/install/include/"
+          export LOG4C_LIBS="-L${{env.DEP_LIB}}/log4c-1.2.3/install/lib"
+          ./configure --prefix=${{env.RDKLOGGER_INSTALL_DIR}}/lib --sysconfdir=${{env.RDKLOGGER_INSTALL_DIR}}/bin LOG4c_CFLAGS="-I${{env.DEP_LIB}}/log4c-1.2.3/src/ -I${{env.DEP_LIB}}/log4c-1.2.3/install/include/log4c/" LOG4C_LIBS="-L${{env.DEP_LIB}}/log4c-1.2.3/install/lib/liblog4c.so"
           make
           make install
 
       - name: Build and execute L1 unittesting for rdk_logger
         run: |
-          mkdir -p /opt/logs
-          sudo touch /opt/logs/rdk_milestones.log
-          sudo chmod 666 /opt/logs/rdk_milestones.log
           mkdir -p ${{env.RDKLOGGER_ROOT}}/unittests
           UNITTESTS="${{env.RDKLOGGER_ROOT}}/unittests"
-          cp ${{github.workspace}}/install/bin/rdklogctrl ${UNITTESTS}/
           cd ${UNITTESTS}
-          if [ "${{matrix.coverage}}" = "with-coverage" ]; then
-             cmake -B build -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install/usr  -DDEP_LIB_PATH=${{env.LD_LIBRARY_PATH}} -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_C_FLAGS="--coverage -DLOGMILESTONE=ON"
-          else
-             cmake -B build -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install/usr -DDEP_LIB_PATH=${{env.LD_LIBRARY_PATH}} -DCMAKE_VERBOSE_MAKEFILE=ON
-          fi
-          make  -C build
+          cmake -DRDKLOGGER_SOURCE_PATH=${{env.RDKLOGGER_ROOT}} -DDEP_LIB_PATH=${{env.DEP_LIB}} -DRDKLOGGER_UNITTEST_DIR=${UNITTESTS} -DCMAKE_INSTALL_PREFIX:PATH=${UNITTESTS}/build -DDEBUG_CONF_FILE="\"debug.ini\"" -S . -B build
+          make -C build
           cmake --install build
           ./build/rdk_logger_gtest
-      - name: Collect coverage report
-        if: ${{ matrix.coverage == 'with-coverage' }}
-        run: |
-          lcov --directory ${{env.RDKLOGGER_ROOT}}/src --capture --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' "${{env.RDKLOGGER_PREFIX}}/*" --output-file coverage.info 
-      - name: Generate the html report
-        run: |
-            genhtml coverage.info --output-directory /tmp/coverage_report    
-      - name: Upload coverage report
-        if: ${{ matrix.coverage == 'with-coverage' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: /tmp/coverage_report   

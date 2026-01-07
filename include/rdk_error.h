@@ -17,14 +17,26 @@
  * limitations under the License.
 */
 
-#include <stdio.h>
-#include "rdk_debug.h"
+#if !defined(_RDK_ERROR_H_)
+#define _RDK_ERROR_H_
 
-int rdk_logger_debug_test();
-
-int main()
+#ifdef __cplusplus
+extern "C"
 {
-	rdk_logger_init(NULL);
-	rdk_logger_debug_test();
-	return 0;
+#endif
+
+#ifndef uint32_t
+typedef unsigned int uint32_t;
+#endif
+
+#define RDK_SUCCESS          0
+
+typedef uint32_t rdk_Error;
+
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* _RDK_ERROR_H_ */
+
