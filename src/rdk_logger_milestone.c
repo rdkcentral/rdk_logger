@@ -24,9 +24,12 @@
 #include <sys/time.h>
 #include "rdk_logger_milestone.h"
 
-#ifndef MILESTONE_LOG_FILENAME
+#ifdef LOGMILESTONE
 #define MILESTONE_LOG_FILENAME "/opt/logs/rdk_milestones.log"
+#else
+#define MILESTONE_LOG_FILENAME "/rdklogs/logs/rdk_milestones.log"
 #endif
+
 
 unsigned long long getUptimeMS(void)
 {
