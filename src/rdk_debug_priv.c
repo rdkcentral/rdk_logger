@@ -94,6 +94,9 @@ static const log4c_layout_type_t log4c_layout_type_rdk_with_ts = {"format_with_t
 static const log4c_layout_type_t log4c_layout_type_rdk_detail_with_ts = {"format_detail_with_ts", rdk_detail_with_ts};
 static const log4c_layout_type_t log4c_layout_type_rdk_detail_without_ts = {"format_detail_without_ts", rdk_detail_without_ts};
 
+// For backward Compatibility
+static const log4c_layout_type_t log4c_layout_type_comcast_dated  = {"format_legacy", rdk_detail_with_ts};
+
 /**
  * Initialize Appender API.
  */
@@ -317,6 +320,10 @@ void rdk_dbg_priv_init(void)
     (void) log4c_layout_type_set(&log4c_layout_type_rdk_with_ts);
     (void) log4c_layout_type_set(&log4c_layout_type_rdk_detail_with_ts);
     (void) log4c_layout_type_set(&log4c_layout_type_rdk_detail_without_ts);
+
+    log4c_layout_t* legacy = log4c_layout_get("comcast_dated");
+    if (NULL != legacy)
+        (void) log4c_layout_set_type(legacy, &log4c_layout_type_comcast_dated);
 
     (void) log4c_appender_type_set(&log4c_appender_type_to_console);
     (void) log4c_appender_type_set(&log4c_appender_type_to_syslog);
@@ -684,7 +691,7 @@ bool rdk_dbg_priv_log_reconfig(const char *pModuleName, rdk_LogLevel logLevel)
  */
 static const char* rdk_plaintext(const log4c_layout_t* layout, const log4c_logging_event_t* event)
 {
-    (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s %s",
+    (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "[%-5s] %s",
                                                                         log4c_priority_to_string(event->evt_priority),
                                                                         event->evt_msg);
 
@@ -703,7 +710,7 @@ static const char* rdk_with_ts(const log4c_layout_t* layout, const log4c_logging
     gmtime_r(&event->evt_timestamp.tv_sec, &tm);
     printTime(&tm,timeBuff);
 
-    (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld %s %s", timeBuff,
+    (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld [%-5s] %s", timeBuff,
                                                                                                 event->evt_timestamp.tv_usec,
                                                                                                 log4c_priority_to_string(event->evt_priority),
                                                                                                 event->evt_msg);
@@ -746,7 +753,7 @@ static const char* rdk_detail_format_handler(const log4c_layout_t* layout, const
         gmtime_r(&event->evt_timestamp.tv_sec, &tm);
         printTime(&tm,timeBuff);
 
-        (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld %s [%s] [%ld] %s",
+        (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld [%-5s] [%s] [%ld] %s",
                                                     timeBuff,
                                                     event->evt_timestamp.tv_usec,
                                                     log4c_priority_to_string(event->evt_priority),
@@ -756,7 +763,7 @@ static const char* rdk_detail_format_handler(const log4c_layout_t* layout, const
     }
     else
     {
-        (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s [%s] [%ld] %s",
+        (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "[%-5s] [%s] [%ld] %s",
                                                     log4c_priority_to_string(event->evt_priority),
                                                     p,
                                                     syscall(SYS_gettid),
