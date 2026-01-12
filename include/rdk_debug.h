@@ -31,4 +31,8 @@
 #include <pthread.h>
 #include <time.h>
 
+#ifndef DEBUG_INI_OVERRIDE_PATH
+#define DEBUG_INI_OVERRIDE_PATH "/nvram/debug.ini"
+#endif
+
 #endif /* _RDK_DEBUG_H_ */
