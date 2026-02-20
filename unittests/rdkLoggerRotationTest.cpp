@@ -606,9 +606,6 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
             // Read and verify log content has detailed info but no timestamp
             FILE* logFile = fopen(logFilePath, "r");
             if (logFile) {
-                char line[1024];
-                bool foundModuleName = false;
-                bool readAnyLine = false;
             ASSERT_NE(logFile, nullptr) << "Failed to open log file for validation";
             char line[1024];
             bool foundModuleName = false;
@@ -618,6 +615,8 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
                     foundModuleName = true;
                 }
             }
+            fclose(logFile);
+            EXPECT_TRUE(foundModuleName) << "Log should contain module name in detailed format";
             fclose(logFile);
             EXPECT_TRUE(foundModuleName) << "Log should contain module name in detailed format";
     });
