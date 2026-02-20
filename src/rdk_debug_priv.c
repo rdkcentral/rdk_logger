@@ -773,7 +773,7 @@ static const char* rdk_format_log(const log4c_layout_t* layout, log4c_logging_ev
     {
         event->evt_buffer.buf_size = n + 1;
         event->evt_buffer.buf_data = (char *) realloc (event->evt_buffer.buf_data, event->evt_buffer.buf_size);
-        rdk_format_log(layout, event, format);
+        return rdk_format_log(layout, event, format);
     }
 
     /* avoid redundant \n */
