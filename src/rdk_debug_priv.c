@@ -777,7 +777,11 @@ static const char* rdk_format_log(const log4c_layout_t* layout, log4c_logging_ev
     }
 
     /* avoid redundant \n */
-    if((event->evt_buffer.buf_data[n] == '\0') && (event->evt_buffer.buf_data[n - 1] == '\n') && (event->evt_buffer.buf_data[n - 2] == '\n'))
+    if ((n >= 2) &&
+        (n < event->evt_buffer.buf_size) &&
+        (event->evt_buffer.buf_data[n] == '\0') &&
+        (event->evt_buffer.buf_data[n - 1] == '\n') &&
+        (event->evt_buffer.buf_data[n - 2] == '\n'))
     {
         event->evt_buffer.buf_data[n - 1] = '\0';
     }
