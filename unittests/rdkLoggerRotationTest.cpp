@@ -493,19 +493,18 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             
             // Read and verify log content contains thread ID
             FILE* logFile = fopen(logFilePath, "r");
-            if (logFile) {
-                char line[1024];
-                bool foundThreadId = false;
-                while (fgets(line, sizeof(line), logFile)) {
-                    // Thread ID format typically appears as [TID:xxxxx] or similar
-                    if (strstr(line, "TID") != NULL || strchr(line, '[') != NULL) {
-                        foundThreadId = true;
-                        break;
-                    }
+            ASSERT_NE(logFile, nullptr) << "Failed to open log file for validation";
+            char line[1024];
+            bool foundThreadId = false;
+            while (fgets(line, sizeof(line), logFile)) {
+                // Thread ID format typically appears as [TID:xxxxx] or similar
+                if (strstr(line, "TID") != NULL || strchr(line, '[') != NULL) {
+                    foundThreadId = true;
+                    break;
                 }
-                fclose(logFile);
-                EXPECT_TRUE(foundThreadId) << "Log should contain thread ID information";
             }
+            fclose(logFile);
+            EXPECT_TRUE(foundThreadId) << "Log should contain thread ID information";
     });
 }
 
