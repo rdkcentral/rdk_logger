@@ -70,7 +70,10 @@ void PrintCPUMetric(CpuTimes prev_times, CpuTimes now_times, const char* pBuf)
     unsigned long long diff_total = now_total - prev_total;
 
     /* Lets calculate CPU usage percentage. The usage is, 100.0 - (percentage of idle time) */
-    float cpu_usage = (100.0 * (double)(diff_total - diff_idle) / (double)diff_total);
+    float cpu_usage = 0.0f;
+    if (diff_total > 0) {
+        cpu_usage = (float)(100.0 * (double)(diff_total - diff_idle) / (double)diff_total);
+    }
 
     FILE* file = fopen("cpu.txt", "a+");
     if (file == NULL) {
