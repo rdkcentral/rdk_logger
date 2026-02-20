@@ -602,8 +602,11 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
                      testPolicy.fileLocation, testPolicy.fileName);
             struct stat st;
             EXPECT_EQ(stat(logFilePath, &st), 0) << "Log file should exist";
-            
+
+            // Read and verify log content contains both timestamp and thread ID
+            FILE* logFile = fopen(logFilePath, "r");
             ASSERT_NE(logFile, nullptr) << "Failed to open log file for validation";
+
             char line[1024];
             bool foundModuleName = false;
             if (fgets(line, sizeof(line), logFile)) {
@@ -612,10 +615,6 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
                     foundModuleName = true;
                 }
             }
-            fclose(logFile);
-            EXPECT_TRUE(foundModuleName) << "Log should contain module name in detailed format";
-            fclose(logFile);
-            EXPECT_TRUE(foundModuleName) << "Log should contain module name in detailed format";
             fclose(logFile);
             EXPECT_TRUE(foundModuleName) << "Log should contain module name in detailed format";
     });
