@@ -546,25 +546,24 @@ TEST_F(RDKLoggerRotationTest, FormatWithTSTID) {
             
             // Read and verify log content contains both timestamp and thread ID
             FILE* logFile = fopen(logFilePath, "r");
-            if (logFile) {
-                char line[1024];
-                bool foundTimestamp = false;
-                bool foundThreadId = false;
-                while (fgets(line, sizeof(line), logFile)) {
-                    // Look for timestamp patterns (date/time format)
-                    if (strchr(line, ':') != NULL && strchr(line, '-') != NULL) {
-                        foundTimestamp = true;
-                    }
-                    // Look for thread ID
-                    if (strstr(line, "TID") != NULL || strchr(line, '[') != NULL) {
-                        foundThreadId = true;
-                    }
-                    if (foundTimestamp && foundThreadId) break;
+            ASSERT_NE(logFile, nullptr) << "Failed to open log file for validation";
+            char line[1024];
+            bool foundTimestamp = false;
+            bool foundThreadId = false;
+            while (fgets(line, sizeof(line), logFile)) {
+                // Look for timestamp patterns (date/time format)
+                if (strchr(line, ':') != NULL && strchr(line, '-') != NULL) {
+                    foundTimestamp = true;
                 }
-                fclose(logFile);
-                EXPECT_TRUE(foundTimestamp) << "Log should contain timestamp information";
-                EXPECT_TRUE(foundThreadId) << "Log should contain thread ID information";
+                // Look for thread ID
+                if (strstr(line, "TID") != NULL || strchr(line, '[') != NULL) {
+                    foundThreadId = true;
+                }
+                if (foundTimestamp && foundThreadId) break;
             }
+            fclose(logFile);
+            EXPECT_TRUE(foundTimestamp) << "Log should contain timestamp information";
+            EXPECT_TRUE(foundThreadId) << "Log should contain thread ID information";
     });
 }
 
