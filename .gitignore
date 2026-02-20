@@ -1,0 +1,22 @@
+# Build artifacts
+Makefile.in
+aclocal.m4
+autom4te.cache/
+config.h.in
+config.log
+configure
+compile
+config.guess
+config.sub
+depcomp
+install-sh
+libtool.m4
+ltmain.sh
+ltoptions.m4
+ltsugar.m4
+ltversion.m4
+lt~obsolete.m4
+missing
+
+# CodeQL artifacts
+_codeql_detected_source_root
