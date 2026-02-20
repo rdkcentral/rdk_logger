@@ -463,7 +463,7 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 1024; // 1KB
+            testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -477,8 +477,10 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization with RDKLOG_FORMAT_WITH_TID should succeed";
 
             // Generate log messages to test the format with thread ID
-            for (int i = 0; i < 10; i++) {
-                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "TID format test message %d", i);
+            char large_message[150];
+            createLargeLogMessage(large_message, sizeof(large_message));
+            for (int i = 0; i < 15; i++) {
+                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "TID format test %d: %s", i, large_message);
                 usleep(10000); // 10ms delay
             }
 
@@ -488,6 +490,22 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
                      testPolicy.fileLocation, testPolicy.fileName);
             struct stat st;
             EXPECT_EQ(stat(logFilePath, &st), 0) << "Log file should exist";
+            
+            // Read and verify log content contains thread ID
+            FILE* logFile = fopen(logFilePath, "r");
+            if (logFile) {
+                char line[1024];
+                bool foundThreadId = false;
+                while (fgets(line, sizeof(line), logFile)) {
+                    // Thread ID format typically appears as [TID:xxxxx] or similar
+                    if (strstr(line, "TID") != NULL || strchr(line, '[') != NULL) {
+                        foundThreadId = true;
+                        break;
+                    }
+                }
+                fclose(logFile);
+                EXPECT_TRUE(foundThreadId) << "Log should contain thread ID information";
+            }
     });
 }
 
@@ -499,7 +517,7 @@ TEST_F(RDKLoggerRotationTest, FormatWithTSTID) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 1024; // 1KB
+            testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -513,8 +531,10 @@ TEST_F(RDKLoggerRotationTest, FormatWithTSTID) {
             ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization with RDKLOG_FORMAT_WITH_TS_TID should succeed";
 
             // Generate log messages to test the format with timestamp and thread ID
-            for (int i = 0; i < 10; i++) {
-                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "TS_TID format test message %d", i);
+            char large_message[150];
+            createLargeLogMessage(large_message, sizeof(large_message));
+            for (int i = 0; i < 15; i++) {
+                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "TS_TID format test %d: %s", i, large_message);
                 usleep(10000); // 10ms delay
             }
 
@@ -524,6 +544,28 @@ TEST_F(RDKLoggerRotationTest, FormatWithTSTID) {
                      testPolicy.fileLocation, testPolicy.fileName);
             struct stat st;
             EXPECT_EQ(stat(logFilePath, &st), 0) << "Log file should exist";
+            
+            // Read and verify log content contains both timestamp and thread ID
+            FILE* logFile = fopen(logFilePath, "r");
+            if (logFile) {
+                char line[1024];
+                bool foundTimestamp = false;
+                bool foundThreadId = false;
+                while (fgets(line, sizeof(line), logFile)) {
+                    // Look for timestamp patterns (date/time format)
+                    if (strchr(line, ':') != NULL && strchr(line, '-') != NULL) {
+                        foundTimestamp = true;
+                    }
+                    // Look for thread ID
+                    if (strstr(line, "TID") != NULL || strchr(line, '[') != NULL) {
+                        foundThreadId = true;
+                    }
+                    if (foundTimestamp && foundThreadId) break;
+                }
+                fclose(logFile);
+                EXPECT_TRUE(foundTimestamp) << "Log should contain timestamp information";
+                EXPECT_TRUE(foundThreadId) << "Log should contain thread ID information";
+            }
     });
 }
 
@@ -535,7 +577,7 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
             strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
-            testPolicy.fileSizeMax = 1024; // 1KB
+            testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
             rdk_logger_ext_config_t config;
             memset(&config, 0, sizeof(config));
@@ -549,8 +591,10 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
             ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization with RDKLOG_FORMAT_DETAIL_WITHOUT_TS should succeed";
 
             // Generate log messages to test the detailed format without timestamp
-            for (int i = 0; i < 10; i++) {
-                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "Detail without TS format test message %d", i);
+            char large_message[150];
+            createLargeLogMessage(large_message, sizeof(large_message));
+            for (int i = 0; i < 15; i++) {
+                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "Detail no TS format test %d: %s", i, large_message);
                 usleep(10000); // 10ms delay
             }
 
@@ -560,6 +604,21 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
                      testPolicy.fileLocation, testPolicy.fileName);
             struct stat st;
             EXPECT_EQ(stat(logFilePath, &st), 0) << "Log file should exist";
+            
+            // Read and verify log content has detailed info but no timestamp
+            FILE* logFile = fopen(logFilePath, "r");
+            if (logFile) {
+                char line[1024];
+                bool foundModuleName = false;
+                if (fgets(line, sizeof(line), logFile)) {
+                    // Check for module name (LOG.RDK.ROTATION) which should be in detailed format
+                    if (strstr(line, "LOG.RDK.ROTATION") != NULL || strstr(line, "ROTATION") != NULL) {
+                        foundModuleName = true;
+                    }
+                }
+                fclose(logFile);
+                EXPECT_TRUE(foundModuleName) << "Log should contain module name in detailed format";
+            }
     });
 }
 
