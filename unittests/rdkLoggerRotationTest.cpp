@@ -454,6 +454,80 @@ TEST_F(RDKLoggerRotationTest, ConcurrentAccess) {
     });
     // Should handle concurrent access gracefully
 }
+
+// Test log rotation with RDKLOG_FORMAT_WITH_TID format
+TEST_F(RDKLoggerRotationTest, FormatWithTID) {
+    RUN_IN_FORK({
+            rdk_LogOutput_File testPolicy;
+            strncpy(testPolicy.fileName, "format_tid_test.log", sizeof(testPolicy.fileName)-1);
+            testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
+            strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
+            testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
+            testPolicy.fileSizeMax = 256; // 256 Bytes
+            testPolicy.fileCountMax = 2;
+            rdk_logger_ext_config_t config;
+            memset(&config, 0, sizeof(config));
+            config.pModuleName = "LOG.RDK.ROTATION";
+            config.loglevel = RDK_LOG_TRACE;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TID;
+            config.pFilePolicy = &testPolicy;
+            rdk_Error ret = rdk_logger_ext_init(&config);
+            ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization with RDKLOG_FORMAT_WITH_TID should succeed";
+
+            // Generate log messages to test the format
+            char large_message[200];
+            createLargeLogMessage(large_message, sizeof(large_message));
+
+            for (int i = 0; i < 15; i++) {
+                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "TID Message %d: %s", i, large_message);
+                usleep(10000); // 10ms delay
+            }
+
+            // Check that rotation occurred
+            int file_count = countFilesInDirectory("/tmp/rdk_logger_rotation_test");
+            printf("file_count with TID format: %d\n", file_count);
+            system("ls -lt /tmp/rdk_logger_rotation_test");
+            EXPECT_LE(file_count, testPolicy.fileCountMax + 1) << "Should not exceed maxCount files with TID format";
+    });
+}
+
+// Test log rotation with RDKLOG_FORMAT_WITH_TS_TID format
+TEST_F(RDKLoggerRotationTest, FormatWithTSTID) {
+    RUN_IN_FORK({
+            rdk_LogOutput_File testPolicy;
+            strncpy(testPolicy.fileName, "format_ts_tid_test.log", sizeof(testPolicy.fileName)-1);
+            testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
+            strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
+            testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
+            testPolicy.fileSizeMax = 256; // 256 Bytes
+            testPolicy.fileCountMax = 2;
+            rdk_logger_ext_config_t config;
+            memset(&config, 0, sizeof(config));
+            config.pModuleName = "LOG.RDK.ROTATION";
+            config.loglevel = RDK_LOG_TRACE;
+            config.output = RDKLOG_OUTPUT_FILE;
+            config.format = RDKLOG_FORMAT_WITH_TS_TID;
+            config.pFilePolicy = &testPolicy;
+            rdk_Error ret = rdk_logger_ext_init(&config);
+            ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization with RDKLOG_FORMAT_WITH_TS_TID should succeed";
+
+            // Generate log messages to test the format
+            char large_message[200];
+            createLargeLogMessage(large_message, sizeof(large_message));
+
+            for (int i = 0; i < 15; i++) {
+                rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.ROTATION", "TS_TID Message %d: %s", i, large_message);
+                usleep(10000); // 10ms delay
+            }
+
+            // Check that rotation occurred
+            int file_count = countFilesInDirectory("/tmp/rdk_logger_rotation_test");
+            printf("file_count with TS_TID format: %d\n", file_count);
+            system("ls -lt /tmp/rdk_logger_rotation_test");
+            EXPECT_LE(file_count, testPolicy.fileCountMax + 1) << "Should not exceed maxCount files with TS_TID format";
+    });
+}
 #if 0
 // Test log rotation with different log levels
 TEST_F(RDKLoggerRotationTest, DifferentLogLevels) {
