@@ -120,7 +120,7 @@ int testLogging()
     usleep(1000);
 
     // Test 1: Print DEBUG where DEBUG is not enabled.
-    // CPU taken to drop the log messagge
+    // CPU taken to drop the log message
     getCPUStat(&prev_times);
     for (i = 0; i < 15000; i++)
     {
@@ -131,7 +131,7 @@ int testLogging()
     usleep(10000);
 
     // Test 2: Print INFO where INFO is enabled.
-    // CPU taken to print the log messagge
+    // CPU taken to print the log message
     getCPUStat(&prev_times);
     for (i = 0; i < 15000; i++)
     {
@@ -154,7 +154,7 @@ int testLogging()
     usleep(10000);
 
     // Test 3: Print DEBUG where DEBUG is not enabled.
-    // CPU taken to drop the log messagge
+    // CPU taken to drop the log message
     getCPUStat(&prev_times);
     for (i = 0; i < 15000; i++)
     {
@@ -165,7 +165,7 @@ int testLogging()
     usleep(10000);
 
     // Test 4: Print INFO where INFO is enabled.
-    // CPU taken to print the log messagge
+    // CPU taken to print the log message
     getCPUStat(&prev_times);
     for (i = 0; i < 15000; i++)
     {
