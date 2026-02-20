@@ -609,18 +609,17 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
                 char line[1024];
                 bool foundModuleName = false;
                 bool readAnyLine = false;
-                while (fgets(line, sizeof(line), logFile) != NULL) {
-                    readAnyLine = true;
-                    // Check for full module name (LOG.RDK.ROTATION) which should be in detailed format
-                    if (strstr(line, "LOG.RDK.ROTATION") != NULL) {
-                        foundModuleName = true;
-                        break;
-                    }
+            ASSERT_NE(logFile, nullptr) << "Failed to open log file for validation";
+            char line[1024];
+            bool foundModuleName = false;
+            if (fgets(line, sizeof(line), logFile)) {
+                // Check for full module name (LOG.RDK.ROTATION) which should be in detailed format
+                if (strstr(line, "LOG.RDK.ROTATION") != NULL) {
+                    foundModuleName = true;
                 }
-                fclose(logFile);
-                EXPECT_TRUE(readAnyLine) << "Log file should contain at least one line of output";
-                EXPECT_TRUE(foundModuleName) << "Log should contain module name in detailed format";
             }
+            fclose(logFile);
+            EXPECT_TRUE(foundModuleName) << "Log should contain module name in detailed format";
     });
 }
 
