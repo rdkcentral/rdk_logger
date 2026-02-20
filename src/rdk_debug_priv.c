@@ -673,7 +673,7 @@ bool rdk_dbg_priv_log_reconfig(const char *pModuleName, rdk_LogLevel logLevel)
 
 #define COMCAST_DATAED_BUFF_SIZE    40
 /****************************************************************
- * Wrapper function to retrive module name
+ * Wrapper function to retrieve module name
  */
 static const char* getModuleName(log4c_logging_event_t* event)
 {
