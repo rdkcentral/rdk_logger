@@ -20,12 +20,12 @@
 SUBDIRS =
 DIST_SUBDIRS =
 
-bin_PROGRAMS = testProgram 
+bin_PROGRAMS = rdk_logger_cpu_test
 
-testProgram_SOURCES= rdk_logger_debug_test.c  rdk_logger_test_main.c
-testProgram_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
-testProgram_LDADD = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
-testProgram_LDFLAGS = -L/usr/lib
+rdk_logger_cpu_test_SOURCES= rdk_logger_cpu_test.c
+rdk_logger_cpu_test_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
+rdk_logger_cpu_test_LDADD = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
+rdk_logger_cpu_test_LDFLAGS = -L/usr/lib
 
 
 

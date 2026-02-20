@@ -236,6 +236,8 @@ typedef enum
 {
     RDKLOG_FORMAT_PLAINTEXT = 0,        /** format_plaintext */
     RDKLOG_FORMAT_WITH_TS,              /** format_with_ts */
+    RDKLOG_FORMAT_WITH_TID,             /** format_with_tid */
+    RDKLOG_FORMAT_WITH_TS_TID,          /** format_with_ts_tid */
     RDKLOG_FORMAT_DETAIL_WITH_TS,       /** format_detail_with_ts */
     RDKLOG_FORMAT_DETAIL_WITHOUT_TS     /** format_detail_without_ts */
 } rdk_LogFormat;
