@@ -1,0 +1,26 @@
+# Build artifacts
+Makefile.in
+aclocal.m4
+autom4te.cache/
+cfg/compile
+cfg/config.guess
+cfg/config.sub
+cfg/depcomp
+cfg/install-sh
+cfg/libtool.m4
+cfg/ltmain.sh
+cfg/ltoptions.m4
+cfg/ltsugar.m4
+cfg/ltversion.m4
+cfg/lt~obsolete.m4
+cfg/missing
+cfg/Makefile.in
+config.h.in
+config.log
+configure
+include/Makefile.in
+install-sh
+src/Makefile.in
+test/Makefile.in
+utils/Makefile.in
+_codeql_detected_source_root
