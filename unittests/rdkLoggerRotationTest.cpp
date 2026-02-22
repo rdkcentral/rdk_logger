@@ -509,7 +509,7 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             EXPECT_TRUE(foundThreadId) << "Log should contain thread ID information";
     });
 }
-#if 0
+
 // Test log rotation with RDKLOG_FORMAT_WITH_TS_TID format
 TEST_F(RDKLoggerRotationTest, FormatWithTSTID) {
     RUN_IN_FORK({
@@ -622,7 +622,7 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
     });
 }
 
-
+#if 0
 // Test log rotation with different log levels
 TEST_F(RDKLoggerRotationTest, DifferentLogLevels) {
     rdk_logger_ext_config_t config;
