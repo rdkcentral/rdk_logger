@@ -71,26 +71,27 @@ int gRootPriority = LOG4C_PRIORITY_WARN;
 const char* gRootCatName = "LOG.RDK";
 static pthread_mutex_t gLoggingMutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* 1024 is allowed; but lets leave some space for timestamp  */
-#define LOG4C_MSG_BUFFER_SIZE   980
-
 /* Define the priority as -ve to avoid printing */
 #define LOG4C_PRIORITY_NONE     -1
 
 /**
  * Declare format/layout APIs.
  */
-static const char* rdk_plaintext(const log4c_layout_t* a_layout, const log4c_logging_event_t* a_event);
-static const char* rdk_with_ts(const log4c_layout_t* a_layout, const log4c_logging_event_t* a_event);
-static const char* rdk_detail_with_ts(const log4c_layout_t* a_layout, const log4c_logging_event_t* a_event);
-static const char* rdk_detail_without_ts(const log4c_layout_t* a_layout, const log4c_logging_event_t* a_event);
-static const char* rdk_detail_format_handler(const log4c_layout_t* layout, const log4c_logging_event_t* event, bool isTimed);
+static const char* rdk_plaintext(const log4c_layout_t* a_layout, log4c_logging_event_t* a_event);
+static const char* rdk_with_ts(const log4c_layout_t* a_layout, log4c_logging_event_t* a_event);
+static const char* rdk_with_tid(const log4c_layout_t* a_layout, log4c_logging_event_t* a_event);
+static const char* rdk_with_ts_tid(const log4c_layout_t* a_layout, log4c_logging_event_t* a_event);
+static const char* rdk_detail_with_ts(const log4c_layout_t* a_layout, log4c_logging_event_t* a_event);
+static const char* rdk_detail_without_ts(const log4c_layout_t* a_layout, log4c_logging_event_t* a_event);
+static const char* rdk_format_log(const log4c_layout_t* layout, log4c_logging_event_t* event, rdk_LogFormat format);
 
 /**
  * Initialize Layout API.
  */
 static const log4c_layout_type_t log4c_layout_type_rdk_plaintext = {"format_plaintext", rdk_plaintext};
 static const log4c_layout_type_t log4c_layout_type_rdk_with_ts = {"format_with_ts", rdk_with_ts};
+static const log4c_layout_type_t log4c_layout_type_rdk_with_tid = {"format_with_tid", rdk_with_tid};
+static const log4c_layout_type_t log4c_layout_type_rdk_with_ts_tid = {"format_with_ts_tid", rdk_with_ts_tid};
 static const log4c_layout_type_t log4c_layout_type_rdk_detail_with_ts = {"format_detail_with_ts", rdk_detail_with_ts};
 static const log4c_layout_type_t log4c_layout_type_rdk_detail_without_ts = {"format_detail_without_ts", rdk_detail_without_ts};
 
@@ -318,6 +319,8 @@ void rdk_dbg_priv_init(void)
     ///> will configure them
     (void) log4c_layout_type_set(&log4c_layout_type_rdk_plaintext);
     (void) log4c_layout_type_set(&log4c_layout_type_rdk_with_ts);
+    (void) log4c_layout_type_set(&log4c_layout_type_rdk_with_tid);
+    (void) log4c_layout_type_set(&log4c_layout_type_rdk_with_ts_tid);
     (void) log4c_layout_type_set(&log4c_layout_type_rdk_detail_with_ts);
     (void) log4c_layout_type_set(&log4c_layout_type_rdk_detail_without_ts);
 
@@ -491,6 +494,16 @@ rdk_Error rdk_dbg_priv_ext_init (const rdk_logger_ext_config_t* config)
                     layoutObj = log4c_layout_get("rdk_with_ts");
                     break;
                 }
+                case RDKLOG_FORMAT_WITH_TID:
+                {
+                    layoutObj = log4c_layout_get("rdk_with_tid");
+                    break;
+                }
+                case RDKLOG_FORMAT_WITH_TS_TID:
+                {
+                    layoutObj = log4c_layout_get("rdk_with_ts_tid");
+                    break;
+                }
                 case RDKLOG_FORMAT_DETAIL_WITH_TS:
                 {
                     layoutObj = log4c_layout_get("rdk_detail_with_ts");
@@ -601,6 +614,9 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
         return;
     }
 
+    if ((!module_name) || (!format))
+        return;
+
     pthread_mutex_lock(&gLoggingMutex);
     cat = log4c_category_get(module_name);
     if(!cat)
@@ -620,40 +636,10 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
     /* To Ensure that we dont log at all when category is invalid */
     if(cat)
     {
-        va_list localArg;
-        char logMsg[LOG4C_MSG_BUFFER_SIZE] = "";
-        int n = 0;
         int log4cPriority = rdk_logLevel_to_log4c_priority(level);
-
-        va_copy(localArg, args);
-        n = vsnprintf(logMsg, LOG4C_MSG_BUFFER_SIZE, format, localArg);
-        va_end(localArg);
-
-        if (n > LOG4C_MSG_BUFFER_SIZE)
+        if (log4c_category_is_priority_enabled(cat, log4cPriority))
         {
-            // Lets allocate the memory and split into multiple chunks of LOG4C_MSG_BUFFER_SIZE
-            char *p = (char*) malloc(n + 1);
-            if (p)
-            {
-                va_list reAllocArg;
-                int toPrint = 0;
-                int i = 0;
-
-                va_copy(reAllocArg, args);
-                n = vsnprintf(p, n+1, format, reAllocArg);
-                va_end(reAllocArg);
-
-                for (i = 0; i < n; i += toPrint)
-                {
-                    toPrint = ((n - i) < LOG4C_MSG_BUFFER_SIZE) ? (n - i) : LOG4C_MSG_BUFFER_SIZE;
-                    log4c_category_log(cat, log4cPriority, "%.*s\n", toPrint, p+i);
-                }
-                free(p);
-            }
-        }
-        else
-        {
-            log4c_category_log(cat, log4cPriority, "%s", logMsg);
+            log4c_category_vlog(cat, log4cPriority, format, args);
         }
     }
     pthread_mutex_unlock(&gLoggingMutex);
@@ -688,47 +674,13 @@ bool rdk_dbg_priv_log_reconfig(const char *pModuleName, rdk_LogLevel logLevel)
     return ret;
 }
 
-/****************************************************************
- * Plain Text format with no ending carriage return / line feed
- */
-static const char* rdk_plaintext(const log4c_layout_t* layout, const log4c_logging_event_t* event)
-{
-    (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "[%-5s] %s",
-                                                                        log4c_priority_to_string(event->evt_priority),
-                                                                        event->evt_msg);
-
-    return event->evt_buffer.buf_data;
-}
-
 #define COMCAST_DATAED_BUFF_SIZE    40
 /****************************************************************
- * With TimeStamp format with no ending carriage return / line feed
+ * Wrapper function to retrieve module name
  */
-static const char* rdk_with_ts(const log4c_layout_t* layout, const log4c_logging_event_t* event)
+static const char* getModuleName(log4c_logging_event_t* event)
 {
-    struct tm tm;
-    char timeBuff[COMCAST_DATAED_BUFF_SIZE] = {0};
-
-    gmtime_r(&event->evt_timestamp.tv_sec, &tm);
-    printTime(&tm,timeBuff);
-
-    (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld [%-5s] %s", timeBuff,
-                                                                                                event->evt_timestamp.tv_usec,
-                                                                                                log4c_priority_to_string(event->evt_priority),
-                                                                                                event->evt_msg);
-
-    return event->evt_buffer.buf_data;
-}
-
-/****************************************************************
- * Detailed format with/without timestamp no ending carriage return / line feed
- */
-static const char* rdk_detail_format_handler(const log4c_layout_t* layout, const log4c_logging_event_t* event, bool isTimed)
-{
-    struct tm tm;
-    char timeBuff[COMCAST_DATAED_BUFF_SIZE] = {0};
-
-    /** Get the last part of the cagetory as "module" */
+    /** Get the last part of the category as "module" */
     char *p= (char *)(event->evt_category);
     if (NULL == p)
     {
@@ -749,27 +701,96 @@ static const char* rdk_detail_format_handler(const log4c_layout_t* layout, const
             p = (char*)"UNKNOWN";
         }
     }
+    return p;
+}
 
-    if (isTimed)
-    {
-        gmtime_r(&event->evt_timestamp.tv_sec, &tm);
-        printTime(&tm,timeBuff);
+/****************************************************************
+ * Wrapper function to format the string with newline
+ */
+static const char* rdk_format_log(const log4c_layout_t* layout, log4c_logging_event_t* event, rdk_LogFormat format)
+{
+    int n = -1;
+    struct tm tm;
+    char timeBuff[COMCAST_DATAED_BUFF_SIZE] = {0};
 
-        (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld [%-5s] [%s] [%ld] %s",
-                                                    timeBuff,
-                                                    event->evt_timestamp.tv_usec,
-                                                    log4c_priority_to_string(event->evt_priority),
-                                                    p,
-                                                    syscall(SYS_gettid),
-                                                    event->evt_msg);
-    }
-    else
+    if (event->evt_buffer.buf_size > 0 && event->evt_buffer.buf_data != NULL)
     {
-        (void) snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "[%-5s] [%s] [%ld] %s",
-                                                    log4c_priority_to_string(event->evt_priority),
-                                                    p,
-                                                    syscall(SYS_gettid),
-                                                    event->evt_msg);
+        if(RDKLOG_FORMAT_DETAIL_WITHOUT_TS == format)
+        {
+            n = snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "[%-5s] [%s] [%ld] %s\n",
+                                                        log4c_priority_to_string(event->evt_priority),
+                                                        getModuleName(event),
+                                                        syscall(SYS_gettid),
+                                                        event->evt_msg);
+        }
+        else if(RDKLOG_FORMAT_DETAIL_WITH_TS == format)
+        {
+            gmtime_r(&event->evt_timestamp.tv_sec, &tm);
+            printTime(&tm,timeBuff);
+
+            n = snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld [%-5s] [%s] [%ld] %s\n",
+                                                        timeBuff,
+                                                        event->evt_timestamp.tv_usec,
+                                                        log4c_priority_to_string(event->evt_priority),
+                                                        getModuleName(event),
+                                                        syscall(SYS_gettid),
+                                                        event->evt_msg);
+        }
+        else if(RDKLOG_FORMAT_WITH_TS_TID == format)
+        {
+            gmtime_r(&event->evt_timestamp.tv_sec, &tm);
+            printTime(&tm, timeBuff);
+
+            n = snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld [%-5s] [%ld] %s\n",
+                                                        timeBuff,
+                                                        event->evt_timestamp.tv_usec,
+                                                        log4c_priority_to_string(event->evt_priority),
+                                                        syscall(SYS_gettid),
+                                                        event->evt_msg);
+        }
+        else if(RDKLOG_FORMAT_WITH_TS == format)
+        {
+            gmtime_r(&event->evt_timestamp.tv_sec, &tm);
+            printTime(&tm, timeBuff);
+
+            n = snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "%s.%06ld [%-5s] %s\n",
+                                                        timeBuff,
+                                                        event->evt_timestamp.tv_usec,
+                                                        log4c_priority_to_string(event->evt_priority),
+                                                        event->evt_msg);
+        }
+        else if(RDKLOG_FORMAT_WITH_TID == format)
+        {
+            n = snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "[%-5s] [%ld] %s\n",
+                                                        log4c_priority_to_string(event->evt_priority),
+                                                        syscall(SYS_gettid),
+                                                        event->evt_msg);
+        }
+        else
+        {
+            n = snprintf(event->evt_buffer.buf_data, event->evt_buffer.buf_size, "[%-5s] %s\n",
+                                                        log4c_priority_to_string(event->evt_priority),
+                                                        event->evt_msg);
+        }
+
+        /* Re-alloc if there is big data block */
+        if (n > -1 && n >= event->evt_buffer.buf_size && event->evt_buffer.buf_maxsize == 0)
+        {
+            event->evt_buffer.buf_size = n + 1;
+            event->evt_buffer.buf_data = (char *) realloc (event->evt_buffer.buf_data, event->evt_buffer.buf_size);
+            return rdk_format_log(layout, event, format);
+        }
+
+        /* avoid redundant \n */
+        if ((n >= 2) &&
+            (n < event->evt_buffer.buf_size) &&
+            (event->evt_buffer.buf_data != NULL) &&
+            (event->evt_buffer.buf_data[n] == '\0') &&
+            (event->evt_buffer.buf_data[n - 1] == '\n') &&
+            (event->evt_buffer.buf_data[n - 2] == '\n'))
+        {
+            event->evt_buffer.buf_data[n - 1] = '\0';
+        }
     }
 
     return event->evt_buffer.buf_data;
@@ -777,19 +798,51 @@ static const char* rdk_detail_format_handler(const log4c_layout_t* layout, const
 
 
 /****************************************************************
+ * Plain Text format
+ */
+static const char* rdk_plaintext(const log4c_layout_t* layout, log4c_logging_event_t* event)
+{
+    return rdk_format_log(layout, event, RDKLOG_FORMAT_PLAINTEXT);
+}
+
+/****************************************************************
+ * With TimeStamp format
+ */
+static const char* rdk_with_ts(const log4c_layout_t* layout, log4c_logging_event_t* event)
+{
+    return rdk_format_log(layout, event, RDKLOG_FORMAT_WITH_TS);
+}
+
+/****************************************************************
+ * With TID
+ */
+static const char* rdk_with_tid(const log4c_layout_t* layout, log4c_logging_event_t* event)
+{
+    return rdk_format_log(layout, event, RDKLOG_FORMAT_WITH_TID);
+}
+
+/****************************************************************
+ * With TimeStamp & TID format
+ */
+static const char* rdk_with_ts_tid(const log4c_layout_t* layout, log4c_logging_event_t* event)
+{
+    return rdk_format_log(layout, event, RDKLOG_FORMAT_WITH_TS_TID);
+}
+
+/****************************************************************
  * Detailed format with timestamp
  */
-static const char* rdk_detail_with_ts(const log4c_layout_t* layout, const log4c_logging_event_t* event)
+static const char* rdk_detail_with_ts(const log4c_layout_t* layout, log4c_logging_event_t* event)
 {
-    return rdk_detail_format_handler(layout, event, true);
+    return rdk_format_log(layout, event, RDKLOG_FORMAT_DETAIL_WITH_TS);
 }
 
 /****************************************************************
  * Detailed format without timestamp
  */
-static const char* rdk_detail_without_ts(const log4c_layout_t* layout, const log4c_logging_event_t* event)
+static const char* rdk_detail_without_ts(const log4c_layout_t* layout, log4c_logging_event_t* event)
 {
-    return rdk_detail_format_handler(layout, event, false);
+    return rdk_format_log(layout, event, RDKLOG_FORMAT_DETAIL_WITHOUT_TS);
 }
 
 /*****************************************************************/

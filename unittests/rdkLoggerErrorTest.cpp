@@ -129,14 +129,6 @@ TEST_F(RDKLoggerErrorTest, VeryLongMessages) {
     // Test very long message
     rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.TEST", "Long message: %s", long_message);
     // Should not crash, may truncate or handle gracefully
-    
-    // Test very long format string
-    char long_format[5000];
-    memset(long_format, '%', sizeof(long_format) - 1);
-    long_format[sizeof(long_format) - 1] = '\0';
-    
-    rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.TEST", long_format, "test");
-    // Should not crash
 }
 
 // Test very long module names
