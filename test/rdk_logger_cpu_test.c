@@ -47,10 +47,16 @@ void getCPUStat(CpuTimes *times) {
     char line[256];
     memset(times, 0, sizeof(*times));
     if (fgets(line, sizeof(line), file) != NULL) {
+        printf ("%s\n", line);
         int parsed = sscanf(line, "cpu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
             &times->user, &times->nice, &times->system, &times->idle,
             &times->iowait, &times->irq, &times->softirq, &times->steal,
             &times->guest, &times->guest_nice);
+        if (parsed != 10) {
+            fprintf(stderr, "Failed to parse CPU statistics from /proc/stat (parsed %d fields)\n", parsed);
+            fclose(file);
+            exit(EXIT_FAILURE);
+        }
         if (parsed != 10) {
             fprintf(stderr, "Failed to parse CPU statistics from /proc/stat (parsed %d fields)\n", parsed);
             fclose(file);
