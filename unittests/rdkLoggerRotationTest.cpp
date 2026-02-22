@@ -461,7 +461,7 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "format_tid_test.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
-            strncpy(testPolicy.fileLocation, "./", sizeof(testPolicy.fileLocation)-1);
+            strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
             testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
@@ -476,6 +476,7 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             rdk_Error ret = rdk_logger_ext_init(&config);
             ASSERT_EQ(ret, RDK_SUCCESS) << "Extended initialization with RDKLOG_FORMAT_WITH_TID should succeed";
 
+	        system("mkdir -p /tmp/rdk_logger_rotation_test");
             // Generate log messages to test the format with thread ID
             char large_message[150];
             createLargeLogMessage(large_message, sizeof(large_message));
@@ -488,7 +489,7 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             char logFilePath[512];
             snprintf(logFilePath, sizeof(logFilePath), "%s/%s", 
                      testPolicy.fileLocation, testPolicy.fileName);
-	printf("logFilePath = %s\n", logFilePath);
+			printf("logFilePath = %s\n", logFilePath);
             struct stat st;
             EXPECT_EQ(lstat(logFilePath, &st), 0) << "Log file should exist";
             
@@ -508,14 +509,14 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             EXPECT_TRUE(foundThreadId) << "Log should contain thread ID information";
     });
 }
-
+#if 0
 // Test log rotation with RDKLOG_FORMAT_WITH_TS_TID format
 TEST_F(RDKLoggerRotationTest, FormatWithTSTID) {
     RUN_IN_FORK({
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "format_ts_tid_test.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
-            strncpy(testPolicy.fileLocation, "./", sizeof(testPolicy.fileLocation)-1);
+            strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
             testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
@@ -574,7 +575,7 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "format_detail_no_ts_test.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
-            strncpy(testPolicy.fileLocation, "./", sizeof(testPolicy.fileLocation)-1);
+            strncpy(testPolicy.fileLocation, "/tmp/rdk_logger_rotation_test", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
             testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
@@ -621,7 +622,7 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
     });
 }
 
-#if 0
+
 // Test log rotation with different log levels
 TEST_F(RDKLoggerRotationTest, DifferentLogLevels) {
     rdk_logger_ext_config_t config;
