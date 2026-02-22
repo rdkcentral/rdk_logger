@@ -226,16 +226,19 @@ typedef enum
  * @enum rdk_LogFormat
  * @brief Defines the layout/format used to render log messages.
  *
- * - RDKLOG_FORMAT_PLAINTEXT:            Simple layout (priority, category, message).
- * - RDKLOG_FORMAT_WITH_TS:              Timestamped layout including date/time and milliseconds.
- * - RDKLOG_FORMAT_DETAIL_WITH_TS:       Specific layout with the exact fields
- *                                       (such as module, level, thread id) with time stamped
+ * - RDKLOG_FORMAT_PLAINTEXT:            Simple layout (priority & message).
+ * - RDKLOG_FORMAT_WITH_TS:              Timestamped layout including milliseconds, priority & message.
+ * - RDKLOG_FORMAT_WITH_TID:             Simple layout with priority, TID & message.
+ * - RDKLOG_FORMAT_WITH_TS_TID:          Timestamped layout with priority, TID & message.
+ * - RDKLOG_FORMAT_DETAIL_WITH_TS:       Specific layout with timestamp, priority, category, TID & message.
  * - RDKLOG_FORMAT_DETAIL_WITHOUT_TS:    Same as above but without timestamp
  */
 typedef enum
 {
     RDKLOG_FORMAT_PLAINTEXT = 0,        /** format_plaintext */
     RDKLOG_FORMAT_WITH_TS,              /** format_with_ts */
+    RDKLOG_FORMAT_WITH_TID,             /** format_with_tid */
+    RDKLOG_FORMAT_WITH_TS_TID,          /** format_with_ts_tid */
     RDKLOG_FORMAT_DETAIL_WITH_TS,       /** format_detail_with_ts */
     RDKLOG_FORMAT_DETAIL_WITHOUT_TS     /** format_detail_without_ts */
 } rdk_LogFormat;
