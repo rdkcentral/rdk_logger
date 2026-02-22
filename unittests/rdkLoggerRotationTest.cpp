@@ -461,7 +461,7 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "format_tid_test.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
-            strncpy(testPolicy.fileLocation, "/tmp/", sizeof(testPolicy.fileLocation)-1);
+            strncpy(testPolicy.fileLocation, "./", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
             testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
@@ -515,7 +515,7 @@ TEST_F(RDKLoggerRotationTest, FormatWithTSTID) {
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "format_ts_tid_test.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
-            strncpy(testPolicy.fileLocation, "/tmp/", sizeof(testPolicy.fileLocation)-1);
+            strncpy(testPolicy.fileLocation, "./", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
             testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
@@ -574,7 +574,7 @@ TEST_F(RDKLoggerRotationTest, FormatDetailWithoutTS) {
             rdk_LogOutput_File testPolicy;
             strncpy(testPolicy.fileName, "format_detail_no_ts_test.log", sizeof(testPolicy.fileName)-1);
             testPolicy.fileName[sizeof(testPolicy.fileName) - 1] = '\0';
-            strncpy(testPolicy.fileLocation, "/tmp/", sizeof(testPolicy.fileLocation)-1);
+            strncpy(testPolicy.fileLocation, "./", sizeof(testPolicy.fileLocation)-1);
             testPolicy.fileLocation[sizeof(testPolicy.fileLocation) - 1] = '\0';
             testPolicy.fileSizeMax = 512; // 512 bytes to trigger rotation
             testPolicy.fileCountMax = 3;
