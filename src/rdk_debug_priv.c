@@ -614,6 +614,9 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
         return;
     }
 
+    if (!module_name)
+        return;
+
     pthread_mutex_lock(&gLoggingMutex);
     cat = log4c_category_get(module_name);
     if(!cat)
@@ -769,7 +772,7 @@ static const char* rdk_format_log(const log4c_layout_t* layout, log4c_logging_ev
     }
 
     /* Re-alloc if there is big data block */
-    if (n > -1 && n > event->evt_buffer.buf_size && event->evt_buffer.buf_maxsize == 0)
+    if (n > -1 && n >= event->evt_buffer.buf_size && event->evt_buffer.buf_maxsize == 0)
     {
         event->evt_buffer.buf_size = n + 1;
         event->evt_buffer.buf_data = (char *) realloc (event->evt_buffer.buf_data, event->evt_buffer.buf_size);

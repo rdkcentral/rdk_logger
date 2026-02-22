@@ -47,7 +47,6 @@ void getCPUStat(CpuTimes *times) {
     char line[256];
     memset(times, 0, sizeof(*times));
     if (fgets(line, sizeof(line), file) != NULL) {
-        printf ("%s\n", line);
         int parsed = sscanf(line, "cpu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
             &times->user, &times->nice, &times->system, &times->idle,
             &times->iowait, &times->irq, &times->softirq, &times->steal,
@@ -99,7 +98,7 @@ void PrintCPUMetric(CpuTimes prev_times, CpuTimes now_times, const char* pBuf)
 
 int testLogging()
 {
-    CpuTimes prev_times, now_times;
+    CpuTimes prev_times = {0}, now_times = {0};
     int i, j;
 
     char buffer[250] = {0};
@@ -110,7 +109,7 @@ int testLogging()
     memset(&cfg, 0, sizeof(cfg));
     cfg.pModuleName = "LOG.RDK.FOO";
     cfg.loglevel = RDK_LOG_INFO;
-    cfg.output = RDKLOG_OUTPUT_CONSOLE;
+    cfg.output = RDKLOG_OUTPUT_SYSLOG;
     cfg.format = RDKLOG_FORMAT_WITH_TS_TID;
     cfg.pFilePolicy = NULL;
     rdk_logger_ext_init(&cfg);
@@ -120,7 +119,7 @@ int testLogging()
     usleep(1000);
 
     // Test 1: Print DEBUG where DEBUG is not enabled.
-    // CPU taken to drop the log messagge
+    // CPU taken to drop the log message
     getCPUStat(&prev_times);
     for (i = 0; i < 15000; i++)
     {
@@ -131,7 +130,7 @@ int testLogging()
     usleep(10000);
 
     // Test 2: Print INFO where INFO is enabled.
-    // CPU taken to print the log messagge
+    // CPU taken to print the log message
     getCPUStat(&prev_times);
     for (i = 0; i < 15000; i++)
     {
@@ -145,7 +144,7 @@ int testLogging()
     memset(&cfg, 0, sizeof(cfg));
     cfg.pModuleName = "LOG.RDK.FOO";
     cfg.loglevel = RDK_LOG_INFO;
-    cfg.output = RDKLOG_OUTPUT_SYSLOG;
+    cfg.output = RDKLOG_OUTPUT_CONSOLE;
     cfg.format = RDKLOG_FORMAT_WITH_TID;
     cfg.pFilePolicy = NULL;
     rdk_logger_ext_init(&cfg);
@@ -154,7 +153,7 @@ int testLogging()
     usleep(10000);
 
     // Test 3: Print DEBUG where DEBUG is not enabled.
-    // CPU taken to drop the log messagge
+    // CPU taken to drop the log message
     getCPUStat(&prev_times);
     for (i = 0; i < 15000; i++)
     {
@@ -165,7 +164,7 @@ int testLogging()
     usleep(10000);
 
     // Test 4: Print INFO where INFO is enabled.
-    // CPU taken to print the log messagge
+    // CPU taken to print the log message
     getCPUStat(&prev_times);
     for (i = 0; i < 15000; i++)
     {
@@ -178,11 +177,11 @@ int testLogging()
 
 int main ()
 {
-    CpuTimes prev_times, now_times;
+    CpuTimes prev_times = {0}, now_times = {0};
 
     // Begin
     getCPUStat(&prev_times);
-	rdk_logger_init(NULL);
+    rdk_logger_init(NULL);
     // End
     getCPUStat(&now_times);
 

@@ -14,10 +14,10 @@
     <layout name="rdk_detail_with_ts"       type="format_detail_with_ts"/>
     <layout name="rdk_detail_without_ts"    type="format_detail_without_ts"/>
 
-    <appender name="rdk_console" type="to_console" layout="rdk_detail_with_ts"/>
-    <appender name="rdk_syslog"  type="to_syslog"  layout="rdk_detail_without_ts"/>
+    <appender name="rdk_console" type="to_console" layout="rdk_detail_without_ts"/>
+    <appender name="rdk_syslog"  type="to_syslog"  layout="rdk_with_tid"/>
     <appender name="rdk_journal" type="to_journal" layout="rdk_plaintext"/>
-    <appender name="rdk_printf"  type="to_console" layout="rdk_with_ts_tid"/>
+    <appender name="rdk_printf"  type="to_console" layout="rdk_detail_with_ts"/>
 
-    <category name="LOG.RDK" priority="warning" appender="rdk_syslog"/>
+    <category name="LOG.RDK" priority="warning" appender="rdk_console"/>
 </log4c>
