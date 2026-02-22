@@ -488,8 +488,9 @@ TEST_F(RDKLoggerRotationTest, FormatWithTID) {
             char logFilePath[512];
             snprintf(logFilePath, sizeof(logFilePath), "%s/%s", 
                      testPolicy.fileLocation, testPolicy.fileName);
+	printf("logFilePath = %s\n", logFilePath);
             struct stat st;
-            EXPECT_EQ(stat(logFilePath, &st), 0) << "Log file should exist";
+            EXPECT_EQ(lstat(logFilePath, &st), 0) << "Log file should exist";
             
             // Read and verify log content contains thread ID
             FILE* logFile = fopen(logFilePath, "r");
