@@ -24,6 +24,7 @@ find_package(GTest REQUIRED)
 enable_testing()
 link_directories("${DEP_LIB_PATH}/")
 
+
 # Add the test executable
 add_executable(
   rdk_logger_gtest
@@ -62,6 +63,13 @@ target_link_libraries(
 )
 
 include_directories(${DEP_LIB_PATH}/../include)
+set(LOG4C_RC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Gtest_log4crc")
+if(EXISTS ${LOG4C_RC_FILE})
+  message(STATUS "Using log4c config for tests: ${LOG4C_RC_FILE}")
+else()
+  message(WARNING "log4c config ${LOG4C_RC_FILE} not found; tests may fail")
+endif()
+
 include(GoogleTest)
-gtest_discover_tests(rdk_logger_gtest)
+gtest_discover_tests(rdk_logger_gtest PROPERTIES ENVIRONMENT "LOG4C_CONFIGURATION=${LOG4C_RC_FILE}")
 find_package(Threads)
