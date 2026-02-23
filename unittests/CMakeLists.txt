@@ -44,7 +44,11 @@ add_executable(
   main.cpp
 )
 
-include_directories(${CMAKE_INSTALL_PREFIX}/include)
+target_include_directories(rdk_logger_gtest PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src/include
+  ${CMAKE_INSTALL_PREFIX}/include
+)
 
 add_compile_definitions(LOGMILESTONE=ON)
 target_compile_definitions(rdk_logger_gtest PRIVATE GTEST_DEBUG_INI_FILE="sample_gtest_debug.ini")
