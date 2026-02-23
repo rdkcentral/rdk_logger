@@ -1,23 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <log4c>
-    <config>
-        <bufsize>0</bufsize>
-        <debug level="0"/>
-        <nocleanup>0</nocleanup>
-        <reread>0</reread>
-    </config>
+  <config>
+    <bufsize>0</bufsize>
+    <debug level="0"/>
+    <nocleanup>0</nocleanup>
+    <reread>0</reread>
+  </config>
 
-    <layout name="rdk_plaintext"            type="format_plaintext"/>
-    <layout name="rdk_with_ts"              type="format_with_ts"/>
-    <layout name="rdk_with_tid"             type="format_with_tid"/>
-    <layout name="rdk_with_ts_tid"          type="format_with_ts_tid"/>
-    <layout name="rdk_detail_with_ts"       type="format_detail_with_ts"/>
-    <layout name="rdk_detail_without_ts"    type="format_detail_without_ts"/>
+  <layout name="rdk_plaintext"            type="format_plaintext"/>
+  <layout name="rdk_with_ts"              type="format_with_ts"/>
+  <layout name="rdk_with_tid"             type="format_with_tid"/>
+  <layout name="rdk_with_ts_tid"          type="format_with_ts_tid"/>
+  <layout name="rdk_detail_with_ts"       type="format_detail_with_ts"/>
+  <layout name="rdk_detail_without_ts"    type="format_detail_without_ts"/>
 
-    <appender name="rdk_console" type="to_console" layout="rdk_detail_with_ts"/>
-    <appender name="rdk_syslog"  type="to_syslog"  layout="rdk_detail_without_ts"/>
-    <appender name="rdk_journal" type="to_journal" layout="rdk_plaintext"/>
-    <appender name="rdk_printf"  type="to_console" layout="rdk_with_ts_tid"/>
+  <appender name="rdk_console" type="to_console" layout="rdk_detail_with_ts"/>
+  <appender name="rdk_syslog"  type="to_syslog"  layout="rdk_detail_without_ts"/>
+  <appender name="rdk_journal" type="to_journal" layout="rdk_plaintext"/>
+  <appender name="rdk_printf"  type="to_console" layout="rdk_with_ts_tid"/>
 
-    <category name="LOG.RDK" priority="warning" appender="rdk_console"/>
-
+  <category name="LOG.RDK" priority="warning" appender="rdk_console"/>
 </log4c>
