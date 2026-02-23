@@ -1,4 +1,3 @@
-#########################################################################
 # Copyright 2024 Comcast Cable Communications Management, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +20,9 @@ project(rdk_logger_gtest)
 # Find the gtest package
 find_package(GTest REQUIRED)
 
-link_directories("${DEP_LIB_PATH}/")
+
 enable_testing()
+link_directories("${DEP_LIB_PATH}/")
 
 # Add the test executable
 add_executable(
@@ -43,13 +43,6 @@ add_executable(
   rdkLoggerPerformanceTest.cpp
   main.cpp
 )
-
-target_include_directories(rdk_logger_gtest PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../src/include
-  ${CMAKE_INSTALL_PREFIX}/include
-)
-
 add_compile_definitions(LOGMILESTONE=ON)
 target_compile_definitions(rdk_logger_gtest PRIVATE GTEST_DEBUG_INI_FILE="sample_gtest_debug.ini")
 
@@ -57,10 +50,18 @@ target_compile_definitions(rdk_logger_gtest PRIVATE GTEST_DEBUG_INI_FILE="sample
 install (CODE "execute_process (COMMAND ${CMAKE_COMMAND} -E copy Gtest_log4crc ${CMAKE_INSTALL_PREFIX}/log4crc)")
 
 if (NOT GTEST_INCLUDE_DIR)
-    target_link_libraries(rdk_logger_gtest -L${DEP_LIB_PATH} -lrdkloggers -llog4c -l:libgtest.a gcov)
+    target_link_libraries(rdk_logger_gtest  -L${DEP_LIB_PATH} -lrdkloggers -llog4c -l:libgtest.a gcov)
 else ()
     target_link_libraries(rdk_logger_gtest -L${DEP_LIB_PATH} -lrdkloggers -llog4c gtest gcov)
 endif()
 
-install (TARGETS rdk_logger_gtest RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+# Link the gtest libraries to the test executable
+target_link_libraries(
+  rdk_logger_gtest
+  GTest::gtest_main
+)
+
 include_directories(${DEP_LIB_PATH}/../include)
+include(GoogleTest)
+gtest_discover_tests(rdk_logger_gtest)
+find_package(Threads)
