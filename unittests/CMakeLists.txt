@@ -21,7 +21,7 @@ project(rdk_logger_gtest)
 # Find the gtest package
 find_package(GTest REQUIRED)
 
-
+link_directories("${DEP_LIB_PATH}/")
 enable_testing()
 
 # Add the test executable
@@ -63,3 +63,4 @@ else ()
 endif()
 
 install (TARGETS rdk_logger_gtest RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+include_directories(${DEP_LIB_PATH}/../include)
