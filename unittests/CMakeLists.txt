@@ -1,4 +1,3 @@
-# Copyright 2024 Comcast Cable Communications Management, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +13,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #########################################################################
-
 cmake_minimum_required(VERSION 3.22)
 project(rdk_logger_gtest)
 # Find the gtest package
@@ -22,8 +20,6 @@ find_package(GTest REQUIRED)
 
 
 enable_testing()
-link_directories("${DEP_LIB_PATH}/")
-
 
 # Add the test executable
 add_executable(
@@ -44,32 +40,20 @@ add_executable(
   rdkLoggerPerformanceTest.cpp
   main.cpp
 )
+
+include_directories(${CMAKE_INSTALL_PREFIX}/include)
+
 add_compile_definitions(LOGMILESTONE=ON)
 target_compile_definitions(rdk_logger_gtest PRIVATE GTEST_DEBUG_INI_FILE="sample_gtest_debug.ini")
+target_include_directories(rdk_logger_gtest PRIVATE ${CMAKE_SOURCE_DIR}/rdk_logger/include)
 
 
 install (CODE "execute_process (COMMAND ${CMAKE_COMMAND} -E copy Gtest_log4crc ${CMAKE_INSTALL_PREFIX}/log4crc)")
 
 if (NOT GTEST_INCLUDE_DIR)
-    target_link_libraries(rdk_logger_gtest  -L${DEP_LIB_PATH} -lrdkloggers -llog4c -l:libgtest.a gcov)
+    target_link_libraries(rdk_logger_gtest -L${DEP_LIB_PATH} -lrdkloggers -llog4c -l:libgtest.a gcov)
 else ()
     target_link_libraries(rdk_logger_gtest -L${DEP_LIB_PATH} -lrdkloggers -llog4c gtest gcov)
 endif()
 
-# Link the gtest libraries to the test executable
-target_link_libraries(
-  rdk_logger_gtest
-  GTest::gtest_main
-)
-
-include_directories(${DEP_LIB_PATH}/../include)
-set(LOG4C_RC_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Gtest_log4crc")
-if(EXISTS ${LOG4C_RC_FILE})
-  message(STATUS "Using log4c config for tests: ${LOG4C_RC_FILE}")
-else()
-  message(WARNING "log4c config ${LOG4C_RC_FILE} not found; tests may fail")
-endif()
-
-include(GoogleTest)
-gtest_discover_tests(rdk_logger_gtest PROPERTIES ENVIRONMENT "LOG4C_CONFIGURATION=${LOG4C_RC_FILE}")
-find_package(Threads)
+install (TARGETS rdk_logger_gtest RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

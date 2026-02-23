@@ -17,6 +17,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
+<!DOCTYPE log4c SYSTEM "">
 <log4c>
     <config>
         <bufsize>0</bufsize>
