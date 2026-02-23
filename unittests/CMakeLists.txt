@@ -57,3 +57,4 @@ else ()
 endif()
 
 install (TARGETS rdk_logger_gtest RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+include_directories(${DEP_LIB_PATH}/../include)
