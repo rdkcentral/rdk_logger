@@ -25,9 +25,19 @@
         <nocleanup>0</nocleanup>
         <reread>0</reread>
     </config>
-    <layout name="basic" type="basic_nocr"/>
-    <layout name="dated" type="dated_nocr"/>
-    <layout name="comcast_dated" type="comcast_dated_nocr"/>
-    <appender name="stdout" type="stream_env" layout="comcast_dated"/>
-    <category name="LOG.RDK" priority="warning" appender="stdout"/>
+
+    <layout name="rdk_plaintext"            type="format_plaintext"/>
+    <layout name="rdk_with_ts"              type="format_with_ts"/>
+    <layout name="rdk_with_tid"             type="format_with_tid"/>
+    <layout name="rdk_with_ts_tid"          type="format_with_ts_tid"/>
+    <layout name="rdk_detail_with_ts"       type="format_detail_with_ts"/>
+    <layout name="rdk_detail_without_ts"    type="format_detail_without_ts"/>
+
+    <appender name="rdk_console" type="to_console" layout="rdk_detail_with_ts"/>
+    <appender name="rdk_syslog"  type="to_syslog"  layout="rdk_detail_without_ts"/>
+    <appender name="rdk_journal" type="to_journal" layout="rdk_plaintext"/>
+    <appender name="rdk_printf"  type="to_console" layout="rdk_with_ts_tid"/>
+
+    <category name="LOG.RDK" priority="warning" appender="rdk_console"/>
+
 </log4c>
