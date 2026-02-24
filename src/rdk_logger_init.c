@@ -43,14 +43,6 @@ static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool isLogInited = false;
 
-static void __attribute__((constructor)) _rdk_logger_init (void)
-{
-    /* Perform Logger Internal Init */
-    rdk_dbg_priv_init();
-
-    return;
-}
-
 /**
  * @brief Initialize the logger. Sets up the environment variable storage by parsing
  * debug configuration file then Initialize the debug support to the underlying platform.
@@ -73,6 +65,7 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
             debugConfigFile = DEBUG_CONF_FILE;
         }
 
+        rdk_dbg_priv_init();
         /* Perform Logger Internal Init */
         ret = rdk_dbg_priv_config(debugConfigFile);
 

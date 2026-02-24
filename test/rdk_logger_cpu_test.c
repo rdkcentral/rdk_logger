@@ -116,7 +116,7 @@ int testLogging()
 
     getCPUStat(&cpu_after);
     PrintCPUMetric(cpu_before, cpu_after, "Ext Init");
-    usleep(1000);
+    usleep(10000);
 
     // Test 1: Print DEBUG where DEBUG is not enabled.
     // CPU taken to drop the log message
