@@ -315,6 +315,11 @@ rdk_Error rdk_logger_parse_config( const char * path)
 
 void rdk_dbg_priv_init(void)
 {
+    static bool isInited = false;
+
+    if(isInited)
+        return;
+
     ///> These must be set before calling log4c_init so that the log4crc file
     ///> will configure them
     (void) log4c_layout_type_set(&log4c_layout_type_rdk_plaintext);
@@ -329,14 +334,19 @@ void rdk_dbg_priv_init(void)
     (void) log4c_appender_type_set(&log4c_appender_type_to_syslog);
     (void) log4c_appender_type_set(&log4c_appender_type_to_journal);
 
+    if (0 != log4c_init())
+    {
+        fprintf(stderr, "log4c_init() failed?!\n");
+    }
+    else
+    {
+        /* Register this for legacy Components */
+        log4c_layout_t* legacy = log4c_layout_get("comcast_dated");
+        if (NULL != legacy)
+            (void) log4c_layout_set_type(legacy, &log4c_layout_type_comcast_dated);
 
-    if (log4c_init())
-        fprintf(stderr, "log4c_init() failed?!");
-
-    /* Register this for legacy Components */
-    log4c_layout_t* legacy = log4c_layout_get("comcast_dated");
-    if (NULL != legacy)
-        (void) log4c_layout_set_type(legacy, &log4c_layout_type_comcast_dated);
+        isInited = true;
+    }
 
     return;
 }
@@ -353,7 +363,7 @@ rdk_Error rdk_dbg_priv_config(const char* debugConfigFile)
             /* Get the root category */
             if (!gRootCat)
             {
-                fprintf(stderr, "RDK Root Category Creation failed?!");
+                fprintf(stderr, "RDK Root Category Creation failed?!\n");
             }
         }
         /* Read the config file & populate pre-configured log levels */
@@ -364,7 +374,7 @@ rdk_Error rdk_dbg_priv_config(const char* debugConfigFile)
     }
     else
     {
-        fprintf(stderr, "Invalid conf file!");
+        fprintf(stderr, "Invalid conf file!\n");
         ret = RDK_FAILURE;
     }
 
