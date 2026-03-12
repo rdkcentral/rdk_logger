@@ -1,10 +1,10 @@
 # RDK Logger
 
-RDK Logger is a comprehensive logging framework that serves as the cornerstone logging mechanism for all RDK-B middleware components. It provides centralized, configurable, and runtime-controllable logging capabilities across the entire RDK-B ecosystem. The component abstracts the complexity of underlying logging utilities while offering fine-grained control over log levels, formatting, and output destinations for different modules and components.
+RDK Logger is a logging framework for all RDK-B middleware components. It provides centralized, configurable, and runtime-controllable logging with fine-grained control over log levels, formatting, and output destinations for different modules and components.
 
-RDK Logger serves three critical functions in the RDK-B middleware: First, it provides a unified logging interface that standardizes how all RDK-B components generate and manage log messages, ensuring consistency across the entire platform. Second, it enables dynamic runtime control of logging behavior, allowing operators to adjust logging levels and verbosity without requiring system restarts or service interruptions. Third, it optimizes system performance by providing efficient filtering mechanisms that minimize logging overhead when verbose logging is disabled.
+RDK Logger provides a unified logging interface that standardizes how RDK-B components generate and manage log messages. It enables dynamic runtime control of logging behavior, allowing operators to adjust logging levels and verbosity without requiring system restarts. It optimizes system performance by implementing efficient filtering mechanisms that minimize logging overhead when verbose logging is disabled.
 
-At the module level, RDK Logger implements a sophisticated configuration-driven architecture that allows each component to maintain its own logging context while participating in a centralized logging ecosystem. The framework handles log message formatting, filtering, routing, and output management, while providing thread-safe operations and minimal performance impact on the host applications.
+RDK Logger uses a configuration-driven architecture where each component maintains its own logging context within a centralized logging system. The framework handles log message formatting, filtering, routing, and output management with thread-safe operations and minimal performance impact on host applications.
 
 ```mermaid
 graph LR
@@ -26,8 +26,8 @@ graph LR
         
         subgraph "RDK-B Core Components"
             CMAgent["CM Agent"]
-            WiFiAgent["WiFi Agent"]
-            PAM["P&M Component"]
+            WiFiAgent["CcspWiFiAgent/OneWiFi"]
+            PandM["CcspPandM"]
             PSM["PSM"]
             OtherComp["Other Components"]
         end
@@ -50,7 +50,7 @@ graph LR
     %% RDK-B Components to Logger
     CMAgent -->|RDK_LOG APIs| RDKLogger
     WiFiAgent -->|RDK_LOG APIs| RDKLogger
-    PAM -->|RDK_LOG APIs| RDKLogger
+    PandM -->|RDK_LOG APIs| RDKLogger
     PSM -->|RDK_LOG APIs| RDKLogger
     OtherComp -->|RDK_LOG APIs| RDKLogger
 
@@ -65,7 +65,7 @@ graph LR
 
     class RemoteMgmt,LocalUI,AdminTools,MonitorSys external;
     class RDKLogger rdklogger;
-    class ProtocolAgents,CMAgent,WiFiAgent,PAM,PSM,OtherComp rdkbComponent;
+    class ProtocolAgents,CMAgent,WiFiAgent,PandM,PSM,OtherComp rdkbComponent;
     class Log4C,Linux system;
 ```
 
@@ -77,20 +77,20 @@ graph LR
 - **Performance Optimization**: Implements efficient filtering mechanisms that minimize CPU and memory overhead when verbose logging is disabled, crucial for resource-constrained embedded systems
 - **Multi-Level Logging Support**: Provides comprehensive log level hierarchy (TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, FATAL) with configurable verbosity control
 - **Thread-Safe Operations**: Ensures safe concurrent access to logging functions across multi-threaded RDK-B components without requiring external synchronization
-- **Configuration Management**: Handles automatic detection of configuration file overrides (`/nvram/debug.ini` vs `/etc/debug.ini`) and runtime configuration updates
+- **Configuration Management**: Handles automatic detection of configuration file overrides with three-tier priority system (`/opt/debug.ini` highest, `/nvram/debug.ini` second, `/etc/debug.ini` default) and runtime configuration updates
 - **Log Format Standardization**: Enforces consistent timestamp, module identification, and message formatting across all RDK-B components for improved log analysis and monitoring
 
 ## Design
 
-RDK Logger is architected as a lightweight, efficient logging abstraction layer that sits between RDK-B applications and the underlying Log4C logging infrastructure. The design follows a modular approach where the core logging functionality is separated from configuration management, runtime control, and output formatting. This separation enables independent evolution of each subsystem while maintaining backward compatibility and minimizing performance impact on client applications.
+RDK Logger is a logging abstraction layer that sits between RDK-B applications and the underlying Log4C logging infrastructure. The design follows a modular approach where core logging functionality is separated from configuration management, runtime control, and output formatting. This separation enables independent evolution of each subsystem while maintaining backward compatibility and minimizing performance impact on client applications.
 
-The architecture emphasizes configuration-driven behavior where all logging policies are externalized to the `debug.ini` configuration file. This design choice enables system administrators and developers to adjust logging behavior without code changes or application restarts. The framework implements a two-tier configuration system: default system-wide settings in `/etc/debug.ini` and optional overrides in `/nvram/debug.ini`, providing flexibility for both development and production environments.
+The architecture uses configuration-driven behavior where all logging policies are externalized to the `debug.ini` configuration file. System administrators and developers can adjust logging behavior without code changes or application restarts. The framework implements a three-tier configuration system with priority-based file selection: first checking `/opt/debug.ini` for platform-specific overrides, then `/nvram/debug.ini` for runtime overrides, and finally falling back to `/etc/debug.ini` for default system-wide settings.
 
-Northbound interactions with RDK-B middleware components are handled through a simple, high-performance C API that provides printf-style logging functions. The API design minimizes function call overhead and includes compile-time optimizations for disabled log levels. Southbound interactions with the Log4C library and system logging facilities are abstracted through a pluggable backend architecture that allows for future extensibility to alternative logging systems.
+Northbound interactions with RDK-B middleware components are handled through a high-performance C API that provides printf-style logging functions. The API design minimizes function call overhead and includes compile-time optimizations for disabled log levels. Southbound interactions with the Log4C library and system logging facilities are abstracted through a pluggable backend architecture.
 
-The IPC mechanism design leverages UDP sockets for runtime log level control, enabling the `rdklogctrl` utility to communicate with running processes without requiring complex IPC infrastructure. This lightweight approach ensures that runtime control operations have minimal impact on system performance and can function reliably even under high system load conditions.
+The IPC mechanism uses UDP sockets for runtime log level control, enabling the `rdklogctrl` utility to communicate with running processes. This approach ensures that runtime control operations have minimal impact on system performance.
 
-Data persistence and storage management are handled through a combination of in-memory configuration caching and file-based persistence. The framework loads configuration at startup, caches it in memory for performance, and provides mechanisms for runtime updates. Log output persistence is delegated to the underlying Log4C system, which handles file rotation, compression, and storage management according to its own configuration.
+Data persistence and storage management are handled through in-memory configuration caching and file-based persistence. The framework loads configuration at startup, caches it in memory for performance, and provides mechanisms for runtime updates. Log output persistence is delegated to the underlying Log4C system, which handles file rotation, compression, and storage management.
 
 ```mermaid
 flowchart TD
@@ -164,15 +164,16 @@ flowchart TD
 
 ### Prerequisites and Dependencies
 
-**Build-Time Flags and Configuration:**
+**Build-Time Dependencies and Configuration:**
 
-| Configure Option | DISTRO Feature | Build Flag | Purpose | Default |
-|------------------|----------------|------------|---------|---------|
-| `--enable-milestone` | N/A | `LOGMILESTONE` | Enable milestone logging for system events and boot tracking | Enabled |
-| `--enable-onboardlog` | N/A | `IS_ONBOARDLOG_ENABLED` | Enable onboard logging utilities and support | Disabled |
-| `--enable-systemd-syslog-helper` | N/A | `SYSTEMD_SYSLOG_HELPER` | Enable systemd syslog helper integration | Disabled |
-| `--enable-journal` | N/A | `SYSTEMD_JOURNAL` | Enable systemd journal logging support | Disabled |
-| N/A | `safec` | `SAFEC_DUMMY_API` | Safe C library integration for secure string operations | Auto-detected |
+RDK Logger uses autotools-based configuration with automatic feature detection. The following build flags are auto-detected or externally defined:
+
+| Build Flag | Detection Method | Purpose | Default |
+|------------|------------------|---------|---------|
+| `HAVE_SYSTEMD` | Auto-detected via `PKG_CHECK_MODULES([SYSTEMD], [libsystemd >= 209])` | Enable systemd journal logging support when libsystemd is available | Auto-detected |
+| `HAVE_SYSLOG_H` | Auto-detected via `AC_CHECK_HEADERS([syslog.h])` | Enable syslog output support when syslog.h is available | Auto-detected |
+| `LOGMILESTONE` | Externally defined (Yocto/build system) | Controls milestone log file path (`/opt/logs/` vs `/rdklogs/logs/`) | Defined externally |
+| `DEBUG_CONF_FILE` | Makefile compile flag | Set default configuration file name to `"debug.ini"` | `"debug.ini"` |
 
 **RDK-B Platform and Integration Requirements**
 
@@ -184,8 +185,9 @@ flowchart TD
 - **Systemd Services**: No specific systemd service dependencies, but integrates with systemd journal when available
 - **Message Bus**: No RBus registration required (RDK Logger operates below the message bus layer)
 - **Configuration Files**: 
-  - `/etc/debug.ini` (primary configuration file, must exist)
-  - `/nvram/debug.ini` (optional override configuration)
+  - `/etc/debug.ini` (default system-wide configuration file, must exist)
+  - `/nvram/debug.ini` (optional runtime override configuration, second priority)
+  - `/opt/debug.ini` (optional platform-specific override configuration, first priority)
   - Proper file system permissions for configuration file access
 - **Startup Order**: Must initialize before any RDK-B component that uses logging (typically first in startup sequence)
 
@@ -219,13 +221,20 @@ sequenceDiagram
     System->>Logger: RDK_LOGGER_INIT()
     Note over Logger: State: Initializing<br/>Check file paths, setup logging context
     
-    Logger->>FileSystem: Check /nvram/debug.ini existence
-    FileSystem-->>Logger: File status (exists/not exists)
+    Logger->>FileSystem: Check /opt/debug.ini existence
     
-    alt Override file exists
-        Logger->>Config: Load /nvram/debug.ini
-    else Default configuration
-        Logger->>Config: Load /etc/debug.ini
+    alt /opt/debug.ini exists
+        FileSystem-->>Logger: Override file available
+        Logger->>Config: Load /opt/debug.ini
+    else Check second priority
+        Logger->>FileSystem: Check /nvram/debug.ini existence
+        alt /nvram/debug.ini exists
+            FileSystem-->>Logger: Override file available
+            Logger->>Config: Load /nvram/debug.ini
+        else Use default configuration
+            FileSystem-->>Logger: Use default config
+            Logger->>Config: Load /etc/debug.ini
+        end
     end
     
     Config->>FileSystem: Parse configuration file
@@ -272,7 +281,7 @@ RDK Logger maintains several operational contexts that can change during runtime
 
 **Context Switching Scenarios:**
 
-- **Configuration Override Detection**: Switch between `/etc/debug.ini` and `/nvram/debug.ini` based on file availability and modification times
+- **Configuration Override Detection**: Three-tier priority system checking `/opt/debug.ini`, then `/nvram/debug.ini`, then `/etc/debug.ini` based on file availability and access permissions
 - **Output Destination Switching**: Automatic fallback from file output to console output when log files become unavailable
 - **Debug Mode Activation**: Enhanced logging and diagnostic output when debug flags are enabled through configuration or runtime commands
 
@@ -354,10 +363,10 @@ RDK Logger is composed of several specialized modules, each responsible for spec
 
 | Module/Class | Description | Key Files |
 |-------------|------------|-----------|
-| **Core Logging API** | Main application interface providing RDK_LOG macros and initialization functions | `include/rdk_logger.h`, `src/rdk_logger_init.c`, `src/rdk_logger_util.c` |
-| **Configuration Manager** | Handles parsing, caching, and management of debug.ini configuration files | `src/rdk_logger_init.c`, configuration parsing logic embedded |
-| **Dynamic Logger** | Runtime control system for changing log levels via UDP socket communication | `src/rdk_dynamic_logger.c`, `include/rdk_dynamic_logger.h` |
-| **Debug Support** | Enhanced debugging capabilities, internal diagnostics, and development tools | `src/rdk_debug.c`, `src/rdk_debug_priv.c`, `include/rdk_debug.h` |
+| **Core Logging API** | Main application interface providing RDK_LOG macros and initialization functions | `include/rdk_logger.h`, `src/rdk_logger_init.c`, `src/rdk_debug.c` |
+| **Configuration Manager** | Handles parsing, caching, and management of debug.ini configuration files | `src/rdk_logger_init.c`, `src/rdk_debug_priv.c` |
+| **Dynamic Logger** | Runtime control system for changing log levels via UDP socket communication | `src/rdk_dynamic_logger.c`, `src/include/rdk_dynamic_logger.h` |
+| **Debug Support** | Enhanced debugging capabilities, internal diagnostics, and development tools | `src/rdk_debug.c`, `src/rdk_debug_priv.c`, `include/rdk_debug.h`, `src/include/rdk_debug_priv.h` |
 | **Milestone Logging** | Special-purpose logging for system milestones and significant events | `src/rdk_logger_milestone.c`, `include/rdk_logger_milestone.h`, `scripts/logMilestone.sh` |
 | **Onboarding Support** | Utilities for component integration and initialization assistance | `src/rdk_logger_onboard.c`, `utils/rdk_logger_onboard_main.c` |
 | **Runtime Control Utilities** | Command-line tools for log level management and system interaction | `utils/rdklogctrl.c`, `utils/rdklogmilestone.c` |
@@ -373,14 +382,14 @@ RDK Logger serves as a foundational component that interfaces with multiple laye
 | **RDK-B Middleware Components** |
 | CcspCMAgent | Cable modem status and configuration logging | `RDK_LOG()`, module: `LOG.RDK.CM` |
 | CcspTr069Pa | TR-069 protocol events and diagnostic logging | `RDK_LOG()`, module: `LOG.RDK.TR069` |
-| CcspWifiAgent | WiFi operations, connection events, security logging | `RDK_LOG()`, module: `LOG.RDK.WIFI` |
+| CcspWiFiAgent/OneWiFi | WiFi operations, connection events, security logging | `RDK_LOG()`, module: `LOG.RDK.WIFI` |
 | CcspPandM | Platform and management events, system status | `RDK_LOG()`, module: `LOG.RDK.PAM` |
 | CcspPsm | Parameter storage and retrieval operations | `RDK_LOG()`, module: `LOG.RDK.PSM` |
 | WAN Manager | WAN interface management and failover events | `RDK_LOG()`, module: `LOG.RDK.WANMGR` |
 | **System & Platform Layers** |
 | Log4C Library | Backend log message formatting and file management | `log4c_init()`, `log4c_category_log()`, configuration via log4crc |
 | System Logger (syslog) | System-wide log integration and kernel message coordination | Direct syslog API calls, facility LOG_USER |
-| File System | Configuration file access and log file storage | `/etc/debug.ini`, `/nvram/debug.ini`, `/var/log/*` |
+| File System | Configuration file access and log file storage | `/opt/debug.ini`, `/nvram/debug.ini`, `/etc/debug.ini`, `/var/log/*` |
 | systemd Journal | Modern Linux logging integration | Journal API integration when available |
 | Network Services | UDP socket communication for runtime control | UDP port 12035, localhost interface |
 
@@ -459,14 +468,20 @@ sequenceDiagram
     participant ConfigCache as Configuration Cache
 
     App->>RDKLogger: RDK_LOGGER_INIT()
-    RDKLogger->>FileSystem: Check /nvram/debug.ini (override)
+    RDKLogger->>FileSystem: Check /opt/debug.ini (first priority)
     
-    alt Override file exists and is newer
+    alt /opt/debug.ini exists and is readable
         FileSystem-->>RDKLogger: Override file available
-        RDKLogger->>ConfigParser: Parse /nvram/debug.ini
-    else Use default configuration
-        FileSystem-->>RDKLogger: Use default config
-        RDKLogger->>ConfigParser: Parse /etc/debug.ini
+        RDKLogger->>ConfigParser: Parse /opt/debug.ini
+    else Check second priority
+        RDKLogger->>FileSystem: Check /nvram/debug.ini (second priority)
+        alt /nvram/debug.ini exists and is readable
+            FileSystem-->>RDKLogger: Override file available
+            RDKLogger->>ConfigParser: Parse /nvram/debug.ini
+        else Use default configuration
+            FileSystem-->>RDKLogger: Use default config
+            RDKLogger->>ConfigParser: Parse /etc/debug.ini
+        end
     end
     
     ConfigParser->>FileSystem: Read configuration file
@@ -488,16 +503,16 @@ RDK Logger operates at the middleware layer and does not directly interface with
 | System API | Purpose | Implementation File |
 |---------|---------|-------------------|
 | `socket()`, `bind()`, `recvfrom()` | UDP socket communication for runtime control via rdklogctrl | `src/rdk_dynamic_logger.c` |
-| `fopen()`, `fread()`, `stat()` | Configuration file reading and monitoring | `src/rdk_logger_init.c` |
-| `log4c_init()`, `log4c_category_log()` | Log4C backend initialization and message output | `src/rdk_logger_init.c`, `src/rdk_logger_util.c` |
-| `gettimeofday()`, `localtime_r()` | Timestamp generation for log message formatting | `src/rdk_logger_util.c` |
-| `pthread_mutex_*()` | Thread synchronization for configuration updates | `src/rdk_dynamic_logger.c` |
+| `fopen()`, `fread()`, `stat()` | Configuration file reading and monitoring | `src/rdk_logger_init.c`, `src/rdk_debug_priv.c` |
+| `log4c_init()`, `log4c_category_log()` | Log4C backend initialization and message output | `src/rdk_debug_priv.c` |
+| `gettimeofday()`, `localtime_r()` | Timestamp generation for log message formatting | `src/rdk_debug_priv.c` |
+| `pthread_mutex_*()` | Thread synchronization for configuration updates | `src/rdk_logger_init.c`, `src/rdk_dynamic_logger.c` |
 
 ### Key Implementation Logic
 
-- **Configuration Management Engine**: Core configuration system implemented in `src/rdk_logger_init.c` handles parsing of debug.ini files, detection of configuration overrides, and maintenance of in-memory configuration cache. The system supports both default configuration (`/etc/debug.ini`) and runtime overrides (`/nvram/debug.ini`) with automatic fallback mechanisms.
-     - Main configuration parsing logic in `rdk_logger_init()` function 
-     - Configuration override detection and file priority handling
+- **Configuration Management Engine**: Core configuration system implemented in `src/rdk_logger_init.c` and `src/rdk_debug_priv.c` handles parsing of debug.ini files, detection of configuration overrides, and maintenance of in-memory configuration cache. The system supports three-tier configuration priority (`/opt/debug.ini`, `/nvram/debug.ini`, `/etc/debug.ini`) with automatic fallback mechanisms.
+     - Main configuration parsing logic in `rdk_logger_init()` and `rdk_dbg_priv_config()` functions 
+     - Configuration override detection with three-tier priority file checking
      - In-memory cache management with atomic updates for thread safety
 
 - **Dynamic Runtime Control**: Real-time log level modification system implemented in `src/rdk_dynamic_logger.c` provides UDP-based communication mechanism for the `rdklogctrl` utility. The system enables immediate log level changes without application restart.
@@ -527,8 +542,9 @@ RDK Logger operates at the middleware layer and does not directly interface with
 
 | Configuration File | Purpose | Override Mechanisms |
 |--------------------|---------|--------------------|
-| `/etc/debug.ini` | Primary system-wide logging configuration with default log levels for all RDK-B components | Environment variable `RDK_LOGGER_CONFIG_PATH`, `/nvram/debug.ini` override |
-| `/nvram/debug.ini` | Runtime configuration override file for temporary or persistent log level changes | Takes precedence when present and readable, automatic detection |
+| `/etc/debug.ini` | Default system-wide logging configuration with default log levels for all RDK-B components | Overridden by `/opt/debug.ini` or `/nvram/debug.ini` when present and readable |
+| `/opt/debug.ini` | Platform-specific configuration override with highest priority | Takes precedence over all other configuration files when present and readable |
+| `/nvram/debug.ini` | Runtime configuration override file for temporary or persistent log level changes | Takes precedence over `/etc/debug.ini` but lower priority than `/opt/debug.ini` |
 | `log4crc` | Log4C backend configuration for output formatting, file rotation, and destination control | Log4C environment variables, application-specific log4crc files |
 | `/var/log/messages` | Default log output destination for system-wide RDK-B component logs | Log4C configuration, syslog configuration, systemd journal settings |
 
