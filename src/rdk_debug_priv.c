@@ -49,6 +49,7 @@
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
 #include "log4c.h"
+#include "rdk_otlp_instrumentation.h"
 #include <log4c/appender_type_rollingfile.h>
 #include <log4c/rollingpolicy.h>
 #include <log4c/rollingpolicy_type_sizewin.h>
@@ -614,6 +615,8 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
 {
     log4c_category_t* cat = NULL;
     int prio = 0;
+    va_list args_copy;
+    va_copy(args_copy, args);
 
     /* Handling process request here. This is not a blocking call and it shall return immediately */
     rdk_dyn_log_process_pending_request();
@@ -621,11 +624,15 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
     /* Check the incoming log level; dont print when it is RDK_LOG_NONE */
     if (RDK_LOG_NONE == level)
     {
+        va_end(args_copy);
         return;
     }
 
     if ((!module_name) || (!format))
+    {
+        va_end(args_copy);
         return;
+    }
 
     pthread_mutex_lock(&gLoggingMutex);
     cat = log4c_category_get(module_name);
@@ -653,6 +660,15 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
         }
     }
     pthread_mutex_unlock(&gLoggingMutex);
+
+    /* Bridge log message to OTEL LogRecord if enabled at runtime */
+    if (rdk_otlp_logs_enabled())
+    {
+        char otel_msg_buf[1024];
+        vsnprintf(otel_msg_buf, sizeof(otel_msg_buf), format, args_copy);
+        rdk_otlp_emit_log((int)level, module_name, otel_msg_buf);
+    }
+    va_end(args_copy);
 
     return;
 }
