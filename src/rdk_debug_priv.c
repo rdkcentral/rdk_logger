@@ -661,8 +661,8 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
     }
     pthread_mutex_unlock(&gLoggingMutex);
 
-    /* Bridge log message to OTEL LogRecord if enabled at runtime */
-    if (rdk_otlp_logs_enabled())
+    /* Bridge log message to OTEL LogRecord if enabled for this module */
+    if (rdk_otlp_logs_enabled(module_name))
     {
         char otel_msg_buf[1024];
         vsnprintf(otel_msg_buf, sizeof(otel_msg_buf), format, args_copy);
