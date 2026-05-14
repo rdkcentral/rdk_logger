@@ -656,7 +656,19 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
         int log4cPriority = rdk_logLevel_to_log4c_priority(level);
         if (log4c_category_is_priority_enabled(cat, log4cPriority))
         {
-            log4c_category_vlog(cat, log4cPriority, format, args);
+            char trace_id[33] = {0}, span_id[17] = {0};
+            if (rdk_otlp_has_active_trace() &&
+                rdk_otlp_get_active_trace_context(trace_id, span_id))
+            {
+                char msg_buf[1024];
+                vsnprintf(msg_buf, sizeof(msg_buf), format, args);
+                log4c_category_log(cat, log4cPriority,
+                    "[TraceID:%s SpanID:%s] %s", trace_id, span_id, msg_buf);
+            }
+            else
+            {
+                log4c_category_vlog(cat, log4cPriority, format, args);
+            }
         }
     }
     pthread_mutex_unlock(&gLoggingMutex);
