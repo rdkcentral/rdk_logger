@@ -144,7 +144,7 @@ TEST_F(RDKLoggerErrorTest, VeryLongModuleNames) {
     
     // Create a very long module name
     char long_module[1000];
-    memset(long_module, 'A', sizeof(long_module) - 1);
+    memset(long_module, 'B', sizeof(long_module) - 1);
     long_module[sizeof(long_module) - 1] = '\0';
     
     // Test very long module name
