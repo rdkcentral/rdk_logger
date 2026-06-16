@@ -35,6 +35,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "rdk_logger.h"
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"

@@ -82,9 +82,9 @@ PKG_CHECK_MODULES([LOG4C], [log4c >= 1.2.3])
 
 dnl Log suppression feature
 AC_ARG_ENABLE([log-suppression],
-  [AS_HELP_STRING([--enable-log-suppression], [Enable duplicate log suppression (default: yes)])],
+  [AS_HELP_STRING([--enable-log-suppression], [Enable duplicate log suppression (default: no)])],
   [enable_log_suppression=$enableval],
-  [enable_log_suppression=yes])
+  [enable_log_suppression=no])
 if test "x$enable_log_suppression" = "xyes"; then
   AC_DEFINE([HAVE_LOG_SUPPRESSION], [1], [Define to enable log duplicate suppression])
 fi

@@ -26,7 +26,7 @@
 
 LOG_DIR="${1:-/rdklogs/logs}"
 THRESHOLD="${2:-2}"
-DEDUP_BIN="/usr/bin/rdkLogDedupSync"
+DEDUP_BIN="${DEDUP_BIN:-/usr/bin/rdkLogDedupSync}"
 DEDUP_COUNT=0
 
 if [ ! -d "$LOG_DIR" ]; then

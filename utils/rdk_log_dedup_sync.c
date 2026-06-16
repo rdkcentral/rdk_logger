@@ -25,9 +25,8 @@
  * and writes a deduplicated version with "repeated N times" annotations.
  * Intended to be run before log files are uploaded to reduce bandwidth.
  *
- * Usage: rdk_log_dedup_sync <input_file> <output_file>
+ * Usage: rdk_log_dedup_sync <input_file> <output_file> [threshold]
  * Exit codes: 0 = success, 1 = error, 2 = no changes needed
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,6 +59,11 @@ int main(int argc, char *argv[])
     const char *output_path = argv[2];
     int threshold = DEFAULT_THRESHOLD;
 
+    if (strcmp(input_path, output_path) == 0) {
+        fprintf(stderr, "Error: input_file and output_file must be different paths\n");
+        return 1;
+    }
+
     if (argc == 4) {
         threshold = atoi(argv[3]);
         if (threshold < 1) {
@@ -74,7 +78,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int fd_out = open(output_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    struct stat in_st;
+    mode_t out_mode = S_IRUSR | S_IWUSR;
+    if (stat(input_path, &in_st) == 0) {
+        out_mode = in_st.st_mode & 0777;
+    }
+
+    int fd_out = open(output_path, O_WRONLY | O_CREAT | O_TRUNC, out_mode);
     if (fd_out < 0) {
         fprintf(stderr, "Error: Cannot open output file: %s\n", output_path);
         fclose(fin);
@@ -140,7 +150,10 @@ int main(int argc, char *argv[])
 
     if (!any_dedup) {
         /* No deduplication was needed - remove output and signal caller */
-        remove(output_path);
+        if (remove(output_path) != 0) {
+            fprintf(stderr, "Error: Failed to remove unchanged output file: %s\n", output_path);
+            return 1;
+        }
         return 2;
     }
 
