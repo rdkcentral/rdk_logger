@@ -49,6 +49,10 @@
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
 #include "log4c.h"
+
+#ifdef HAVE_LOG_SUPPRESSION
+#include "rdk_log_suppression.h"
+#endif
 #include <log4c/appender_type_rollingfile.h>
 #include <log4c/rollingpolicy.h>
 #include <log4c/rollingpolicy_type_sizewin.h>
@@ -649,6 +653,19 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
         int log4cPriority = rdk_logLevel_to_log4c_priority(level);
         if (log4c_category_is_priority_enabled(cat, log4cPriority))
         {
+#ifdef HAVE_LOG_SUPPRESSION
+            uint32_t repeat_count = 0;
+            rdk_SuppressResult suppress_result = rdk_log_suppression_check(module_name, level, format, &repeat_count);
+            if (suppress_result == RDK_SUPPRESS_BLOCK)
+            {
+                pthread_mutex_unlock(&gLoggingMutex);
+                return;
+            }
+            if (suppress_result == RDK_SUPPRESS_EMIT_SUMMARY)
+            {
+                log4c_category_log(cat, log4cPriority, "Previous message repeated %u times", repeat_count);
+            }
+#endif
             log4c_category_vlog(cat, log4cPriority, format, args);
         }
     }

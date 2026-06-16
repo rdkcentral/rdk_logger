@@ -38,6 +38,9 @@
 #include "rdk_logger.h"
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
+#ifdef HAVE_LOG_SUPPRESSION
+#include "rdk_log_suppression.h"
+#endif
 
 static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -73,6 +76,9 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
         {
             /* Perform Dynamic Logger Internal Init */
             rdk_dyn_log_init();
+#ifdef HAVE_LOG_SUPPRESSION
+            rdk_log_suppression_init();
+#endif
 
             isLogInited = true;
             /**
@@ -118,6 +124,9 @@ rdk_Error rdk_logger_deinit()
     if (isLogInited)
     {
         rdk_dyn_log_deinit();
+#ifdef HAVE_LOG_SUPPRESSION
+        rdk_log_suppression_deinit();
+#endif
     }
     pthread_mutex_unlock(&gInitMutex);
 
