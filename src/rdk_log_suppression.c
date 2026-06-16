@@ -67,19 +67,7 @@ static struct {
     .num_categories = 0
 };
 
-/**
- * Compute FNV-1a hash of a byte sequence.
- */
-static uint32_t fnv1a_hash(const void *data, size_t len)
-{
-    const unsigned char *p = (const unsigned char *)data;
-    uint32_t hash = FNV_OFFSET_BASIS;
-    for (size_t i = 0; i < len; i++) {
-        hash ^= p[i];
-        hash *= FNV_PRIME;
-    }
-    return hash;
-}
+/* fnv1a_hash() removed (unused) */
 
 /**
  * Compute pattern hash from module + level + format string.
@@ -161,6 +149,7 @@ int rdk_log_suppression_init(void)
 
     memset(g_suppress.categories, 0, sizeof(g_suppress.categories));
     g_suppress.num_categories = 0;
+    g_suppress.globally_enabled = false;
     g_suppress.default_window_sec = RDK_SUPPRESS_DEFAULT_WINDOW_SEC;
     g_suppress.default_threshold = RDK_SUPPRESS_DEFAULT_THRESHOLD;
     g_suppress.initialized = true;
@@ -171,6 +160,7 @@ int rdk_log_suppression_init(void)
 void rdk_log_suppression_deinit(void)
 {
     g_suppress.initialized = false;
+    g_suppress.globally_enabled = false;
     g_suppress.num_categories = 0;
 }
 
@@ -208,9 +198,8 @@ rdk_SuppressResult rdk_log_suppression_check(const char *module, int level,
 
         if (elapsed > (double)cat->window_sec) {
             /* Window expired - emit summary if we suppressed, then reset */
-            if (entry->repeat_count >= cat->threshold) {
-                uint32_t suppressed = entry->repeat_count - cat->threshold + 1;
-                if (repeat_count) {
+            if (entry->repeat_count > cat->threshold) {
+                uint32_t suppressed = entry->repeat_count - cat->threshold;
                     *repeat_count = suppressed;
                 }
                 cat->total_summaries++;

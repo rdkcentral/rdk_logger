@@ -39,7 +39,7 @@ if [ ! -x "$DEDUP_BIN" ]; then
     exit 1
 fi
 
-for logfile in "$LOG_DIR"/*.log "$LOG_DIR"/*.txt.*; do
+for logfile in "$LOG_DIR"/*.log "$LOG_DIR"/*.txt "$LOG_DIR"/*.txt.*; do
     [ -f "$logfile" ] || continue
 
     tmpfile="${logfile}.dedup.tmp"

@@ -33,6 +33,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define MAX_LINE_LEN 4096
 #define DEFAULT_THRESHOLD 2
@@ -71,9 +74,17 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    FILE *fout = fopen(output_path, "w");
-    if (!fout) {
+    int fd_out = open(output_path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd_out < 0) {
         fprintf(stderr, "Error: Cannot open output file: %s\n", output_path);
+        fclose(fin);
+        return 1;
+    }
+
+    FILE *fout = fdopen(fd_out, "w");
+    if (!fout) {
+        fprintf(stderr, "Error: Cannot open output file stream: %s\n", output_path);
+        close(fd_out);
         fclose(fin);
         return 1;
     }
