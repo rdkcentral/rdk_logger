@@ -50,6 +50,10 @@
 #include "rdk_dynamic_logger.h"
 #include "log4c.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_LOG_SUPPRESSION
 #include "rdk_log_suppression.h"
 #endif
@@ -57,9 +61,6 @@
 #include <log4c/rollingpolicy.h>
 #include <log4c/rollingpolicy_type_sizewin.h>
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #ifdef HAVE_SYSTEMD
 #include <systemd/sd-journal.h>
