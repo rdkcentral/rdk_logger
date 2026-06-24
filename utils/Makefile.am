@@ -34,3 +34,8 @@ onboarding_log_SOURCES  = rdk_logger_onboard_main.c
 onboarding_log_LDADD    = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
 onboarding_log_CFLAGS   = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
 onboarding_log_LDFLAGS  = -L/usr/lib
+
+bin_PROGRAMS               += rdk_log_dedup_filter
+rdk_log_dedup_filter_SOURCES = rdk_log_dedup_filter.c
+rdk_log_dedup_filter_CFLAGS  = -I$(top_srcdir)/include -I$(top_srcdir)/src/include
+rdk_log_dedup_filter_LDFLAGS = -L/usr/lib
