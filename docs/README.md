@@ -37,7 +37,7 @@ class SysLog VL
 - **Milestone Logging**: Provides a dedicated `logMilestone()` API that records timestamped system lifecycle events (using `CLOCK_MONOTONIC_RAW`) to a dedicated milestones log file, separate from general component logs.
 - **Onboarding Log Support**: Writes structured onboarding events to a dedicated log path during the device provisioning phase, with suppression logic based on provisioning state flags.
 - **Thread-Safe Operation**: Uses mutex protection (`pthread_mutex_t`) around initialization and log message dispatch, enabling safe concurrent use from multi-threaded RDK components without external synchronization.
-- **Performance-Optimized Filtering**: Log level checks are performed before any formatting or I/O, ensuring that log levels below the configured threshold impose negligible overhead on the calling thread.
+- **Performance-Optimized Filtering**: Log level checks are performed before any formatting or output I/O; when a level is disabled, the call avoids message formatting and backend writes (but still performs the mutex-protected category/priority check and dynamic-control polling).
 
 ---
 
@@ -53,7 +53,7 @@ Southbound integration is handled by the Log4C library. RDK Logger registers cus
 
 The runtime control IPC mechanism uses a UDP socket (port 12035, loopback broadcast `127.255.255.255`). When `rdklogctrl` is invoked, it constructs a structured binary message with a `"COMC"` signature, the target process name, the module name, and the new log level, then broadcasts it. Each running process that has initialized RDK Logger maintains a non-blocking UDP socket and calls `rdk_dyn_log_process_pending_request()` to drain any pending control messages. The receiving side validates the signature, verifies the target process name against `__progname`, and applies the level change atomically.
 
-Data persistence at the logging level is fully delegated to Log4C's rolling file appender and the system log infrastructure. RDK Logger itself only maintains an in-memory configuration cache loaded at startup. Milestone log entries are persisted directly to a flat log file via `fopen`/`fprintf`. Onboarding log entries are appended to a separate file path and are suppressed once the device is marked as provisioned.
+Data persistence for standard log messages is delegated to Log4C appenders configured in `log4crc` (e.g., console/syslog/journal or Log4C file/rolling-file appenders). RDK Logger itself does not maintain a separate configuration cache beyond the Log4C category priority state applied at startup. Milestone log entries are persisted directly to a flat log file via `fopen`/`fprintf`. Onboarding log entries are appended to a separate file path and are suppressed once the device is marked as provisioned.
 
 ```mermaid
 flowchart TD
@@ -70,8 +70,7 @@ flowchart TD
         subgraph PrivateCore["Private Core (rdk_debug_priv.c)"]
             ConfigParser["Configuration Parser\nrdk_logger_parse_config"]
             LevelFilter["Level Filter\nlog4c_category_is_priority_enabled"]
-            Formatter["Format Handlers\nformat_plaintext / format_with_ts\nformat_with_tid / format_detail_with_ts"]
-            Appenders["Appender Backends\nto_console / to_syslog\nto_journal / to_file"]
+            Appenders["Appender Backends\nto_console / to_syslog\nto_journal"]
         end
 
         subgraph DynControl["Runtime Control (rdk_dynamic_logger.c)"]
@@ -122,7 +121,7 @@ flowchart TD
 
 ### Platform and Integration Requirements
 
-- **Build Dependencies**: `log4c >= 1.2.3` (mandatory, detected via `PKG_CHECK_MODULES`); `libglib-2.0` (mandatory, linked in `librdkloggers_la_LDFLAGS`); `libsystemd >= 209` (optional, auto-detected via `PKG_CHECK_MODULES`; enables systemd journal appender when present).
+- **Build Dependencies**: `log4c >= 1.2.3` (mandatory, detected via `PKG_CHECK_MODULES`); `libglib-2.0` (mandatory, linked via `$(GLIB_LIBS)` / `$(GLIB_CFLAGS)` provided by the build environment); `libsystemd >= 209` (optional, auto-detected via `PKG_CHECK_MODULES`; enables systemd journal appender when present).
 - **Configuration Files**: `/etc/debug.ini` must exist as the default configuration file. `/opt/debug.ini` and `/nvram/debug.ini` are optional override paths. `log4crc` must be installed at the location Log4C searches by default (typically `/etc/log4crc` or the path set by `LOG4C_RCPATH`) to configure appenders and layouts.
 - **Startup Order**: RDK Logger must be initialized before any RDK middleware component that issues `RDK_LOG()` calls. As a shared library, initialization occurs in-process at the time the first component calls `RDK_LOGGER_INIT()`.
 
@@ -132,7 +131,7 @@ flowchart TD
 
 #### Initialization to Active State
 
-The component transitions through the following states during its lifecycle: **Initializing** (mutex acquired, check `isLogInited` flag) → **LoadingConfig** (parse the selected debug.ini, populate Log4C category priorities) → **InitializingBackend** (register custom layouts and appenders, call `log4c_init()`) → **StartingDynamicControl** (open UDP socket on port 12035, bind to any interface) → **Active** (processing `RDK_LOG()` calls, servicing runtime control messages) → **Shutdown** (close UDP socket, release resources).
+The component transitions through the following states during its lifecycle: **Initializing** (mutex acquired, check `isLogInited` flag) → **LoadingConfig** (parse the selected debug.ini, populate Log4C category priorities) → **InitializingBackend** (register custom layouts and appenders, call `log4c_init()`) → **StartingDynamicControl** (open UDP socket on port 12035, bind to `127.255.255.255`) → **Active** (processing `RDK_LOG()` calls, servicing runtime control messages) → **Shutdown** (close UDP socket, release resources).
 
 ```mermaid
 sequenceDiagram
@@ -192,7 +191,7 @@ sequenceDiagram
 **State Change Triggers:**
 
 - **Module Log Level Change via rdklogctrl**: When a valid UDP control message is received matching the process name and a recognized module name, `rdk_dbg_priv_log_reconfig()` updates the Log4C category priority for that module immediately. Subsequent `RDK_LOG()` calls for that module reflect the new level without any restart.
-- **Invalid Control Message**: Messages that fail signature validation (`"COMC"` check), have a mismatched process name, or carry an out-of-range log level are silently discarded by `rdk_dyn_log_validate_component_name()`.
+- **Invalid Control Message**: Messages that fail signature validation (`"COMC"` check) or have a mismatched process name are discarded; out-of-range log levels are rejected and reported to `stderr` by `rdk_dyn_log_validate_component_name()`. 
 - **Configuration File Not Found**: If the selected debug.ini cannot be opened, `rdk_logger_parse_config()` returns `RDK_FAILURE`, initialization of RDK Logger fails, and `isLogInited` remains false. Log messages issued before a successful initialization are suppressed.
 
 **Context Switching Scenarios:**
