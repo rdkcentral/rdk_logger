@@ -16,7 +16,7 @@ classDef VL stroke:#808080,fill:#F2F2F2,stroke-width:2px
 
 RDKMW["RDK Middleware Components"]
 RDKLogger["RDK Logger"]
-SysLog["Log4C / syslog\n/ systemd journal"]
+SysLog["Log4C / syslog\n/ systemd journal\n/ rolling files"]
 
 RDKMW -->|RDK_LOG APIs| RDKLogger
 RDKLogger -->|Log4C APIs| SysLog
@@ -70,7 +70,8 @@ flowchart TD
         subgraph PrivateCore["Private Core (rdk_debug_priv.c)"]
             ConfigParser["Configuration Parser\nrdk_logger_parse_config"]
             LevelFilter["Level Filter\nlog4c_category_is_priority_enabled"]
-            Appenders["Appender Backends\nto_console / to_syslog\nto_journal"]
+            Formatter["Format Handlers\nformat_plaintext / format_with_ts\nformat_with_tid / format_detail_with_ts"]
+            Appenders["Appender Backends\nto_console / to_syslog\nto_journal\nrollingfile (built-in)"]
         end
 
         subgraph DynControl["Runtime Control (rdk_dynamic_logger.c)"]
@@ -191,7 +192,7 @@ sequenceDiagram
 **State Change Triggers:**
 
 - **Module Log Level Change via rdklogctrl**: When a valid UDP control message is received matching the process name and a recognized module name, `rdk_dbg_priv_log_reconfig()` updates the Log4C category priority for that module immediately. Subsequent `RDK_LOG()` calls for that module reflect the new level without any restart.
-- **Invalid Control Message**: Messages that fail signature validation (`"COMC"` check) or have a mismatched process name are discarded; out-of-range log levels are rejected and reported to `stderr` by `rdk_dyn_log_validate_component_name()`. 
+- **Invalid Control Message**: Messages that fail signature validation (`"COMC"` check) or have a mismatched process name are discarded; out-of-range log levels are rejected and reported to `stderr` by `rdk_dyn_log_validate_component_name()`.
 - **Configuration File Not Found**: If the selected debug.ini cannot be opened, `rdk_logger_parse_config()` returns `RDK_FAILURE`, initialization of RDK Logger fails, and `isLogInited` remains false. Log messages issued before a successful initialization are suppressed.
 
 **Context Switching Scenarios:**
@@ -295,16 +296,16 @@ sequenceDiagram
 
 ## Internal Modules
 
-| Module / Class            | Description                                                                                                                                                                                                                                                              | Key Files                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `Core Logging API`        | Exposes the `RDK_LOG` macro, initialization functions, and log level enumeration. Entry point for all RDK components.                                                                                                                                                    | `include/rdk_logger.h`, `include/rdk_debug.h`                                      |
-| `Initialization Manager`  | Implements `rdk_logger_init()`, `rdk_logger_ext_init()`, and `rdk_logger_deinit()`. Guards one-time initialization with a mutex. Receives external data through the debug.ini file path.                                                                                 | `src/rdk_logger_init.c`                                                            |
-| `Private Core`            | Implements Log4C backend integration, all six layout formatters, three appender backends, configuration file parsing (`rdk_logger_parse_config`), module-level log category management, and the `rdk_dbg_priv_log_msg` dispatch function.                                | `src/rdk_debug_priv.c`, `src/include/rdk_debug_priv.h`                             |
-| `Debug Dispatch`          | Public-facing wrappers (`rdk_logger_msg_printf`, `rdk_dbg_MsgRaw`, `rdk_logger_msg_vsprintf`) that validate parameters and forward to `rdk_dbg_priv_log_msg`. Also provides `rdk_logger_set_logLevel`, `rdk_logger_enable_logLevel`, and `rdk_logger_level_from_string`. | `src/rdk_debug.c`                                                                  |
-| `Dynamic Logger`          | Implements the non-blocking UDP listener (port 12035) used for runtime log level control. Validates incoming `"COMC"`-signed messages and calls `rdk_dbg_priv_log_reconfig` on matched entries.                                                                          | `src/rdk_dynamic_logger.c`, `src/include/rdk_dynamic_logger.h`                     |
-| `Milestone Logger`        | Provides `logMilestone(msg_code)` which appends a `<code>:<uptime_ms>` record to the milestones log file using `CLOCK_MONOTONIC_RAW`. Receives external data through the `msg_code` string argument.                                                                     | `src/rdk_logger_milestone.c`, `include/rdk_logger_milestone.h`                     |
-| `Onboarding Logger`       | Provides `rdk_logger_log_onboard(module, msg, ...)` for writing provisioning-phase log entries to a dedicated onboarding log file. Suppressed when `/nvram/.device_onboarded` or `/nvram/DISABLE_ONBOARD_LOGGING` exists.                                                | `src/rdk_logger_onboard.c`                                                         |
-| `Runtime Control Utility` | CLI tool (`rdklogctrl`) that constructs and sends `"COMC"`-framed UDP messages to change log levels in running processes. Also includes the milestone CLI tool (`rdklogmilestone`) and the onboarding utility (`rdk_logger_onboard_main`).                               | `utils/rdklogctrl.c`, `utils/rdklogmilestone.c`, `utils/rdk_logger_onboard_main.c` |
+| Module / Class            | Description                                                                                                                                                                                                                                                                                                                                                     | Key Files                                                                          |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `Core Logging API`        | Exposes the `RDK_LOG` macro, initialization functions, and log level enumeration. Entry point for all RDK components.                                                                                                                                                                                                                                           | `include/rdk_logger.h`, `include/rdk_debug.h`                                      |
+| `Initialization Manager`  | Implements `rdk_logger_init()`, `rdk_logger_ext_init()`, and `rdk_logger_deinit()`. Guards one-time initialization with a mutex. Receives external data through the debug.ini file path.                                                                                                                                                                        | `src/rdk_logger_init.c`                                                            |
+| `Private Core`            | Implements Log4C backend integration, all six layout formatters, three custom appender backends (`to_console`, `to_syslog`, `to_journal`) plus rolling file output via Log4C's built-in `rollingfile` appender, configuration file parsing (`rdk_logger_parse_config`), module-level log category management, and the `rdk_dbg_priv_log_msg` dispatch function. | `src/rdk_debug_priv.c`, `src/include/rdk_debug_priv.h`                             |
+| `Debug Dispatch`          | Public-facing wrappers (`rdk_logger_msg_printf`, `rdk_dbg_MsgRaw`, `rdk_logger_msg_vsprintf`) that validate parameters and forward to `rdk_dbg_priv_log_msg`. Also provides `rdk_logger_set_logLevel`, `rdk_logger_enable_logLevel`, and `rdk_logger_level_from_string`.                                                                                        | `src/rdk_debug.c`                                                                  |
+| `Dynamic Logger`          | Implements the non-blocking UDP listener (port 12035) used for runtime log level control. Validates incoming `"COMC"`-signed messages and calls `rdk_dbg_priv_log_reconfig` on matched entries.                                                                                                                                                                 | `src/rdk_dynamic_logger.c`, `src/include/rdk_dynamic_logger.h`                     |
+| `Milestone Logger`        | Provides `logMilestone(msg_code)` which appends a `<code>:<uptime_ms>` record to the milestones log file using `CLOCK_MONOTONIC_RAW`. Receives external data through the `msg_code` string argument.                                                                                                                                                            | `src/rdk_logger_milestone.c`, `include/rdk_logger_milestone.h`                     |
+| `Onboarding Logger`       | Provides `rdk_logger_log_onboard(module, msg, ...)` for writing provisioning-phase log entries to a dedicated onboarding log file. Suppressed when `/nvram/.device_onboarded` or `/nvram/DISABLE_ONBOARD_LOGGING` exists.                                                                                                                                       | `src/rdk_logger_onboard.c`                                                         |
+| `Runtime Control Utility` | CLI tool (`rdklogctrl`) that constructs and sends `"COMC"`-framed UDP messages to change log levels in running processes. Also includes the milestone CLI tool (`rdklogmilestone`) and the onboarding utility (`rdk_logger_onboard_main`).                                                                                                                      | `utils/rdklogctrl.c`, `utils/rdklogmilestone.c`, `utils/rdk_logger_onboard_main.c` |
 
 ---
 
@@ -387,9 +388,9 @@ sequenceDiagram
 
 - **Configuration Parsing**: `rdk_logger_parse_config()` in `src/rdk_debug_priv.c` reads the debug.ini file line-by-line, skipping comments and lines without `=`. For the `LOG.RDK.DEFAULT` entry it sets the root `LOG.RDK` category priority; for all other `LOG.RDK.*` entries it calls `log4c_category_get()` and `log4c_category_set_priority()`. Whitespace trimming is applied to both name and value tokens before comparison. Level strings are parsed case-insensitively by `rdk_logger_level_from_string()`.
 
-- **Log4C Layout and Appender Registration**: Six layout types (`format_plaintext`, `format_with_ts`, `format_with_tid`, `format_with_ts_tid`, `format_detail_with_ts`, `format_detail_without_ts`) and three appender types (`to_console`, `to_syslog`, `to_journal`) are registered in `rdk_dbg_priv_init()` before `log4c_init()` is called, so that the `log4crc` XML configuration file can reference them by name. A legacy `comcast_dated` layout alias is also registered for backward compatibility.
+- **Log4C Layout and Appender Registration**: Six layout types (`format_plaintext`, `format_with_ts`, `format_with_tid`, `format_with_ts_tid`, `format_detail_with_ts`, `format_detail_without_ts`) and three custom appender types (`to_console`, `to_syslog`, `to_journal`) are registered in `rdk_dbg_priv_init()` before `log4c_init()` is called, so that the `log4crc` XML configuration file can reference them by name. Rolling file output uses Log4C's built-in `rollingfile` appender type (referenced by name string via `log4c_appender_type_get("rollingfile")`) — it is not registered as a custom type. A legacy `comcast_dated` layout alias is also registered for backward compatibility.
 
-- **Extended Initialization**: `rdk_logger_ext_init()` accepts an `rdk_logger_ext_config_t` structure specifying a module name, log level, output type, format type, and optional file policy (`rdk_LogOutput_File` with file name, directory, max size, and max file count). This path, implemented in `rdk_dbg_priv_ext_init()`, creates or retrieves a Log4C category and attaches a dedicated appender to it, enabling per-component log files distinct from the shared output.
+- **Extended Initialization and File Logging**: `rdk_logger_ext_init()` accepts an `rdk_logger_ext_config_t` structure specifying a module name, log level, output type (`RDKLOG_OUTPUT_CONSOLE`, `RDKLOG_OUTPUT_SYSLOG`, `RDKLOG_OUTPUT_JOURNAL`, or `RDKLOG_OUTPUT_FILE`), format type, and an optional `rdk_LogOutput_File` file policy. When `RDKLOG_OUTPUT_FILE` is selected, the `rdk_LogOutput_File` structure must be populated with `fileName` (log file prefix, max 64 chars), `fileLocation` (directory path, max 256 chars), `fileCountMax` (maximum number of rotating files), and `fileSizeMax` (maximum size per file in bytes). This path, implemented in `rdk_dbg_priv_ext_init()`, creates or retrieves a Log4C category and attaches a dedicated `rollingfile` appender with a `sizewin` rolling policy. File rolling closes the current appender before reconfiguring, preventing data loss. This mechanism is the primary means for components that require per-component log files on disk rather than shared console or system log output.
 
 - **Runtime Log Level Control**: `rdk_dyn_log_process_pending_request()` in `src/rdk_dynamic_logger.c` uses a non-blocking `select()` call on the UDP socket to drain any pending control messages in a loop. Each message is validated for the `"COMC"` signature and loopback source address before `rdk_dyn_log_validate_component_name()` matches the target process name against `__progname`. Validated messages invoke `rdk_dbg_priv_log_reconfig()` which calls `log4c_category_set_priority()` with the new level.
 
@@ -418,6 +419,19 @@ sequenceDiagram
 | `LOG.RDK.<MODULE>` | string (log level)  | Inherits `LOG.RDK.DEFAULT`        | Sets the log level for a specific named module. Accepted values: `FATAL`, `ERROR`, `WARNING`, `NOTICE`, `INFO`, `DEBUG`, `TRACE`, `NONE`.                 |
 | `DEBUG_CONF_FILE`  | compile-time string | `"debug.ini"`                     | Fallback configuration file name used when `rdk_logger_init()` receives a `NULL` path argument. Set via `-DDEBUG_CONF_FILE` in `librdkloggers_la_CFLAGS`. |
 | `LOGMILESTONE`     | compile-time flag   | Undefined (uses `/rdklogs/logs/`) | When defined at build time, milestone events are written to `/opt/logs/rdk_milestones.log` instead of `/rdklogs/logs/rdk_milestones.log`.                 |
+
+### File Output Configuration
+
+Components that require output to rolling log files on disk use `rdk_logger_ext_init()` with `RDKLOG_OUTPUT_FILE` and populate an `rdk_LogOutput_File` structure passed via the `pFilePolicy` field of `rdk_logger_ext_config_t`:
+
+| Field          | Type        | Description                                                                                                                    |
+| -------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `fileName`     | `char[64]`  | Log file name prefix. The `rollingfile` appender appends a numeric suffix when rotating.                                       |
+| `fileLocation` | `char[256]` | Directory path where log files are written (e.g., `/rdklogs/logs/`).                                                           |
+| `fileCountMax` | `int8_t`    | Maximum number of rotating log files to retain. When 0, no size-based rotation policy is applied.                              |
+| `fileSizeMax`  | `int64_t`   | Maximum size in bytes per file before rotation. When 0 with a non-zero `fileCountMax`, the default Log4C rolling size is used. |
+
+Passing a `NULL` `pFilePolicy` when `RDKLOG_OUTPUT_FILE` is selected causes `rdk_dbg_priv_ext_init()` to reject the configuration and write a diagnostic to `stderr`.
 
 ### Runtime Configuration
 
