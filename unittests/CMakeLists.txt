@@ -21,26 +21,8 @@ project(rdk_logger_gtest)
 # Find the gtest package
 find_package(GTest REQUIRED)
 
-include_directories(${RDKLOGGER_SOURCE_PATH}/)
-include_directories(${RDKLOGGER_SOURCE_PATH}/include)
-include_directories(${RDKLOGGER_SOURCE_PATH}/src/include)
-include_directories(${RDKLOGGER_SOURCE_PATH}/cfg)
-include_directories(${RDKLOGGER_UNITTEST_DIR}/)
-
-# Set the path to the gtest installation directory
-set(GTEST_ROOT "${RDKLOGGER_UNITTEST_DIR}/googletest/")
-
-# Add the test executable
-#add_executable(unitTestRunner testRunner.cpp)
-
-# Link the gtest libraries to the test executable
-#target_link_libraries(unitTestRunner GTest::GTest GTest::Main)
-
 
 enable_testing()
-link_directories("${RDKLOGGER_SOURCE_PATH}/src/.libs/")
-link_directories("${DEP_LIB_PATH}/log4c-1.2.3/install/lib/")
-link_directories("${RDKLOGGER_UNITTEST_DIR}/googletest/build/lib/")
 
 # Add the test executable
 add_executable(
@@ -48,31 +30,34 @@ add_executable(
   rdkloggerInit.cpp
   rdkloggerMsgPrintf.cpp
   rdkloggerMsgVsprintf.cpp
-  rdkIsDbgEnabled.cpp
+  rdkloggerMsgRaw.cpp
+  rdkloggerMsgRaw1.cpp
+  rdkLoggerDynamic.cpp
+  rdkLoggerUtilityTest.cpp
+  rdkLoggerConfigTest.cpp
+  rdkEnableLogLevel.cpp
+  rdkLogLevelFromString.cpp
+  test_rdkloggerExtInit.cpp
+  rdkLoggerRotationTest.cpp
+  rdkLoggerErrorTest.cpp
+  rdkLoggerPerformanceTest.cpp
   main.cpp
 )
-target_compile_definitions(rdk_logger_gtest PRIVATE GTEST_DEBUG_INI_FILE="${RDKLOGGER_UNITTEST_DIR}/sample_gtest_debug.ini")
+
+include_directories(${CMAKE_INSTALL_PREFIX}/include)
+include_directories(${DEP_LIB_PATH}/../include)
+link_directories("${DEP_LIB_PATH}/")
+
+add_compile_definitions(LOGMILESTONE=ON)
+target_compile_definitions(rdk_logger_gtest PRIVATE GTEST_DEBUG_INI_FILE="sample_gtest_debug.ini")
 
 
-install (CODE "execute_process (COMMAND ${CMAKE_COMMAND} -E copy ${RDKLOGGER_UNITTEST_DIR}/Gtest_log4crc ${RDKLOGGER_UNITTEST_DIR}/build/log4crc)")
+install (CODE "execute_process (COMMAND ${CMAKE_COMMAND} -E copy Gtest_log4crc ${CMAKE_INSTALL_PREFIX}/log4crc)")
 
 if (NOT GTEST_INCLUDE_DIR)
-    target_link_libraries(rdk_logger_gtest  -L${RDKLOGGER_SOURCE_PATH}/src/.libs -lrdkloggers -L${DEP_LIB_PATH}/log4c-1.2.3/install/lib/ -llog4c -l:libgtest.a gcov)
+    target_link_libraries(rdk_logger_gtest -L${DEP_LIB_PATH} -lrdkloggers -llog4c -l:libgtest.a gcov)
 else ()
-    target_link_libraries(rdk_logger_gtest -L${RDKLOGGER_SOURCE_PATH}/src/.lib -L${DEP_LIB_PATH}/log4c-1.2.3/install/lib/ rdkloggers log4c gtest gcov)
+    target_link_libraries(rdk_logger_gtest -L${DEP_LIB_PATH} -lrdkloggers -llog4c gtest gcov)
 endif()
 
-# Link the gtest libraries to the test executable
-target_link_libraries(
-  rdk_logger_gtest
-  GTest::gtest_main
-)
-
-message("RDKLOGGER_SOURCE_PATH ${RDKLOGGER_SOURCE_PATH} RDK_PROJECT_ROOT_PATH ${RDK_PROJECT_ROOT_PATH} RDKLOGGER_UNITTEST_DIR ${RDKLOGGER_UNITTEST_DIR}.")
-include_directories(${RDKLOGGER_UNITTEST_DIR}/googletest/googletest/include)
-include_directories(${RDKLOGGER_UNITTEST_DIR}/googletest/googletest/src)
-include_directories(${RDKLOGGER_SOURCE_PATH}/include)
-include_directories(${DEP_LIB_PATH}/log4c-1.2.3/src/log4c)
-include(GoogleTest)
-gtest_discover_tests(rdk_logger_gtest)
-find_package(Threads)
+install (TARGETS rdk_logger_gtest RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
