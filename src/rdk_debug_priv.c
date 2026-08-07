@@ -48,6 +48,7 @@
 
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
+#include "rdk_log_dedup.h"
 #include "log4c.h"
 #include <log4c/appender_type_rollingfile.h>
 #include <log4c/rollingpolicy.h>
@@ -307,6 +308,34 @@ rdk_Error rdk_logger_parse_config( const char * path)
                 }
             }
         }
+
+        /* Parse dedup configuration keys */
+        if (strcmp("LOG.RDK.DEDUP_ENABLED", trimname) == 0)
+        {
+            rdk_dedup_config_t cfg = *rdk_dedup_get_config();
+            cfg.enabled = (atoi(trimvalue) != 0);
+            rdk_dedup_set_config(&cfg);
+        }
+        else if (strcmp("LOG.RDK.DEDUP_WINDOW_SEC", trimname) == 0)
+        {
+            rdk_dedup_config_t cfg = *rdk_dedup_get_config();
+            int val = atoi(trimvalue);
+            if (val > 0)
+            {
+                cfg.window_sec = (uint32_t)val;
+                rdk_dedup_set_config(&cfg);
+            }
+        }
+        else if (strcmp("LOG.RDK.DEDUP_MAX_SUPPRESS", trimname) == 0)
+        {
+            rdk_dedup_config_t cfg = *rdk_dedup_get_config();
+            int val = atoi(trimvalue);
+            if (val > 0)
+            {
+                cfg.max_suppress = (uint32_t)val;
+                rdk_dedup_set_config(&cfg);
+            }
+        }
     }
 
     fclose( f);
@@ -344,6 +373,9 @@ void rdk_dbg_priv_init(void)
         log4c_layout_t* legacy = log4c_layout_get("comcast_dated");
         if (NULL != legacy)
             (void) log4c_layout_set_type(legacy, &log4c_layout_type_comcast_dated);
+
+        /* Initialize the duplicate log suppression engine */
+        rdk_dedup_init();
 
         isInited = true;
     }
@@ -649,7 +681,11 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
         int log4cPriority = rdk_logLevel_to_log4c_priority(level);
         if (log4c_category_is_priority_enabled(cat, log4cPriority))
         {
-            log4c_category_vlog(cat, log4cPriority, format, args);
+            /* Check for duplicate suppression before dispatching */
+            if (!rdk_dedup_check((const void *)cat, log4cPriority, format, args))
+            {
+                log4c_category_vlog(cat, log4cPriority, format, args);
+            }
         }
     }
     pthread_mutex_unlock(&gLoggingMutex);

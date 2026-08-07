@@ -41,6 +41,7 @@ add_executable(
   rdkLoggerRotationTest.cpp
   rdkLoggerErrorTest.cpp
   rdkLoggerPerformanceTest.cpp
+  rdkLoggerDedupTest.cpp
   main.cpp
 )
 
