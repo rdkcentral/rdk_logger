@@ -30,6 +30,7 @@
 #include <sys/time.h>
 
 #include "rdk_dynamic_logger.h"
+#include "rdk_dynamic_logger_parser.h"
 #include "rdk_debug_priv.h"
 
 #define DL_PORT 12035
@@ -54,32 +55,18 @@ static char * rdk_dyn_log_logLevelToString(rdk_LogLevel log_level)
     return "NONE";
 }
 
-static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
+static void rdk_dyn_log_validate_component_name(const unsigned char *buf, size_t length)
 {
     unsigned char log_level = 0;
-    int app_len, comp_len, i = DL_SIGNATURE_LEN;
     char comp_name[64] = {0};
+    rdk_LogLevel loggingLevel;
 
-    if(0 != memcmp(buf,DL_SIGNATURE,i)) {
+    if (!rdk_dyn_log_parse_request(buf, length, __progname, comp_name, sizeof(comp_name), &log_level))
         return;
-    }
 
-    log_level = buf[++i];
-    app_len = buf[++i];
-
-    if(0 != memcmp(buf+(++i),__progname,app_len)) {
-        /* The received msg is not intended for this process */
-        return;
-    }
-
-    i += app_len;
-    comp_len = buf[i];
-
-    rdk_LogLevel loggingLevel = (rdk_LogLevel) log_level;
-
+    loggingLevel = (rdk_LogLevel) log_level;
     if((loggingLevel >= RDK_LOG_FATAL) && (loggingLevel <= RDK_LOG_NONE))
     {
-        memcpy(comp_name,buf+(++i),comp_len);
         rdk_dbg_priv_log_reconfig(comp_name, loggingLevel);
         fprintf(stderr, "Log level change request to %s (%u) for the component %s, is success\n", rdk_dyn_log_logLevelToString(loggingLevel), loggingLevel, comp_name);
     }
@@ -87,8 +74,6 @@ static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
     {
         fprintf(stderr, "Log level change request with Invalid input (%u)\n", loggingLevel);
     }
-
-    return;
 }
 
 void rdk_dyn_log_process_pending_request()
@@ -114,7 +99,7 @@ void rdk_dyn_log_process_pending_request()
         if(ret <= 0)
             break;
 
-        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), 0, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
+        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), MSG_TRUNC, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
             fprintf(stderr,"%s recvfrom failed %s\n",__func__,strerror(errno));
             return;
         }
@@ -133,8 +118,10 @@ void rdk_dyn_log_process_pending_request()
          * Ensure that the we handle msgs only from localhost
          */
         if((0 == strcmp("127.0.0.1",inet_ntoa(sender_addr.sin_addr))) &&
-                (numbytes == buf[4]+DL_SIGNATURE_LEN+1)) {
-            rdk_dyn_log_validate_component_name((const unsigned char *)buf);
+                (numbytes >= DL_SIGNATURE_LEN + 1) &&
+                ((size_t)numbytes <= sizeof(buf)) &&
+                ((size_t)numbytes == (size_t)(unsigned char)buf[4] + DL_SIGNATURE_LEN + 1)) {
+            rdk_dyn_log_validate_component_name((const unsigned char *)buf, (size_t)numbytes);
         }
     }
 }
