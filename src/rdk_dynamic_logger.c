@@ -79,19 +79,15 @@ static void rdk_dyn_log_validate_component_name(const unsigned char *buf, size_t
 void rdk_dyn_log_process_pending_request()
 {
     char buf[128] = {0};
-    struct sockaddr_in sender_addr;
     struct timeval tv;
     int numbytes, ret;
-    socklen_t addr_len;
     fd_set rfds;
 
     if(-1 == g_dl_socket)
         return;
-    memset(&sender_addr,0,sizeof(sender_addr));
     while(1) {
         FD_ZERO(&rfds);
         FD_SET(g_dl_socket, &rfds);
-        addr_len = sizeof(sender_addr);
 
         tv.tv_sec = 0;
         tv.tv_usec = 0;
@@ -99,7 +95,7 @@ void rdk_dyn_log_process_pending_request()
         if(ret <= 0)
             break;
 
-        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), MSG_TRUNC, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
+        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), MSG_TRUNC, NULL, NULL)) == -1) {
             fprintf(stderr,"%s recvfrom failed %s\n",__func__,strerror(errno));
             return;
         }
@@ -117,12 +113,10 @@ void rdk_dyn_log_process_pending_request()
          *
          * Ensure that the we handle msgs only from localhost
          */
-        if(0 == strcmp("127.0.0.1",inet_ntoa(sender_addr.sin_addr))) {
-            if((numbytes >= DL_SIGNATURE_LEN + 1) &&
-                    ((size_t)numbytes <= sizeof(buf)) &&
-                    ((size_t)numbytes == (size_t)(unsigned char)buf[4] + DL_SIGNATURE_LEN + 1)) {
-                rdk_dyn_log_validate_component_name((const unsigned char *)buf, (size_t)numbytes);
-            }
+        if((numbytes >= DL_SIGNATURE_LEN + 1) &&
+                ((size_t)numbytes <= sizeof(buf)) &&
+                ((size_t)numbytes == (size_t)(unsigned char)buf[4] + DL_SIGNATURE_LEN + 1)) {
+            rdk_dyn_log_validate_component_name((const unsigned char *)buf, (size_t)numbytes);
         }
     }
 }
