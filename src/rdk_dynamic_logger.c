@@ -117,11 +117,12 @@ void rdk_dyn_log_process_pending_request()
          *
          * Ensure that the we handle msgs only from localhost
          */
-        if((0 == strcmp("127.0.0.1",inet_ntoa(sender_addr.sin_addr))) &&
-                (numbytes >= DL_SIGNATURE_LEN + 1) &&
-                ((size_t)numbytes <= sizeof(buf)) &&
-                ((size_t)numbytes == (size_t)(unsigned char)buf[4] + DL_SIGNATURE_LEN + 1)) {
-            rdk_dyn_log_validate_component_name((const unsigned char *)buf, (size_t)numbytes);
+        if(0 == strcmp("127.0.0.1",inet_ntoa(sender_addr.sin_addr))) {
+            if((numbytes >= DL_SIGNATURE_LEN + 1) &&
+                    ((size_t)numbytes <= sizeof(buf)) &&
+                    ((size_t)numbytes == (size_t)(unsigned char)buf[4] + DL_SIGNATURE_LEN + 1)) {
+                rdk_dyn_log_validate_component_name((const unsigned char *)buf, (size_t)numbytes);
+            }
         }
     }
 }
