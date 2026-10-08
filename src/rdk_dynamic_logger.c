@@ -74,6 +74,12 @@ static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
 
     i += app_len;
     comp_len = buf[i];
+    
+    if (comp_len >= sizeof(comp_name)) 
+    {
+       fprintf(stderr, "Error: component name too long\n");
+       return;
+    }
 
     rdk_LogLevel loggingLevel = (rdk_LogLevel) log_level;
 
