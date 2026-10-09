@@ -21,6 +21,9 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <cstdlib>
+#include <fstream>
+#include <iterator>
+#include <string>
 #include "rdk_logger.h"
 #include "gtest_app.h"
 typedef enum {
@@ -31,7 +34,8 @@ typedef enum {
     CAT_INFO,
     CAT_DEBUG,
     CAT_TRACE,
-    CAT_NONE
+    CAT_NONE,
+    CAT_BOUNDARY
 } LogCategory;
 
 typedef enum {
@@ -53,7 +57,7 @@ typedef struct {
 
 void* run_rdklogctrl(void* arg) {
     rdklogctrl_args_t* args = (rdklogctrl_args_t*)arg;
-    char category_str[32] = "";
+    char category_str[128] = "";
     char level_str[16] = "";
 
     // Switch-case for category
@@ -82,6 +86,9 @@ void* run_rdklogctrl(void* arg) {
         case CAT_NONE:
             strcpy(category_str, "LOG.RDK.NONE");
 	    break;
+        case CAT_BOUNDARY:
+            strcpy(category_str, "LOG.RDK.rdklogger_component_name_for_boundary_length_testing_123");
+            break;
         default:
             break;
     }
@@ -124,6 +131,12 @@ void* run_rdklogctrl(void* arg) {
     fprintf(stderr, "Executing command: %s\n", cmd);
     int ret = system(cmd);
     (void)ret;
+    return NULL;
+}
+
+static void* run_log_messages(void*) {
+    for (int i = 0; i < 500; ++i)
+        rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.TEST", "Concurrent test log\n");
     return NULL;
 }
 
@@ -327,5 +340,63 @@ TEST(RdkDynamicLoggerTest, MessageProcessingViaSystem_negnone) {
     // Clean up
     pthread_join(client_thread, nullptr);
 
+}
+
+TEST(RdkDynamicLoggerTest, Critical001_RejectsOversizedComponentName) {
+    if (geteuid() != 0)
+        GTEST_SKIP() << "Run this dynamic logger test as root";
+
+    char conf_file[] = GTEST_DEBUG_INI_FILE;
+    ASSERT_EQ(rdk_logger_init(conf_file), RDK_SUCCESS);
+
+    const char* component = "LOG.RDK.rdklogger_component_name_for_boundary_length_testing_123";
+    ASSERT_EQ(strlen(component), 64U);
+
+    rdklogctrl_args_t args;
+    args.category = CAT_BOUNDARY;
+    args.level = LVL_INFO;
+
+    testing::internal::CaptureStderr();
+    pthread_t client_thread;
+    ASSERT_EQ(0, pthread_create(&client_thread, nullptr, run_rdklogctrl, &args));
+    usleep(500000);
+    rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.TESTMOD", "Process dynamic log request\n");
+    ASSERT_EQ(0, pthread_join(client_thread, nullptr));
+
+    const std::string output = testing::internal::GetCapturedStderr();
+    EXPECT_NE(output.find("Error: component name too long"), std::string::npos);
+}
+
+TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
+    if (geteuid() != 0)
+        GTEST_SKIP() << "Run this dynamic logger test as root";
+
+    ASSERT_EQ(rdk_logger_init(GTEST_DEBUG_INI_FILE), RDK_SUCCESS);
+    rdklogctrl_args_t args;
+    args.category = CAT_INFO;
+    args.level = LVL_INFO;
+
+    pthread_t control_thread;
+    pthread_t log_threads[2];
+    ASSERT_EQ(pthread_create(&control_thread, nullptr, run_rdklogctrl, &args), 0);
+    ASSERT_EQ(pthread_create(&log_threads[0], nullptr, run_log_messages, nullptr), 0);
+    ASSERT_EQ(pthread_create(&log_threads[1], nullptr, run_log_messages, nullptr), 0);
+    ASSERT_EQ(pthread_join(control_thread, nullptr), 0);
+    ASSERT_EQ(pthread_join(log_threads[0], nullptr), 0);
+    ASSERT_EQ(pthread_join(log_threads[1], nullptr), 0);
+}
+
+TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedAppName) {
+    const std::string app_name(200, 'A');
+    const char* output_path = "/tmp/rdklogctrl_medium005_test.txt";
+    std::string command = "./rdklogctrl " + app_name +
+                          " LOG.RDK.TEST DEBUG > " + output_path + " 2>&1";
+    ASSERT_NE(system(command.c_str()), -1);
+
+    std::ifstream output_file(output_path);
+    const std::string output((std::istreambuf_iterator<char>(output_file)),
+                             std::istreambuf_iterator<char>());
+    EXPECT_NE(output.find("exceed packet size"), std::string::npos);
+    remove(output_path);
 }
 
