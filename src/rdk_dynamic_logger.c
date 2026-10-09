@@ -75,6 +75,12 @@ static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
     i += app_len;
     comp_len = buf[i];
 
+    if (comp_len >= sizeof(comp_name)) 
+    {
+       fprintf(stderr, "Error: component name too long\n");
+       return;
+    }
+
     rdk_LogLevel loggingLevel = (rdk_LogLevel) log_level;
 
     if((loggingLevel >= RDK_LOG_FATAL) && (loggingLevel <= RDK_LOG_NONE))
@@ -114,7 +120,9 @@ void rdk_dyn_log_process_pending_request()
         if(ret <= 0)
             break;
 
-        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), 0, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
+        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), MSG_DONTWAIT, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+                break;
             fprintf(stderr,"%s recvfrom failed %s\n",__func__,strerror(errno));
             return;
         }
