@@ -54,38 +54,34 @@ static char * rdk_dyn_log_logLevelToString(rdk_LogLevel log_level)
     return "NONE";
 }
 
-static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
+static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t *message)
 {
-    unsigned char log_level = 0;
-    int app_len, comp_len, i = DL_SIGNATURE_LEN;
-    char comp_name[64] = {0};
+    size_t app_len = message->app_length;
+    size_t comp_len = message->component_length;
+    char comp_name[RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX] = {0};
 
-    if(0 != memcmp(buf,DL_SIGNATURE,i)) {
+    if (0 != memcmp(message->signature, DL_SIGNATURE, DL_SIGNATURE_LEN)) {
         return;
     }
 
-    log_level = buf[++i];
-    app_len = buf[++i];
-
-    if(0 != memcmp(buf+(++i),__progname,app_len)) {
+    if (app_len == 0 || app_len > sizeof(message->app_name) ||
+            __progname == NULL || app_len != strlen(__progname) ||
+            0 != memcmp(message->app_name, __progname, app_len)) {
         /* The received msg is not intended for this process */
         return;
     }
 
-    i += app_len;
-    comp_len = buf[i];
-
-    if (comp_len >= sizeof(comp_name)) 
+    if (comp_len >= sizeof(comp_name))
     {
        fprintf(stderr, "Error: component name too long\n");
        return;
     }
 
-    rdk_LogLevel loggingLevel = (rdk_LogLevel) log_level;
+    rdk_LogLevel loggingLevel = (rdk_LogLevel) message->log_level;
 
     if((loggingLevel >= RDK_LOG_FATAL) && (loggingLevel <= RDK_LOG_NONE))
     {
-        memcpy(comp_name,buf+(++i),comp_len);
+        memcpy(comp_name, message->component_name, comp_len);
         rdk_dbg_priv_log_reconfig(comp_name, loggingLevel);
         fprintf(stderr, "Log level change request to %s (%u) for the component %s, is success\n", rdk_dyn_log_logLevelToString(loggingLevel), loggingLevel, comp_name);
     }
@@ -99,7 +95,7 @@ static void rdk_dyn_log_validate_component_name(const unsigned char *buf)
 
 void rdk_dyn_log_process_pending_request()
 {
-    char buf[128] = {0};
+    rdk_dynamic_log_message_t message;
     struct sockaddr_in sender_addr;
     struct timeval tv;
     int numbytes, ret;
@@ -120,7 +116,8 @@ void rdk_dyn_log_process_pending_request()
         if(ret <= 0)
             break;
 
-        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), MSG_DONTWAIT, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
+        if ((numbytes=recvfrom(g_dl_socket, &message, sizeof(message),
+                MSG_DONTWAIT, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
             if(errno == EAGAIN || errno == EWOULDBLOCK)
                 break;
             fprintf(stderr,"%s recvfrom failed %s\n",__func__,strerror(errno));
@@ -140,10 +137,14 @@ void rdk_dyn_log_process_pending_request()
          *
          * Ensure that the we handle msgs only from localhost
          */
-        if((0 == strcmp("127.0.0.1",inet_ntoa(sender_addr.sin_addr))) &&
-                (numbytes == buf[4]+DL_SIGNATURE_LEN+1)) {
-            rdk_dyn_log_validate_component_name((const unsigned char *)buf);
-        }
+        if (strcmp("127.0.0.1", inet_ntoa(sender_addr.sin_addr)) != 0 ||
+            numbytes != (int)sizeof(message) ||
+            message.message_length != (uint8_t)(sizeof(message) - DL_SIGNATURE_LEN - 1) ||
+                message.app_length > sizeof(message.app_name) ||
+                message.component_length > sizeof(message.component_name))
+            continue;
+
+        rdk_dyn_log_validate_component_name(&message);
     }
 }
 

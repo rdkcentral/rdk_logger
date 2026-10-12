@@ -113,7 +113,6 @@ jobs:
           make  -C build
           cmake --install build
           ./build/rdk_logger_gtest
-          sudo env LD_LIBRARY_PATH="$LD_LIBRARY_PATH" ./build/rdk_logger_gtest --gtest_filter="RdkDynamicLoggerTest.Critical001_RejectsOversizedComponentName:RdkDynamicLoggerTest.Medium002_ConcurrentLogCallsComplete"
       - name: Collect coverage report
         if: ${{ matrix.coverage == 'with-coverage' }}
         run: |

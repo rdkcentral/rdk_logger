@@ -343,9 +343,6 @@ TEST(RdkDynamicLoggerTest, MessageProcessingViaSystem_negnone) {
 }
 
 TEST(RdkDynamicLoggerTest, Critical001_RejectsOversizedComponentName) {
-    if (geteuid() != 0)
-        GTEST_SKIP() << "Run this dynamic logger test as root";
-
     char conf_file[] = GTEST_DEBUG_INI_FILE;
     ASSERT_EQ(rdk_logger_init(conf_file), RDK_SUCCESS);
 
@@ -368,10 +365,8 @@ TEST(RdkDynamicLoggerTest, Critical001_RejectsOversizedComponentName) {
 }
 
 TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
-    if (geteuid() != 0)
-        GTEST_SKIP() << "Run this dynamic logger test as root";
-
     ASSERT_EQ(rdk_logger_init(GTEST_DEBUG_INI_FILE), RDK_SUCCESS);
+
     rdklogctrl_args_t args;
     args.category = CAT_INFO;
     args.level = LVL_INFO;
@@ -386,17 +381,23 @@ TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
     ASSERT_EQ(pthread_join(log_threads[1], nullptr), 0);
 }
 
-TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedAppName) {
-    const std::string app_name(200, 'A');
+TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedArguments) {
     const char* output_path = "/tmp/rdklogctrl_medium005_test.txt";
-    std::string command = "./rdklogctrl " + app_name +
-                          " LOG.RDK.TEST DEBUG > " + output_path + " 2>&1";
-    ASSERT_NE(system(command.c_str()), -1);
+    const std::string oversized_app(200, 'A');
+    const std::string oversized_module = "LOG.RDK." + std::string(200, 'B');
+    const std::string commands[] = {
+        "./rdklogctrl " + oversized_app + " LOG.RDK.TEST DEBUG > " + output_path + " 2>&1",
+        "./rdklogctrl testapp " + oversized_module + " DEBUG > " + output_path + " 2>&1"
+    };
 
-    std::ifstream output_file(output_path);
-    const std::string output((std::istreambuf_iterator<char>(output_file)),
-                             std::istreambuf_iterator<char>());
-    EXPECT_NE(output.find("exceed packet size"), std::string::npos);
+    for (const std::string& command : commands) {
+        int status = system(command.c_str());
+        ASSERT_NE(status, -1);
+        EXPECT_NE(status, 0);
+        std::ifstream output_file(output_path);
+        const std::string output((std::istreambuf_iterator<char>(output_file)),
+                                 std::istreambuf_iterator<char>());
+        EXPECT_NE(output.find("packet field size"), std::string::npos);
+    }
     remove(output_path);
 }
-

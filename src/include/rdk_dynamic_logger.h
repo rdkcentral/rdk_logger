@@ -20,7 +20,21 @@
 #if !defined(_RDK_DBG_PRIV_DYNLOG_H)
 #define _RDK_DBG_PRIV_DYNLOG_H
 
+#include <stdint.h>
 #include <rdk_logger.h>
+
+#define RDK_DYNAMIC_LOG_APP_NAME_MAX 56
+#define RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX 64
+
+typedef struct {
+	uint8_t signature[4];
+	uint8_t message_length;
+	uint8_t log_level;
+	uint8_t app_length;
+	char app_name[RDK_DYNAMIC_LOG_APP_NAME_MAX];
+	uint8_t component_length;
+	char component_name[RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX];
+} rdk_dynamic_log_message_t;
 
 void rdk_dyn_log_init(void);
 void rdk_dyn_log_deinit(void);
