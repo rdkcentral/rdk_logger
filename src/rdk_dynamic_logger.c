@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/select.h>
 #include <sys/time.h>
 
@@ -37,6 +38,7 @@
 #define DL_SIGNATURE_LEN 4
 
 static int g_dl_socket = -1;
+static pthread_mutex_t g_dl_request_mutex = PTHREAD_MUTEX_INITIALIZER;
 extern char *__progname;
 
 static char * rdk_dyn_log_logLevelToString(rdk_LogLevel log_level)
@@ -104,8 +106,13 @@ void rdk_dyn_log_process_pending_request()
     socklen_t addr_len;
     fd_set rfds;
 
-    if(-1 == g_dl_socket)
+    if (pthread_mutex_trylock(&g_dl_request_mutex) != 0)
         return;
+
+    if(-1 == g_dl_socket) {
+        pthread_mutex_unlock(&g_dl_request_mutex);
+        return;
+    }
     memset(&sender_addr,0,sizeof(sender_addr));
     while(1) {
         FD_ZERO(&rfds);
@@ -125,6 +132,7 @@ void rdk_dyn_log_process_pending_request()
             if(errno == EAGAIN || errno == EWOULDBLOCK)
                 break;
             fprintf(stderr,"%s recvfrom failed %s\n",__func__,strerror(errno));
+            pthread_mutex_unlock(&g_dl_request_mutex);
             return;
         }
 
@@ -158,6 +166,7 @@ void rdk_dyn_log_process_pending_request()
         memcpy(message.component_name, packet + comp_len_offset + 1, comp_len);
         rdk_dyn_log_validate_component_name(&message);
     }
+    pthread_mutex_unlock(&g_dl_request_mutex);
 }
 
 void rdk_dyn_log_init()
