@@ -174,8 +174,10 @@ void rdk_dyn_log_init()
     struct sockaddr_in my_addr;
     int opt = 1;
 
+    pthread_mutex_lock(&g_dl_request_mutex);
     if ((g_dl_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
         fprintf(stderr, "%s() Socket creation failed. %s\n",__func__,strerror(errno));
+        pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
 
@@ -188,6 +190,7 @@ void rdk_dyn_log_init()
         fprintf(stderr, "%s() setsockopt error %s\n",__func__,strerror(errno));
         close(g_dl_socket);
         g_dl_socket = -1;
+        pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
 
@@ -195,17 +198,21 @@ void rdk_dyn_log_init()
         fprintf(stderr, "%s() bind error %s\n",__func__,strerror(errno));
         close(g_dl_socket);
         g_dl_socket = -1;
+        pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
 
     //fprintf(stderr, "%sg_dl_socket = %d __progname = %s \n",__func__,g_dl_socket,__progname);
+    pthread_mutex_unlock(&g_dl_request_mutex);
 }
 
 void rdk_dyn_log_deinit()
 {
+    pthread_mutex_lock(&g_dl_request_mutex);
     if (g_dl_socket != -1)
     {
         close(g_dl_socket);
         g_dl_socket = -1;
     }
+    pthread_mutex_unlock(&g_dl_request_mutex);
 }
