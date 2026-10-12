@@ -35,7 +35,8 @@ typedef enum {
     CAT_DEBUG,
     CAT_TRACE,
     CAT_NONE,
-    CAT_BOUNDARY
+    CAT_BOUNDARY,
+    CAT_MEDIUM002
 } LogCategory;
 
 typedef enum {
@@ -89,6 +90,9 @@ void* run_rdklogctrl(void* arg) {
         case CAT_BOUNDARY:
             strcpy(category_str, "LOG.RDK.rdklogger_component_name_for_boundary_length_testing_123");
             break;
+        case CAT_MEDIUM002:
+            strcpy(category_str, "LOG.RDK.MEDIUM002");
+            break;
         default:
             break;
     }
@@ -134,7 +138,9 @@ void* run_rdklogctrl(void* arg) {
     return NULL;
 }
 
-static void* run_log_messages(void*) {
+static void* run_log_messages(void* arg) {
+    pthread_barrier_t* start_barrier = static_cast<pthread_barrier_t*>(arg);
+    pthread_barrier_wait(start_barrier);
     for (int i = 0; i < 500; ++i)
         rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.TEST", "Concurrent test log\n");
     return NULL;
@@ -368,17 +374,27 @@ TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
     ASSERT_EQ(rdk_logger_init(GTEST_DEBUG_INI_FILE), RDK_SUCCESS);
 
     rdklogctrl_args_t args;
-    args.category = CAT_INFO;
+    args.category = CAT_MEDIUM002;
     args.level = LVL_INFO;
 
+    pthread_barrier_t start_barrier;
+    ASSERT_EQ(pthread_barrier_init(&start_barrier, nullptr, 3), 0);
     pthread_t control_thread;
     pthread_t log_threads[2];
+    testing::internal::CaptureStdout();
     ASSERT_EQ(pthread_create(&control_thread, nullptr, run_rdklogctrl, &args), 0);
-    ASSERT_EQ(pthread_create(&log_threads[0], nullptr, run_log_messages, nullptr), 0);
-    ASSERT_EQ(pthread_create(&log_threads[1], nullptr, run_log_messages, nullptr), 0);
     ASSERT_EQ(pthread_join(control_thread, nullptr), 0);
+    ASSERT_EQ(pthread_create(&log_threads[0], nullptr, run_log_messages, &start_barrier), 0);
+    ASSERT_EQ(pthread_create(&log_threads[1], nullptr, run_log_messages, &start_barrier), 0);
+    pthread_barrier_wait(&start_barrier);
     ASSERT_EQ(pthread_join(log_threads[0], nullptr), 0);
     ASSERT_EQ(pthread_join(log_threads[1], nullptr), 0);
+    ASSERT_EQ(pthread_barrier_destroy(&start_barrier), 0);
+
+    const char* marker = "Medium002 INFO reconfiguration observed";
+    rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.MEDIUM002", "%s\n", marker);
+    const std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_NE(output.find(marker), std::string::npos);
 }
 
 TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedArguments) {
