@@ -59,8 +59,9 @@ static int8_t validate_loglevel(const char* level)
 int main(int argc, char *argv[])
 {
     struct sockaddr_in dest_addr;
-    int i, sockfd, numbytes, optval = 1;
-    size_t app_len, comp_len;
+    int sockfd, numbytes, optval = 1;
+    size_t app_len, comp_len, app_offset, component_length_offset;
+    size_t component_offset, packet_length;
     int8_t level = -1;
     rdk_dynamic_log_message_t message = {0};
     unsigned char packet[RDK_DYNAMIC_LOG_PACKET_MAX] = {0};
@@ -86,15 +87,31 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-        app_len = strlen(argv[1]);
-        comp_len = strlen(argv[2]);
-        if (app_len == 0 || app_len > RDK_DYNAMIC_LOG_APP_NAME_MAX ||
-            comp_len > RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX ||
-            app_len > sizeof(packet) - 8 ||
-            comp_len > sizeof(packet) - 8 - app_len) {
+    app_len = strlen(argv[1]);
+    comp_len = strlen(argv[2]);
+        if (app_len == 0 || comp_len == 0 ||
+            app_len > RDK_DYNAMIC_LOG_APP_NAME_MAX ||
+            comp_len > RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX) {
         fprintf(stderr, "App or module name exceeds packet field size\n");
         return -1;
     }
+
+    app_offset = DL_SIGNATURE_LEN + 3;
+    if (app_offset > sizeof(packet) || app_len > sizeof(packet) - app_offset) {
+        fprintf(stderr, "App name exceeds packet buffer\n");
+        return -1;
+    }
+    component_length_offset = app_offset + app_len;
+    if (component_length_offset >= sizeof(packet)) {
+        fprintf(stderr, "Component length offset exceeds packet buffer\n");
+        return -1;
+    }
+    component_offset = component_length_offset + 1;
+    if (comp_len > sizeof(packet) - component_offset) {
+        fprintf(stderr, "Component name exceeds packet buffer\n");
+        return -1;
+    }
+    packet_length = component_offset + comp_len;
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
         printf("socket: %s\n",strerror(errno));
@@ -119,25 +136,21 @@ int main(int argc, char *argv[])
     message.component_length = (uint8_t)comp_len;
     memcpy(message.component_name, argv[2], comp_len);
 
-    i = 0;
-    memcpy(packet + i, message.signature, DL_SIGNATURE_LEN);
-    i += DL_SIGNATURE_LEN;
-    packet[i++] = message.message_length;
-    packet[i++] = message.log_level;
-    packet[i++] = message.app_length;
-    memcpy(packet + i, message.app_name, app_len);
-    i += app_len;
-    packet[i++] = message.component_length;
-    memcpy(packet + i, message.component_name, comp_len);
-    i += comp_len;
+    memcpy(packet, message.signature, DL_SIGNATURE_LEN);
+    packet[DL_SIGNATURE_LEN] = message.message_length;
+    packet[DL_SIGNATURE_LEN + 1] = message.log_level;
+    packet[DL_SIGNATURE_LEN + 2] = message.app_length;
+    memcpy(packet + app_offset, message.app_name, app_len);
+    packet[component_length_offset] = message.component_length;
+    memcpy(packet + component_offset, message.component_name, comp_len);
 
-    if ((numbytes=sendto(sockfd, packet, i, 0,
+    if ((numbytes=sendto(sockfd, packet, packet_length, 0,
             (struct sockaddr *)&dest_addr, sizeof(dest_addr))) == -1) {
         printf("sendto: %s\n",strerror(errno));
         close(sockfd);
         return -1;
     }
-    if ((size_t)numbytes != i) {
+    if ((size_t)numbytes != packet_length) {
         fprintf(stderr, "sendto sent an incomplete dynamic log packet\n");
         close(sockfd);
         return -1;
