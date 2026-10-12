@@ -78,8 +78,8 @@ TEST(RDKLoggerUtilityTest, LogOnboardDifferentLevels) {
     };
     testing::internal::CaptureStdout();
     rdk_logger_log_onboard("LOG.RDK.ONBOARD\n[FATAL] forged module",
-                           "Onboard message %s\r\n[FATAL] forged record\n",
-                           token.c_str());
+                            "Onboard message %s\r\n[FATAL] forged record %s\n",
+                            token.c_str(), token.c_str());
     fflush(stdout);
     std::string output = testing::internal::GetCapturedStdout();
     if (output.find(token) == std::string::npos) {

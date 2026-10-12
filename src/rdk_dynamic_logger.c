@@ -95,10 +95,12 @@ static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t 
 
 void rdk_dyn_log_process_pending_request()
 {
-    rdk_dynamic_log_message_t message;
+    unsigned char packet[RDK_DYNAMIC_LOG_PACKET_MAX];
+    rdk_dynamic_log_message_t message = {0};
     struct sockaddr_in sender_addr;
     struct timeval tv;
     int numbytes, ret;
+    size_t app_len, comp_len, comp_len_offset;
     socklen_t addr_len;
     fd_set rfds;
 
@@ -116,34 +118,44 @@ void rdk_dyn_log_process_pending_request()
         if(ret <= 0)
             break;
 
-        if ((numbytes=recvfrom(g_dl_socket, &message, sizeof(message),
-                MSG_DONTWAIT, (struct sockaddr *)&sender_addr, &addr_len)) == -1) {
+        numbytes = recvfrom(g_dl_socket, packet, sizeof(packet),
+                    MSG_DONTWAIT | MSG_TRUNC,
+                    (struct sockaddr *)&sender_addr, &addr_len);
+        if (numbytes == -1) {
             if(errno == EAGAIN || errno == EWOULDBLOCK)
                 break;
             fprintf(stderr,"%s recvfrom failed %s\n",__func__,strerror(errno));
             return;
         }
 
-        /*
-         * msg_format {
-         *    char    m_signature[4];
-         *    uchar8  m_msgLength;
-         *    uchar8  m_logLevel;
-         *    uchar8  m_appLength;
-         *    char    m_appname[m_appLength];
-         *    uchar8  m_compNameLength;
-         *    char    m_compName[m_compNameLength];
-         * }
-         *
-         * Ensure that the we handle msgs only from localhost
-         */
         if (strcmp("127.0.0.1", inet_ntoa(sender_addr.sin_addr)) != 0 ||
-            numbytes != (int)sizeof(message) ||
-            message.message_length != (uint8_t)(sizeof(message) - DL_SIGNATURE_LEN - 1) ||
-                message.app_length > sizeof(message.app_name) ||
-                message.component_length > sizeof(message.component_name))
+                numbytes > (int)sizeof(packet) ||
+                numbytes < DL_SIGNATURE_LEN + 4 ||
+                (size_t)numbytes != (size_t)packet[DL_SIGNATURE_LEN] + DL_SIGNATURE_LEN + 1 ||
+                memcmp(packet, DL_SIGNATURE, DL_SIGNATURE_LEN) != 0)
             continue;
 
+        app_len = packet[DL_SIGNATURE_LEN + 2];
+        if (app_len == 0 || app_len > RDK_DYNAMIC_LOG_APP_NAME_MAX ||
+                app_len > (size_t)numbytes - 8)
+            continue;
+
+        comp_len_offset = DL_SIGNATURE_LEN + 3 + app_len;
+        if (comp_len_offset >= (size_t)numbytes)
+            continue;
+        comp_len = packet[comp_len_offset];
+        if (comp_len > RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX ||
+                comp_len != (size_t)numbytes - comp_len_offset - 1)
+            continue;
+
+        memset(&message, 0, sizeof(message));
+        memcpy(message.signature, packet, DL_SIGNATURE_LEN);
+        message.message_length = packet[DL_SIGNATURE_LEN];
+        message.log_level = packet[DL_SIGNATURE_LEN + 1];
+        message.app_length = (uint8_t)app_len;
+        memcpy(message.app_name, packet + DL_SIGNATURE_LEN + 3, app_len);
+        message.component_length = (uint8_t)comp_len;
+        memcpy(message.component_name, packet + comp_len_offset + 1, comp_len);
         rdk_dyn_log_validate_component_name(&message);
     }
 }
@@ -188,4 +200,3 @@ void rdk_dyn_log_deinit()
         g_dl_socket = -1;
     }
 }
-

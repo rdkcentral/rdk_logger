@@ -59,10 +59,11 @@ static int8_t validate_loglevel(const char* level)
 int main(int argc, char *argv[])
 {
     struct sockaddr_in dest_addr;
-    int sockfd, numbytes, optval = 1;
+    int i, sockfd, numbytes, optval = 1;
     size_t app_len, comp_len;
     int8_t level = -1;
     rdk_dynamic_log_message_t message = {0};
+    unsigned char packet[RDK_DYNAMIC_LOG_PACKET_MAX] = {0};
 
     if (argc != 4) {
         usage(argv[0]);
@@ -85,10 +86,12 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    app_len = strlen(argv[1]);
-    comp_len = strlen(argv[2]);
-    if (app_len == 0 || app_len > sizeof(message.app_name) ||
-            comp_len > sizeof(message.component_name)) {
+        app_len = strlen(argv[1]);
+        comp_len = strlen(argv[2]);
+        if (app_len == 0 || app_len > RDK_DYNAMIC_LOG_APP_NAME_MAX ||
+            comp_len > RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX ||
+            app_len > sizeof(packet) - 8 ||
+            comp_len > sizeof(packet) - 8 - app_len) {
         fprintf(stderr, "App or module name exceeds packet field size\n");
         return -1;
     }
@@ -109,16 +112,33 @@ int main(int argc, char *argv[])
     dest_addr.sin_addr.s_addr=inet_addr("127.255.255.255");
 
     memcpy(message.signature, DL_SIGNATURE, DL_SIGNATURE_LEN);
-    message.message_length = sizeof(message) - DL_SIGNATURE_LEN - 1;
+    message.message_length = (uint8_t)(app_len + comp_len + 3);
     message.log_level = (uint8_t)level;
     message.app_length = (uint8_t)app_len;
     memcpy(message.app_name, argv[1], app_len);
     message.component_length = (uint8_t)comp_len;
     memcpy(message.component_name, argv[2], comp_len);
 
-    if ((numbytes=sendto(sockfd, &message, sizeof(message), 0,
+    i = 0;
+    memcpy(packet + i, message.signature, DL_SIGNATURE_LEN);
+    i += DL_SIGNATURE_LEN;
+    packet[i++] = message.message_length;
+    packet[i++] = message.log_level;
+    packet[i++] = message.app_length;
+    memcpy(packet + i, message.app_name, app_len);
+    i += app_len;
+    packet[i++] = message.component_length;
+    memcpy(packet + i, message.component_name, comp_len);
+    i += comp_len;
+
+    if ((numbytes=sendto(sockfd, packet, i, 0,
             (struct sockaddr *)&dest_addr, sizeof(dest_addr))) == -1) {
         printf("sendto: %s\n",strerror(errno));
+        close(sockfd);
+        return -1;
+    }
+    if ((size_t)numbytes != i) {
+        fprintf(stderr, "sendto sent an incomplete dynamic log packet\n");
         close(sockfd);
         return -1;
     }
