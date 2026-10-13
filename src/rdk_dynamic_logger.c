@@ -101,7 +101,8 @@ static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t 
     {
         memcpy(comp_name, message->component_name, comp_len);
         rdk_dbg_priv_reconfig(comp_name, loggingLevel);
-        fprintf(stderr,"%s(): Set %s loglevel for the component %s of the process %s\n",__func__,loggingLevel,comp_name,__progname);
+        fprintf(stderr, "%s(): Set %s loglevel for the component %s of the process %s\n",
+                __func__, rdk_dyn_log_logLevelToString(loggingLevel), comp_name, __progname);
     }
 }
 
