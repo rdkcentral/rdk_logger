@@ -112,7 +112,7 @@ jobs:
           fi
           make  -C build
           cmake --install build
-          ./build/rdk_logger_gtest
+          gdb --args ./build/rdk_logger_gtest --gtest_filter=RdkDynamicLoggerTest.MessageProcessingViaSystem_error
       - name: Collect coverage report
         if: ${{ matrix.coverage == 'with-coverage' }}
         run: |
