@@ -131,17 +131,15 @@ int main(int argc, char *argv[])
     memcpy(message.signature, DL_SIGNATURE, DL_SIGNATURE_LEN);
     message.message_length = (uint8_t)(app_len + comp_len + 3);
     message.log_level = (uint8_t)level;
-    message.app_length = (uint8_t)app_len;
     memcpy(message.app_name, argv[1], app_len);
-    message.component_length = (uint8_t)comp_len;
     memcpy(message.component_name, argv[2], comp_len);
 
     memcpy(packet, message.signature, DL_SIGNATURE_LEN);
     packet[DL_SIGNATURE_LEN] = message.message_length;
     packet[DL_SIGNATURE_LEN + 1] = message.log_level;
-    packet[DL_SIGNATURE_LEN + 2] = message.app_length;
+    packet[DL_SIGNATURE_LEN + 2] = (uint8_t)app_len;
     memcpy(packet + app_offset, message.app_name, app_len);
-    packet[component_length_offset] = message.component_length;
+    packet[component_length_offset] = (uint8_t)comp_len;
     memcpy(packet + component_offset, message.component_name, comp_len);
 
     if ((numbytes=sendto(sockfd, packet, packet_length, 0,

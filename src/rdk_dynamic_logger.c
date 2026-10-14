@@ -58,34 +58,21 @@ static char * rdk_dyn_log_logLevelToString(rdk_LogLevel log_level)
 
 static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t *message)
 {
-    size_t app_len = message->app_length;
-    size_t comp_len = message->component_length;
-    char comp_name[RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX] = {0};
-
     if (0 != memcmp(message->signature, DL_SIGNATURE, DL_SIGNATURE_LEN)) {
         return;
     }
 
-    if (app_len == 0 || app_len > sizeof(message->app_name) ||
-            __progname == NULL || app_len != strlen(__progname) ||
-            0 != memcmp(message->app_name, __progname, app_len)) {
+    if (__progname == NULL || 0 != strcmp(message->app_name, __progname)) {
         /* The received msg is not intended for this process */
         return;
-    }
-
-    if (comp_len >= sizeof(comp_name))
-    {
-       fprintf(stderr, "Error: component name too long\n");
-       return;
     }
 
     rdk_LogLevel loggingLevel = (rdk_LogLevel) message->log_level;
 
     if((loggingLevel >= RDK_LOG_FATAL) && (loggingLevel <= RDK_LOG_NONE))
     {
-        memcpy(comp_name, message->component_name, comp_len);
-        rdk_dbg_priv_log_reconfig(comp_name, loggingLevel);
-        fprintf(stderr, "Log level change request to %s (%u) for the component %s, is success\n", rdk_dyn_log_logLevelToString(loggingLevel), loggingLevel, comp_name);
+	rdk_dbg_priv_log_reconfig(message->component_name, loggingLevel);
+        fprintf(stderr, "Log level change request to %s (%u) for the component %s, is success\n", rdk_dyn_log_logLevelToString(loggingLevel), loggingLevel, message->component_name);
     }
     else
     {
@@ -152,17 +139,14 @@ void rdk_dyn_log_process_pending_request()
         if (comp_len_offset >= (size_t)numbytes)
             continue;
         comp_len = packet[comp_len_offset];
-        if (comp_len > RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX ||
-                comp_len != (size_t)numbytes - comp_len_offset - 1)
+	if (comp_len == 0 || comp_len > RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX || comp_len != (size_t)numbytes - comp_len_offset - 1)
             continue;
 
         memset(&message, 0, sizeof(message));
         memcpy(message.signature, packet, DL_SIGNATURE_LEN);
         message.message_length = packet[DL_SIGNATURE_LEN];
         message.log_level = packet[DL_SIGNATURE_LEN + 1];
-        message.app_length = (uint8_t)app_len;
         memcpy(message.app_name, packet + DL_SIGNATURE_LEN + 3, app_len);
-        message.component_length = (uint8_t)comp_len;
         memcpy(message.component_name, packet + comp_len_offset + 1, comp_len);
         rdk_dyn_log_validate_component_name(&message);
     }
