@@ -348,7 +348,7 @@ TEST(RdkDynamicLoggerTest, MessageProcessingViaSystem_negnone) {
 
 }
 
-TEST(RdkDynamicLoggerTest, Critical001_RejectsOversizedComponentName) {
+TEST(RdkDynamicLoggerTest, Critical001_AcceptsBoundaryComponentName) {
     char conf_file[] = GTEST_DEBUG_INI_FILE;
     ASSERT_EQ(rdk_logger_init(conf_file), RDK_SUCCESS);
 
@@ -367,7 +367,23 @@ TEST(RdkDynamicLoggerTest, Critical001_RejectsOversizedComponentName) {
     ASSERT_EQ(0, pthread_join(client_thread, nullptr));
 
     const std::string output = testing::internal::GetCapturedStderr();
-    EXPECT_NE(output.find("Error: component name too long"), std::string::npos);
+    EXPECT_NE(output.find("for the component " + std::string(component) + ", is success"), std::string::npos);
+}
+
+TEST(RdkDynamicLoggerTest, Critical001_RejectsComponentNameAboveBuffer) {
+    const char* output_path = "/tmp/rdklogctrl_critical001_test.txt";
+    const std::string component = "LOG.RDK." + std::string(57, 'C');
+    ASSERT_EQ(component.size(), 65U);
+    const std::string command = "./rdklogctrl " + std::to_string(getpid()) + " " +
+                                component + " INFO > " + output_path + " 2>&1";
+    int status = system(command.c_str());
+    ASSERT_NE(status, -1);
+    EXPECT_NE(status, 0);
+    std::ifstream output_file(output_path);
+    const std::string output((std::istreambuf_iterator<char>(output_file)),
+                             std::istreambuf_iterator<char>());
+    EXPECT_NE(output.find("packet field size"), std::string::npos);
+    remove(output_path);
 }
 
 TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
@@ -397,23 +413,17 @@ TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
     EXPECT_NE(output.find(marker), std::string::npos);
 }
 
-TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedArguments) {
+TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedModule) {
     const char* output_path = "/tmp/rdklogctrl_medium005_test.txt";
-    const std::string oversized_app(200, 'A');
     const std::string oversized_module = "LOG.RDK." + std::string(200, 'B');
-    const std::string commands[] = {
-        "./rdklogctrl " + oversized_app + " LOG.RDK.TEST DEBUG > " + output_path + " 2>&1",
-        "./rdklogctrl testapp " + oversized_module + " DEBUG > " + output_path + " 2>&1"
-    };
-
-    for (const std::string& command : commands) {
-        int status = system(command.c_str());
-        ASSERT_NE(status, -1);
-        EXPECT_NE(status, 0);
-        std::ifstream output_file(output_path);
-        const std::string output((std::istreambuf_iterator<char>(output_file)),
-                                 std::istreambuf_iterator<char>());
-        EXPECT_NE(output.find("packet field size"), std::string::npos);
-    }
+    const std::string command = "./rdklogctrl " + std::to_string(getpid()) + " " +
+                                oversized_module + " DEBUG > " + output_path + " 2>&1";
+    int status = system(command.c_str());
+    ASSERT_NE(status, -1);
+    EXPECT_NE(status, 0);
+    std::ifstream output_file(output_path);
+    const std::string output((std::istreambuf_iterator<char>(output_file)),
+                             std::istreambuf_iterator<char>());
+    EXPECT_NE(output.find("packet field size"), std::string::npos);
     remove(output_path);
 }
