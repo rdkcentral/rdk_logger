@@ -21,6 +21,9 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <cstdlib>
+#include <fstream>
+#include <iterator>
+#include <string>
 #include "rdk_logger.h"
 #include "gtest_app.h"
 typedef enum {
@@ -31,7 +34,9 @@ typedef enum {
     CAT_INFO,
     CAT_DEBUG,
     CAT_TRACE,
-    CAT_NONE
+    CAT_NONE,
+    CAT_BOUNDARY,
+    CAT_MEDIUM002
 } LogCategory;
 
 typedef enum {
@@ -53,7 +58,7 @@ typedef struct {
 
 void* run_rdklogctrl(void* arg) {
     rdklogctrl_args_t* args = (rdklogctrl_args_t*)arg;
-    char category_str[32] = "";
+    char category_str[128] = "";
     char level_str[16] = "";
 
     // Switch-case for category
@@ -82,6 +87,12 @@ void* run_rdklogctrl(void* arg) {
         case CAT_NONE:
             strcpy(category_str, "LOG.RDK.NONE");
 	    break;
+        case CAT_BOUNDARY:
+            strcpy(category_str, "LOG.RDK.rdklogger_component_name_for_boundary_length_testing_123");
+            break;
+        case CAT_MEDIUM002:
+            strcpy(category_str, "LOG.RDK.MEDIUM002");
+            break;
         default:
             break;
     }
@@ -124,6 +135,14 @@ void* run_rdklogctrl(void* arg) {
     fprintf(stderr, "Executing command: %s\n", cmd);
     int ret = system(cmd);
     (void)ret;
+    return NULL;
+}
+
+static void* run_log_messages(void* arg) {
+    pthread_barrier_t* start_barrier = static_cast<pthread_barrier_t*>(arg);
+    pthread_barrier_wait(start_barrier);
+    for (int i = 0; i < 500; ++i)
+        rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.TEST", "Concurrent test log\n");
     return NULL;
 }
 
@@ -329,3 +348,82 @@ TEST(RdkDynamicLoggerTest, MessageProcessingViaSystem_negnone) {
 
 }
 
+TEST(RdkDynamicLoggerTest, Critical001_AcceptsBoundaryComponentName) {
+    char conf_file[] = GTEST_DEBUG_INI_FILE;
+    ASSERT_EQ(rdk_logger_init(conf_file), RDK_SUCCESS);
+
+    const char* component = "LOG.RDK.rdklogger_component_name_for_boundary_length_testing_123";
+    ASSERT_EQ(strlen(component), 64U);
+
+    rdklogctrl_args_t args;
+    args.category = CAT_BOUNDARY;
+    args.level = LVL_INFO;
+
+    testing::internal::CaptureStderr();
+    pthread_t client_thread;
+    ASSERT_EQ(0, pthread_create(&client_thread, nullptr, run_rdklogctrl, &args));
+    usleep(500000);
+    rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.TESTMOD", "Process dynamic log request\n");
+    ASSERT_EQ(0, pthread_join(client_thread, nullptr));
+
+    const std::string output = testing::internal::GetCapturedStderr();
+    EXPECT_NE(output.find("for the component " + std::string(component) + ", is success"), std::string::npos);
+}
+
+TEST(RdkDynamicLoggerTest, Critical001_RejectsComponentNameAboveBuffer) {
+    const char* output_path = "/tmp/rdklogctrl_critical001_test.txt";
+    const std::string component = "LOG.RDK." + std::string(57, 'C');
+    ASSERT_EQ(component.size(), 65U);
+    const std::string command = "./rdklogctrl " + std::to_string(getpid()) + " " +
+                                component + " INFO > " + output_path + " 2>&1";
+    int status = system(command.c_str());
+    ASSERT_NE(status, -1);
+    EXPECT_NE(status, 0);
+    std::ifstream output_file(output_path);
+    const std::string output((std::istreambuf_iterator<char>(output_file)),
+                             std::istreambuf_iterator<char>());
+    EXPECT_NE(output.find("packet field size"), std::string::npos);
+    remove(output_path);
+}
+
+TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
+    ASSERT_EQ(rdk_logger_init(GTEST_DEBUG_INI_FILE), RDK_SUCCESS);
+
+    rdklogctrl_args_t args;
+    args.category = CAT_MEDIUM002;
+    args.level = LVL_INFO;
+
+    pthread_barrier_t start_barrier;
+    ASSERT_EQ(pthread_barrier_init(&start_barrier, nullptr, 3), 0);
+    pthread_t control_thread;
+    pthread_t log_threads[2];
+    testing::internal::CaptureStdout();
+    ASSERT_EQ(pthread_create(&control_thread, nullptr, run_rdklogctrl, &args), 0);
+    ASSERT_EQ(pthread_join(control_thread, nullptr), 0);
+    ASSERT_EQ(pthread_create(&log_threads[0], nullptr, run_log_messages, &start_barrier), 0);
+    ASSERT_EQ(pthread_create(&log_threads[1], nullptr, run_log_messages, &start_barrier), 0);
+    pthread_barrier_wait(&start_barrier);
+    ASSERT_EQ(pthread_join(log_threads[0], nullptr), 0);
+    ASSERT_EQ(pthread_join(log_threads[1], nullptr), 0);
+    ASSERT_EQ(pthread_barrier_destroy(&start_barrier), 0);
+
+    const char* marker = "Medium002 INFO reconfiguration observed";
+    rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.MEDIUM002", "%s\n", marker);
+    const std::string output = testing::internal::GetCapturedStdout();
+    EXPECT_NE(output.find(marker), std::string::npos);
+}
+
+TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedModule) {
+    const char* output_path = "/tmp/rdklogctrl_medium005_test.txt";
+    const std::string oversized_module = "LOG.RDK." + std::string(200, 'B');
+    const std::string command = "./rdklogctrl " + std::to_string(getpid()) + " " +
+                                oversized_module + " DEBUG > " + output_path + " 2>&1";
+    int status = system(command.c_str());
+    ASSERT_NE(status, -1);
+    EXPECT_NE(status, 0);
+    std::ifstream output_file(output_path);
+    const std::string output((std::istreambuf_iterator<char>(output_file)),
+                             std::istreambuf_iterator<char>());
+    EXPECT_NE(output.find("packet field size"), std::string::npos);
+    remove(output_path);
+}
