@@ -31,3 +31,21 @@ LOG.RDK.FOO=INFO
 
 LOG.RDK.BAR = NONE
 #ALL logs will be disabled for this module
+
+##########################################################################
+# Duplicate Log Suppression Configuration
+#
+# These settings control the duplicate log message suppression feature.
+# When enabled, consecutive identical log messages are suppressed and
+# a summary count is emitted when the suppression ends.
+#
+# LOG.RDK.DEDUP_ENABLED: 0 = disabled (default), 1 = enabled
+# LOG.RDK.DEDUP_WINDOW_SEC: Time window in seconds before auto-flushing
+#                            summary (default: 30)
+# LOG.RDK.DEDUP_MAX_SUPPRESS: Maximum consecutive duplicates before
+#                              forced flush (default: 1000)
+##########################################################################
+
+#LOG.RDK.DEDUP_ENABLED = 0
+#LOG.RDK.DEDUP_WINDOW_SEC = 30
+#LOG.RDK.DEDUP_MAX_SUPPRESS = 1000
