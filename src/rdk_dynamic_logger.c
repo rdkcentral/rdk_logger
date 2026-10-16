@@ -1,3 +1,4 @@
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -54,18 +55,15 @@ static int rdk_dyn_log_make_socket_path(char *path, size_t path_size)
     if (__progname == NULL || __progname[0] == '\0')
         return -1;
 
-    /* Only root provisions the shared directory, so its owner is always root regardless of start order. */
-    if (geteuid() == 0) {
-        if (mkdir(DL_SOCKET_DIR, 01777) == 0) {
-            /* mkdir honours the caller's umask; force the intended shared-directory mode. */
-            if (chmod(DL_SOCKET_DIR, 01777) == -1)
-                return -1;
-        } else if (errno != EEXIST) {
+    if (mkdir(DL_SOCKET_DIR, 01777) == 0) {
+        /* mkdir honours the caller's umask; force the intended shared-directory mode. */
+        if (chmod(DL_SOCKET_DIR, 01777) == -1)
             return -1;
-        }
+    } else if (errno != EEXIST) {
+        return -1;
     }
     if (lstat(DL_SOCKET_DIR, &dir_stat) == -1 || !S_ISDIR(dir_stat.st_mode) ||
-            dir_stat.st_uid != 0 ||
+            (dir_stat.st_uid != 0 && dir_stat.st_uid != geteuid()) ||
             ((dir_stat.st_mode & (S_IWGRP | S_IWOTH)) && !(dir_stat.st_mode & S_ISVTX)))
         return -1;
 
