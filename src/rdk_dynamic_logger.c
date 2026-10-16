@@ -54,11 +54,16 @@ static int rdk_dyn_log_make_socket_path(char *path, size_t path_size)
     if (__progname == NULL || __progname[0] == '\0')
         return -1;
 
-    if (mkdir(DL_SOCKET_DIR, 01777) == -1 && errno != EEXIST)
+    if (mkdir(DL_SOCKET_DIR, 01777) == 0) {
+        /* mkdir honours the caller's umask; force the intended shared-directory mode. */
+        if (chmod(DL_SOCKET_DIR, 01777) == -1)
+            return -1;
+    } else if (errno != EEXIST) {
         return -1;
+    }
     if (lstat(DL_SOCKET_DIR, &dir_stat) == -1 || !S_ISDIR(dir_stat.st_mode) ||
             (dir_stat.st_uid != 0 && dir_stat.st_uid != geteuid()) ||
-            ((dir_stat.st_mode & S_IWOTH) && !(dir_stat.st_mode & S_ISVTX)))
+            ((dir_stat.st_mode & (S_IWGRP | S_IWOTH)) && !(dir_stat.st_mode & S_ISVTX)))
         return -1;
 
     length = snprintf(path, path_size, DL_SOCKET_DIR "/%s.%ld", __progname, (long)getpid());
@@ -189,9 +194,7 @@ void rdk_dyn_log_process_pending_request()
 void rdk_dyn_log_init()
 {
     struct sockaddr_un my_addr;
-    struct stat socket_stat;
     socklen_t addr_len;
-    mode_t previous_umask;
     int bind_result;
 
     pthread_mutex_lock(&g_dl_request_mutex);
@@ -201,15 +204,9 @@ void rdk_dyn_log_init()
         return;
     }
 
-    if (lstat(g_dl_socket_path, &socket_stat) == 0) {
-        if (!S_ISSOCK(socket_stat.st_mode) || socket_stat.st_uid != geteuid() ||
-                unlink(g_dl_socket_path) == -1) {
-            fprintf(stderr, "%s() socket path is already in use\n", __func__);
-            pthread_mutex_unlock(&g_dl_request_mutex);
-            return;
-        }
-    } else if (errno != ENOENT) {
-        fprintf(stderr, "%s() cannot inspect socket path: %s\n", __func__, strerror(errno));
+    /* Remove any stale entry; the sticky directory refuses to unlink entries owned by others. */
+    if (unlink(g_dl_socket_path) == -1 && errno != ENOENT) {
+        fprintf(stderr, "%s() socket path is already in use: %s\n", __func__, strerror(errno));
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
@@ -225,9 +222,7 @@ void rdk_dyn_log_init()
     memcpy(my_addr.sun_path, g_dl_socket_path, strlen(g_dl_socket_path) + 1);
     addr_len = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + strlen(my_addr.sun_path) + 1);
 
-    previous_umask = umask(0177);
     bind_result = bind(g_dl_socket, (struct sockaddr *)&my_addr, addr_len);
-    umask(previous_umask);
     if (-1 == bind_result) {
         fprintf(stderr, "%s() bind error %s\n",__func__,strerror(errno));
         close(g_dl_socket);
@@ -256,7 +251,9 @@ void rdk_dyn_log_deinit()
     {
         close(g_dl_socket);
         g_dl_socket = -1;
-        unlink(g_dl_socket_path);
+        /* A forked child must not remove the parent's live socket. */
+        if (g_dl_socket_pid == getpid())
+            unlink(g_dl_socket_path);
         g_dl_socket_path[0] = '\0';
     }
     pthread_mutex_unlock(&g_dl_request_mutex);
