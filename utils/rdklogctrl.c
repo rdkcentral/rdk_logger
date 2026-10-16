@@ -31,7 +31,7 @@ static void usage(const char* app_name)
 static int process_name_for_pid(pid_t pid, char *process_name, size_t process_name_size)
 {
     char proc_path[64];
-    char command_line[RDK_DYNAMIC_LOG_APP_NAME_MAX + 2];
+    char command_line[PATH_MAX + 1];
     char *argument_end;
     char *base_name;
     FILE *proc_file;
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
     packet[component_length_offset] = (uint8_t)comp_len;
     memcpy(packet + component_offset, message.component_name, comp_len);
 
-    if ((numbytes=sendto(sockfd, packet, packet_length, 0,
+    if ((numbytes=sendto(sockfd, packet, packet_length, MSG_DONTWAIT,
             (struct sockaddr *)&dest_addr, dest_addr_length)) == -1) {
         printf("sendto: %s\n",strerror(errno));
         close(sockfd);

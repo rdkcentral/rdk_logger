@@ -1,4 +1,3 @@
-/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -22,6 +21,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
@@ -54,15 +54,18 @@ static int rdk_dyn_log_make_socket_path(char *path, size_t path_size)
     if (__progname == NULL || __progname[0] == '\0')
         return -1;
 
-    if (mkdir(DL_SOCKET_DIR, 01777) == 0) {
-        /* mkdir honours the caller's umask; force the intended shared-directory mode. */
-        if (chmod(DL_SOCKET_DIR, 01777) == -1)
+    /* Only root provisions the shared directory, so its owner is always root regardless of start order. */
+    if (geteuid() == 0) {
+        if (mkdir(DL_SOCKET_DIR, 01777) == 0) {
+            /* mkdir honours the caller's umask; force the intended shared-directory mode. */
+            if (chmod(DL_SOCKET_DIR, 01777) == -1)
+                return -1;
+        } else if (errno != EEXIST) {
             return -1;
-    } else if (errno != EEXIST) {
-        return -1;
+        }
     }
     if (lstat(DL_SOCKET_DIR, &dir_stat) == -1 || !S_ISDIR(dir_stat.st_mode) ||
-            (dir_stat.st_uid != 0 && dir_stat.st_uid != geteuid()) ||
+            dir_stat.st_uid != 0 ||
             ((dir_stat.st_mode & (S_IWGRP | S_IWOTH)) && !(dir_stat.st_mode & S_ISVTX)))
         return -1;
 
@@ -217,28 +220,43 @@ void rdk_dyn_log_init()
         return;
     }
 
+    /* Bind in a private (0700) directory so no one can queue packets before the socket is 0600. */
+    char stage_dir[] = DL_SOCKET_DIR "/.stage.XXXXXX";
+    char stage_path[sizeof(stage_dir) + 8];
+    if (mkdtemp(stage_dir) == NULL) {
+        fprintf(stderr, "%s() staging directory error %s\n", __func__, strerror(errno));
+        close(g_dl_socket);
+        g_dl_socket = -1;
+        pthread_mutex_unlock(&g_dl_request_mutex);
+        return;
+    }
+    snprintf(stage_path, sizeof(stage_path), "%s/s", stage_dir);
+
     memset(&my_addr,0,sizeof(my_addr));
     my_addr.sun_family = AF_UNIX;
-    memcpy(my_addr.sun_path, g_dl_socket_path, strlen(g_dl_socket_path) + 1);
+    memcpy(my_addr.sun_path, stage_path, strlen(stage_path) + 1);
     addr_len = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + strlen(my_addr.sun_path) + 1);
 
     bind_result = bind(g_dl_socket, (struct sockaddr *)&my_addr, addr_len);
     if (-1 == bind_result) {
         fprintf(stderr, "%s() bind error %s\n",__func__,strerror(errno));
+        rmdir(stage_dir);
         close(g_dl_socket);
         g_dl_socket = -1;
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
 
-    if (chmod(g_dl_socket_path, 0600) == -1) {
-        fprintf(stderr, "%s() socket permissions error %s\n",__func__,strerror(errno));
+    if (chmod(stage_path, 0600) == -1 || rename(stage_path, g_dl_socket_path) == -1) {
+        fprintf(stderr, "%s() socket publish error %s\n",__func__,strerror(errno));
         close(g_dl_socket);
-        unlink(g_dl_socket_path);
+        unlink(stage_path);
+        rmdir(stage_dir);
         g_dl_socket = -1;
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
+    rmdir(stage_dir);
 
     g_dl_socket_pid = getpid();
     pthread_mutex_unlock(&g_dl_request_mutex);
