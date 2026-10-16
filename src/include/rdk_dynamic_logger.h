@@ -28,9 +28,8 @@
 #define RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX 64
 
 typedef struct {
-	// Adjusting sizes for legacy UDP datagram limits
+	// The encoded wire packet remains capped by RDK_DYNAMIC_LOG_PACKET_MAX.
 	uint8_t signature[4];
-	uint8_t message_length;
 	uint8_t log_level;
 	char app_name[RDK_DYNAMIC_LOG_APP_NAME_MAX + 1];
 	char component_name[RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX + 1];

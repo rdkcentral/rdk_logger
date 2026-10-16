@@ -22,24 +22,57 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/select.h>
+#include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/un.h>
 
 #include "rdk_dynamic_logger.h"
 #include "rdk_debug_priv.h"
 
-#define DL_PORT 12035
+#define DL_SOCKET_DIR "/tmp/.logger"
 #define DL_SIGNATURE "COMC"
 #define DL_SIGNATURE_LEN 4
 
 static int g_dl_socket = -1;
+static char g_dl_socket_path[sizeof(((struct sockaddr_un *)0)->sun_path)];
+static pid_t g_dl_socket_pid = -1;
 static pthread_mutex_t g_dl_request_mutex = PTHREAD_MUTEX_INITIALIZER;
 extern char *__progname;
+
+static int rdk_dyn_log_make_socket_path(char *path, size_t path_size)
+{
+    struct stat dir_stat;
+    int length;
+
+    if (__progname == NULL || __progname[0] == '\0')
+        return -1;
+
+    if (mkdir(DL_SOCKET_DIR, 01777) == 0) {
+        /* mkdir honours the caller's umask; force the intended shared-directory mode. */
+        if (chmod(DL_SOCKET_DIR, 01777) == -1)
+            return -1;
+    } else if (errno != EEXIST) {
+        return -1;
+    }
+    if (lstat(DL_SOCKET_DIR, &dir_stat) == -1 || !S_ISDIR(dir_stat.st_mode) ||
+            (dir_stat.st_uid != 0 && dir_stat.st_uid != geteuid()) ||
+            ((dir_stat.st_mode & (S_IWGRP | S_IWOTH)) && !(dir_stat.st_mode & S_ISVTX)))
+        return -1;
+
+    length = snprintf(path, path_size, DL_SOCKET_DIR "/%s.%ld", __progname, (long)getpid());
+    if (length < 0 || (size_t)length >= path_size || strchr(__progname, '/') != NULL)
+        return -1;
+
+    return 0;
+}
 
 static char * rdk_dyn_log_logLevelToString(rdk_LogLevel log_level)
 {
@@ -86,7 +119,7 @@ void rdk_dyn_log_process_pending_request()
 {
     unsigned char packet[RDK_DYNAMIC_LOG_PACKET_MAX];
     rdk_dynamic_log_message_t message = {0};
-    struct sockaddr_in sender_addr;
+    struct sockaddr_un sender_addr;
     struct timeval tv;
     int numbytes, ret;
     size_t app_len, comp_len, comp_len_offset;
@@ -96,11 +129,19 @@ void rdk_dyn_log_process_pending_request()
     if (pthread_mutex_trylock(&g_dl_request_mutex) != 0)
         return;
 
+    /* After fork/daemonize the inherited socket is named after the parent PID; rebind for ours. */
+    if (g_dl_socket != -1 && g_dl_socket_pid != getpid()) {
+        close(g_dl_socket);
+        g_dl_socket = -1;
+        pthread_mutex_unlock(&g_dl_request_mutex);
+        rdk_dyn_log_init();
+        return;
+    }
+
     if(-1 == g_dl_socket) {
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
-    memset(&sender_addr,0,sizeof(sender_addr));
     while(1) {
         FD_ZERO(&rfds);
         FD_SET(g_dl_socket, &rfds);
@@ -123,8 +164,7 @@ void rdk_dyn_log_process_pending_request()
             return;
         }
 
-        if (strcmp("127.0.0.1", inet_ntoa(sender_addr.sin_addr)) != 0 ||
-                numbytes > (int)sizeof(packet) ||
+        if (numbytes > (int)sizeof(packet) ||
                 numbytes < DL_SIGNATURE_LEN + 4 ||
                 (size_t)numbytes != (size_t)packet[DL_SIGNATURE_LEN] + DL_SIGNATURE_LEN + 1 ||
                 memcmp(packet, DL_SIGNATURE, DL_SIGNATURE_LEN) != 0)
@@ -144,7 +184,6 @@ void rdk_dyn_log_process_pending_request()
 
         memset(&message, 0, sizeof(message));
         memcpy(message.signature, packet, DL_SIGNATURE_LEN);
-        message.message_length = packet[DL_SIGNATURE_LEN];
         message.log_level = packet[DL_SIGNATURE_LEN + 1];
         memcpy(message.app_name, packet + DL_SIGNATURE_LEN + 3, app_len);
         memcpy(message.component_name, packet + comp_len_offset + 1, comp_len);
@@ -155,38 +194,69 @@ void rdk_dyn_log_process_pending_request()
 
 void rdk_dyn_log_init()
 {
-    struct sockaddr_in my_addr;
-    int opt = 1;
+    struct sockaddr_un my_addr;
+    socklen_t addr_len;
+    int bind_result;
 
     pthread_mutex_lock(&g_dl_request_mutex);
-    if ((g_dl_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+    if (rdk_dyn_log_make_socket_path(g_dl_socket_path, sizeof(g_dl_socket_path)) != 0) {
+        fprintf(stderr, "%s() invalid or unavailable socket directory/path\n", __func__);
+        pthread_mutex_unlock(&g_dl_request_mutex);
+        return;
+    }
+
+    /* Remove any stale entry; the sticky directory refuses to unlink entries owned by others. */
+    if (unlink(g_dl_socket_path) == -1 && errno != ENOENT) {
+        fprintf(stderr, "%s() socket path is already in use: %s\n", __func__, strerror(errno));
+        pthread_mutex_unlock(&g_dl_request_mutex);
+        return;
+    }
+
+    if ((g_dl_socket = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
         fprintf(stderr, "%s() Socket creation failed. %s\n",__func__,strerror(errno));
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
 
+    /* Bind in a private (0700) directory so no one can queue packets before the socket is 0600. */
+    char stage_dir[] = DL_SOCKET_DIR "/.stage.XXXXXX";
+    char stage_path[sizeof(stage_dir) + 8];
+    if (mkdtemp(stage_dir) == NULL) {
+        fprintf(stderr, "%s() staging directory error %s\n", __func__, strerror(errno));
+        close(g_dl_socket);
+        g_dl_socket = -1;
+        pthread_mutex_unlock(&g_dl_request_mutex);
+        return;
+    }
+    snprintf(stage_path, sizeof(stage_path), "%s/s", stage_dir);
+
     memset(&my_addr,0,sizeof(my_addr));
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(DL_PORT);
-    my_addr.sin_addr.s_addr = inet_addr("127.255.255.255");
+    my_addr.sun_family = AF_UNIX;
+    memcpy(my_addr.sun_path, stage_path, strlen(stage_path) + 1);
+    addr_len = (socklen_t)(offsetof(struct sockaddr_un, sun_path) + strlen(my_addr.sun_path) + 1);
 
-    if (-1 == setsockopt(g_dl_socket,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(int))) {
-        fprintf(stderr, "%s() setsockopt error %s\n",__func__,strerror(errno));
-        close(g_dl_socket);
-        g_dl_socket = -1;
-        pthread_mutex_unlock(&g_dl_request_mutex);
-        return;
-    }
-
-    if (-1 == bind(g_dl_socket, (struct sockaddr *)&my_addr, sizeof(struct sockaddr))) {
+    bind_result = bind(g_dl_socket, (struct sockaddr *)&my_addr, addr_len);
+    if (-1 == bind_result) {
         fprintf(stderr, "%s() bind error %s\n",__func__,strerror(errno));
+        rmdir(stage_dir);
         close(g_dl_socket);
         g_dl_socket = -1;
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
 
-    //fprintf(stderr, "%sg_dl_socket = %d __progname = %s \n",__func__,g_dl_socket,__progname);
+    if (chmod(stage_path, 0600) == -1 || rename(stage_path, g_dl_socket_path) == -1) {
+        fprintf(stderr, "%s() socket publish error %s\n",__func__,strerror(errno));
+        close(g_dl_socket);
+        unlink(stage_path);
+        rmdir(stage_dir);
+        g_dl_socket = -1;
+        pthread_mutex_unlock(&g_dl_request_mutex);
+        return;
+    }
+    rmdir(stage_dir);
+
+    g_dl_socket_pid = getpid();
     pthread_mutex_unlock(&g_dl_request_mutex);
 }
 
@@ -197,6 +267,10 @@ void rdk_dyn_log_deinit()
     {
         close(g_dl_socket);
         g_dl_socket = -1;
+        /* A forked child must not remove the parent's live socket. */
+        if (g_dl_socket_pid == getpid())
+            unlink(g_dl_socket_path);
+        g_dl_socket_path[0] = '\0';
     }
     pthread_mutex_unlock(&g_dl_request_mutex);
 }
