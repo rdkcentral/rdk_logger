@@ -711,6 +711,7 @@ bool rdk_dbg_priv_log_get_level(const char *pModuleName, rdk_LogLevel *level)
         case LOG4C_PRIORITY_INFO:   *level = RDK_LOG_INFO; break;
         case LOG4C_PRIORITY_DEBUG:  *level = RDK_LOG_DEBUG; break;
         case LOG4C_PRIORITY_TRACE:  *level = RDK_LOG_TRACE; break;
+        case LOG4C_PRIORITY_NONE:
         case LOG4C_PRIORITY_UNKNOWN: *level = RDK_LOG_NONE; break;
         default:
             pthread_mutex_unlock(&gLoggingMutex);
