@@ -684,6 +684,43 @@ bool rdk_dbg_priv_log_reconfig(const char *pModuleName, rdk_LogLevel logLevel)
     return ret;
 }
 
+bool rdk_dbg_priv_log_get_level(const char *pModuleName, rdk_LogLevel *level)
+{
+    log4c_category_t* cat;
+    int priority;
+
+    if (pModuleName == NULL || pModuleName[0] == '\0' || level == NULL)
+        return false;
+
+    pthread_mutex_lock(&gLoggingMutex);
+    cat = log4c_category_get(pModuleName);
+    if (cat == NULL) {
+        pthread_mutex_unlock(&gLoggingMutex);
+        return false;
+    }
+
+    priority = log4c_category_get_priority(cat);
+    if (priority == LOG4C_PRIORITY_NOTSET)
+        priority = gRootPriority;
+
+    switch (priority) {
+        case LOG4C_PRIORITY_FATAL:  *level = RDK_LOG_FATAL; break;
+        case LOG4C_PRIORITY_ERROR:  *level = RDK_LOG_ERROR; break;
+        case LOG4C_PRIORITY_WARN:   *level = RDK_LOG_WARN; break;
+        case LOG4C_PRIORITY_NOTICE: *level = RDK_LOG_NOTICE; break;
+        case LOG4C_PRIORITY_INFO:   *level = RDK_LOG_INFO; break;
+        case LOG4C_PRIORITY_DEBUG:  *level = RDK_LOG_DEBUG; break;
+        case LOG4C_PRIORITY_TRACE:  *level = RDK_LOG_TRACE; break;
+        case LOG4C_PRIORITY_UNKNOWN: *level = RDK_LOG_NONE; break;
+        default:
+            pthread_mutex_unlock(&gLoggingMutex);
+            return false;
+    }
+
+    pthread_mutex_unlock(&gLoggingMutex);
+    return true;
+}
+
 #define COMCAST_DATAED_BUFF_SIZE    40
 /****************************************************************
  * Wrapper function to retrieve module name

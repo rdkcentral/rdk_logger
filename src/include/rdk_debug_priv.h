@@ -32,6 +32,7 @@ void rdk_dbg_priv_deinit(void);
 rdk_Error rdk_dbg_priv_ext_init (const rdk_logger_ext_config_t* config);
 void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const char* format, va_list args);
 bool rdk_dbg_priv_log_reconfig(const char *pModuleName, rdk_LogLevel level);
+bool rdk_dbg_priv_log_get_level(const char *pModuleName, rdk_LogLevel *level);
 
 #ifdef __cplusplus
 }
