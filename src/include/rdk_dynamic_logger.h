@@ -33,8 +33,8 @@
 typedef struct {
 	uint8_t signature[RDK_DYNAMIC_LOG_SIGNATURE_LEN];
 	uint8_t log_level;
-	char app_name[RDK_DYNAMIC_LOG_APP_NAME_MAX];
-	char component_name[RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX];
+	char app_name[RDK_DYNAMIC_LOG_APP_NAME_MAX + 1];
+	char component_name[RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX + 1];
 } rdk_dynamic_log_message_t;
 
 void rdk_dyn_log_init(void);

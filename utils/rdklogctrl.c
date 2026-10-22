@@ -173,8 +173,8 @@ int main(int argc, char *argv[])
 
     snprintf(message.signature, RDK_DYNAMIC_LOG_SIGNATURE_LEN, "%s", RDK_DYNAMIC_LOG_SIGNATURE);
     message.log_level = (uint8_t)level;
-    snprintf(message.app_name, RDK_DYNAMIC_LOG_APP_NAME_MAX, "%s", process_name);
-    snprintf(message.component_name, RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX, "%s", argv[2]);
+    snprintf(message.app_name, sizeof(message.app_name), "%s", process_name);
+    snprintf(message.component_name, sizeof(message.component_name), "%s", argv[2]);
 
     if ((numbytes = sendto(sockfd, (const void*) &message, sizeof(message), MSG_DONTWAIT, (struct sockaddr *)&destAddr, sizeof(destAddr))) == -1)
     {
