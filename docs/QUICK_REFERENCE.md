@@ -74,7 +74,6 @@ LOG.RDK.TEST=NONE
 ## Runtime Control
 
 ### rdklogctrl Command
-Socket URI: `unix:///tmp/.logger/<processname>.<pid>`
 ```bash
 # Set log level for module
 rdklogctrl <pid> <module_name> <level>

@@ -49,7 +49,7 @@ void rdk_logger_msg_printf(rdk_LogLevel level, const char *module, const char *f
     if ((format) && (module))
     {
         va_start(args, format);
-        rdk_dbg_priv_log_msg(level, module, format, args);
+        rdk_dbg_priv_log(level, module, format, args);
         va_end(args);
     }
 }
@@ -69,7 +69,7 @@ void rdk_dbg_MsgRaw(rdk_LogLevel level, const char *module, const char *format, 
     if ((format) && (module))
     {
         va_start(args, format);
-        rdk_dbg_priv_log_msg(level, module, format, args);
+        rdk_dbg_priv_log(level, module, format, args);
         va_end(args);
     }
 }
@@ -77,13 +77,13 @@ void rdk_dbg_MsgRaw(rdk_LogLevel level, const char *module, const char *format, 
 void rdk_logger_msg_vsprintf(rdk_LogLevel level, const char *module, const char *format, va_list args)
 {
     if ((format) && (module))
-        rdk_dbg_priv_log_msg(level, module, format, args);
+        rdk_dbg_priv_log(level, module, format, args);
 }
 
 void rdk_dbg_MsgRaw1(rdk_LogLevel level, const char *module, const char *format, va_list args)
 {
     if ((format) && (module))
-        rdk_dbg_priv_log_msg(level, module, format, args);
+        rdk_dbg_priv_log(level, module, format, args);
 }
 
 /**
@@ -97,7 +97,7 @@ void rdk_dbg_MsgRaw1(rdk_LogLevel level, const char *module, const char *format,
 bool rdk_logger_set_logLevel(const char *module, rdk_LogLevel logLevel)
 {
     if (module)
-        return rdk_dbg_priv_log_reconfig(module, logLevel);
+        return rdk_dbg_priv_set_level(module, logLevel);
     else
         return false;
 }
@@ -110,7 +110,7 @@ bool rdk_logger_set_logLevel(const char *module, rdk_LogLevel logLevel)
  */
 bool rdk_logger_get_logLevel(const char *module, rdk_LogLevel *logLevel)
 {
-    return rdk_dbg_priv_log_get_level(module, logLevel);
+    return rdk_dbg_priv_get_level(module, logLevel);
 }
 
 
@@ -125,7 +125,7 @@ bool rdk_logger_enable_logLevel(const char *module, rdk_LogLevel logLevel, rdk_l
 {
     (void) enableLogLvl;
     if (module)
-        return rdk_dbg_priv_log_reconfig(module, logLevel);
+        return rdk_dbg_priv_set_level(module, logLevel);
     else
         return false;
 }

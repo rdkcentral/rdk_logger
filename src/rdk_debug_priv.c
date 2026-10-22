@@ -147,6 +147,22 @@ static int rdk_logLevel_to_log4c_priority(rdk_LogLevel level)
      return LOG4C_PRIORITY_UNKNOWN;
 }
 
+static rdk_LogLevel log4c_priority_to_rdk_logLevel (int level)
+{
+    switch (level)
+    {
+        case LOG4C_PRIORITY_FATAL:  return RDK_LOG_FATAL;
+        case LOG4C_PRIORITY_ERROR:  return RDK_LOG_ERROR;
+        case LOG4C_PRIORITY_WARN:   return RDK_LOG_WARN;
+        case LOG4C_PRIORITY_NOTICE: return RDK_LOG_NOTICE;
+        case LOG4C_PRIORITY_INFO:   return RDK_LOG_INFO;
+        case LOG4C_PRIORITY_DEBUG:  return RDK_LOG_DEBUG;
+        case LOG4C_PRIORITY_TRACE:  return RDK_LOG_TRACE;
+        default:
+            return RDK_LOG_NONE;
+    }
+}
+
 #if defined(HAVE_SYSTEMD) || defined(HAVE_SYSLOG_H)
 static int get_syslog_priority(int log4c_pr)
 {
@@ -610,7 +626,7 @@ bool rdk_logger_is_logLevel_enabled(const char *module, rdk_LogLevel level)
     return isEnabled;
 }
 
-void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const char* format, va_list args)
+void rdk_dbg_priv_log(rdk_LogLevel level, const char *module_name, const char* format, va_list args)
 {
     log4c_category_t* cat = NULL;
     int prio = 0;
@@ -658,7 +674,7 @@ void rdk_dbg_priv_log_msg(rdk_LogLevel level, const char *module_name, const cha
 }
 
 
-bool rdk_dbg_priv_log_reconfig(const char *pModuleName, rdk_LogLevel logLevel)
+bool rdk_dbg_priv_set_level(const char *pModuleName, rdk_LogLevel logLevel)
 {
     bool ret = true;
     log4c_category_t* cat = NULL;
@@ -684,10 +700,10 @@ bool rdk_dbg_priv_log_reconfig(const char *pModuleName, rdk_LogLevel logLevel)
     return ret;
 }
 
-bool rdk_dbg_priv_log_get_level(const char *pModuleName, rdk_LogLevel *level)
+bool rdk_dbg_priv_get_level(const char *pModuleName, rdk_LogLevel *level)
 {
-    log4c_category_t* cat;
-    int priority;
+    log4c_category_t* cat = NULL;
+    int priority = gRootPriority;
 
     if (pModuleName == NULL || pModuleName[0] == '\0' || level == NULL)
         return false;
@@ -703,20 +719,7 @@ bool rdk_dbg_priv_log_get_level(const char *pModuleName, rdk_LogLevel *level)
     if (priority == LOG4C_PRIORITY_NOTSET)
         priority = gRootPriority;
 
-    switch (priority) {
-        case LOG4C_PRIORITY_FATAL:  *level = RDK_LOG_FATAL; break;
-        case LOG4C_PRIORITY_ERROR:  *level = RDK_LOG_ERROR; break;
-        case LOG4C_PRIORITY_WARN:   *level = RDK_LOG_WARN; break;
-        case LOG4C_PRIORITY_NOTICE: *level = RDK_LOG_NOTICE; break;
-        case LOG4C_PRIORITY_INFO:   *level = RDK_LOG_INFO; break;
-        case LOG4C_PRIORITY_DEBUG:  *level = RDK_LOG_DEBUG; break;
-        case LOG4C_PRIORITY_TRACE:  *level = RDK_LOG_TRACE; break;
-        case LOG4C_PRIORITY_NONE:
-        case LOG4C_PRIORITY_UNKNOWN: *level = RDK_LOG_NONE; break;
-        default:
-            pthread_mutex_unlock(&gLoggingMutex);
-            return false;
-    }
+    *level = log4c_priority_to_rdk_logLevel(priority);
 
     pthread_mutex_unlock(&gLoggingMutex);
     return true;

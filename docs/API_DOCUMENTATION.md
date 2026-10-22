@@ -343,7 +343,6 @@ rdklogctrl "$(pidof -s myapp)" LOG.RDK.NETWORK ~DEBUG
 - `pid`: Process ID of the target application; `rdklogctrl` resolves its name from `/proc`
 - `module_name`: Module name (must match debug.ini format)
 - `log_level`: FATAL, ERROR, WARN, NOTICE, INFO, DEBUG, TRACE, NONE
-Each logger listens on `/tmp/.logger/<processname>.<pid>` using a Unix datagram socket restricted to the process owner.
 
 ### Programmatic Runtime Control
 

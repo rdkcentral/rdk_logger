@@ -155,7 +155,7 @@ rdklogctrl "$(pidof -s myapp)" LOG.RDK.NETWORK DEBUG
 ps -ef | grep myapp
 
 # Check if process accepts socket connections
-ss -xlp | grep '/tmp/.logger/'
+ss -xlp | grep '/tmp/.logger_'
 ```
 
 **Step 3: Test with simple module**
@@ -487,10 +487,10 @@ void debug_config_loading() {
 #### Network Debugging for rdklogctrl
 ```bash
 # List per-process dynamic logger sockets
-ss -xlpn | grep '/tmp/.logger/'
+ss -xlpn | grep '/tmp/.logger_'
 
 # Verify socket ownership and permissions
-ls -l /tmp/.logger
+ls -l /tmp/.logger_<process_name>.<pid>`
 ```
 
 ### Quick Reference Checklist

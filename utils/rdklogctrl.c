@@ -12,9 +12,6 @@
 
 #define COMP_SIGNATURE "LOG.RDK."
 #define COMP_SIGNATURE_LEN 8
-#define DL_SOCKET_DIR "/tmp/.logger"
-#define DL_SIGNATURE "COMC"
-#define DL_SIGNATURE_LEN 4
 
 static void usage(const char* app_name)
 {
@@ -92,21 +89,16 @@ static int8_t validate_loglevel(const char* level)
 
 int main(int argc, char *argv[])
 {
-    struct sockaddr_un dest_addr;
+    struct sockaddr_un destAddr;
     int sockfd, numbytes;
     long parsed_pid;
     char *pid_end;
     const char *pid_character;
     pid_t target_pid;
     char process_name[RDK_DYNAMIC_LOG_APP_NAME_MAX + 1];
-    char socket_path[sizeof(dest_addr.sun_path)];
-    int socket_path_length;
-    socklen_t dest_addr_length;
-    size_t app_len, comp_len, app_offset, component_length_offset;
-    size_t component_offset, packet_length;
+    size_t app_len, comp_len;
     int8_t level = -1;
     rdk_dynamic_log_message_t message = {0};
-    unsigned char packet[RDK_DYNAMIC_LOG_PACKET_MAX] = {0};
 
     if (argc != 4) {
         usage(argv[0]);
@@ -127,11 +119,19 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Invalid process ID\n");
         return -1;
     }
+
     target_pid = (pid_t)parsed_pid;
 
     comp_len = strlen(argv[2]);
     if (comp_len == 0 || comp_len > RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX) {
         fprintf(stderr, "App or module name exceeds packet field size\n");
+        return -1;
+    }
+
+    if( (0 != strncmp(argv[2], COMP_SIGNATURE, COMP_SIGNATURE_LEN)))
+    {
+        printf("Invalid module name\n");
+        usage(argv[0]);
         return -1;
     }
 
@@ -147,83 +147,50 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    if(0 != strcmp("Receiver",process_name)) {
-        if( (0 != strncmp(argv[2],COMP_SIGNATURE,COMP_SIGNATURE_LEN)))
-        {
-            printf("Invalid module name\n");
-            usage(argv[0]);
-            return -1;
-        }
-    }
-
     app_len = strlen(process_name);
     if (app_len == 0 || app_len > RDK_DYNAMIC_LOG_APP_NAME_MAX) {
         fprintf(stderr, "App or module name exceeds packet field size\n");
         return -1;
     }
 
-    app_offset = DL_SIGNATURE_LEN + 3;
-    if (app_offset > sizeof(packet) || app_len > sizeof(packet) - app_offset) {
-        fprintf(stderr, "App name exceeds packet buffer\n");
-        return -1;
-    }
-    component_length_offset = app_offset + app_len;
-    if (component_length_offset >= sizeof(packet)) {
-        fprintf(stderr, "Component length offset exceeds packet buffer\n");
-        return -1;
-    }
-    component_offset = component_length_offset + 1;
-    if (comp_len > sizeof(packet) - component_offset) {
-        fprintf(stderr, "Component name exceeds packet buffer\n");
-        return -1;
-    }
-    packet_length = component_offset + comp_len;
-
-    socket_path_length = snprintf(socket_path, sizeof(socket_path), DL_SOCKET_DIR "/%s.%ld",
-            process_name, parsed_pid);
-    if (socket_path_length < 0 || (size_t)socket_path_length >= sizeof(socket_path)) {
-        fprintf(stderr, "Process socket path is too long\n");
-        return -1;
-    }
 
     if ((sockfd = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
         printf("socket: %s\n",strerror(errno));
         return -1;
     }
 
-    memset(&dest_addr,0,sizeof(dest_addr));
-    dest_addr.sun_family = AF_UNIX;
-    memcpy(dest_addr.sun_path, socket_path, (size_t)socket_path_length + 1);
-    dest_addr_length = (socklen_t)(offsetof(struct sockaddr_un, sun_path) +
-            (size_t)socket_path_length + 1);
+    memset(&destAddr, 0,sizeof(destAddr));
+    destAddr.sun_family = AF_UNIX;
+    int pathLength = 1 + snprintf(destAddr.sun_path, 0, "%s_%s.%ld", RDK_DYNAMIC_SOCKET_PATH_PREFIX, process_name, (long)parsed_pid);
 
-    memcpy(message.signature, DL_SIGNATURE, DL_SIGNATURE_LEN);
+    if (pathLength > sizeof(destAddr.sun_path))
+    {
+        printf ("long process name that cannot be communicated\n");
+        return -1;
+    }
+
+    snprintf(destAddr.sun_path, sizeof(destAddr.sun_path), "%s_%s.%ld", RDK_DYNAMIC_SOCKET_PATH_PREFIX, process_name, (long)parsed_pid);
+
+    snprintf(message.signature, RDK_DYNAMIC_LOG_SIGNATURE_LEN, "%s", RDK_DYNAMIC_LOG_SIGNATURE);
     message.log_level = (uint8_t)level;
-    memcpy(message.app_name, process_name, app_len);
-    memcpy(message.component_name, argv[2], comp_len);
+    snprintf(message.app_name, RDK_DYNAMIC_LOG_APP_NAME_MAX, "%s", process_name);
+    snprintf(message.component_name, RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX, "%s", argv[2]);
 
-    memcpy(packet, message.signature, DL_SIGNATURE_LEN);
-    packet[DL_SIGNATURE_LEN] = (uint8_t)(app_len + comp_len + 3);
-    packet[DL_SIGNATURE_LEN + 1] = message.log_level;
-    packet[DL_SIGNATURE_LEN + 2] = (uint8_t)app_len;
-    memcpy(packet + app_offset, message.app_name, app_len);
-    packet[component_length_offset] = (uint8_t)comp_len;
-    memcpy(packet + component_offset, message.component_name, comp_len);
-
-    if ((numbytes=sendto(sockfd, packet, packet_length, MSG_DONTWAIT,
-            (struct sockaddr *)&dest_addr, dest_addr_length)) == -1) {
+    if ((numbytes = sendto(sockfd, (const void*) &message, sizeof(message), MSG_DONTWAIT, (struct sockaddr *)&destAddr, sizeof(destAddr))) == -1)
+    {
         printf("sendto: %s\n",strerror(errno));
         close(sockfd);
         return -1;
     }
-    if ((size_t)numbytes != packet_length) {
+
+    if ((size_t)numbytes != sizeof(message))
+    {
         fprintf(stderr, "sendto sent an incomplete dynamic log packet\n");
         close(sockfd);
         return -1;
     }
 
-        printf("Sent message to update log level of %s for PID %ld (%s)\n",
-            argv[2], parsed_pid, process_name);
+    printf("Sent message to update log level of %s for PID %ld (%s)\n", argv[2], parsed_pid, process_name);
     close(sockfd);
     return 0;
 }
