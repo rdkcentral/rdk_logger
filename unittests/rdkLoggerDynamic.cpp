@@ -131,7 +131,7 @@ void* run_rdklogctrl(void* arg) {
     }
 
     char cmd[256];
-    snprintf(cmd, sizeof(cmd), "./rdklogctrl rdk_logger_gtest %s %s", category_str, level_str);
+    snprintf(cmd, sizeof(cmd), "./rdklogctrl %ld %s %s", (long)getpid(), category_str, level_str);
     fprintf(stderr, "Executing command: %s\n", cmd);
     int ret = system(cmd);
     (void)ret;
@@ -142,7 +142,7 @@ static void* run_log_messages(void* arg) {
     pthread_barrier_t* start_barrier = static_cast<pthread_barrier_t*>(arg);
     pthread_barrier_wait(start_barrier);
     for (int i = 0; i < 500; ++i)
-        rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.TEST", "Concurrent test log\n");
+        rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.MEDIUM002", "Concurrent test log\n");
     return NULL;
 }
 
@@ -348,44 +348,48 @@ TEST(RdkDynamicLoggerTest, MessageProcessingViaSystem_negnone) {
 
 }
 
-TEST(RdkDynamicLoggerTest, Critical001_AcceptsBoundaryComponentName) {
-    char conf_file[] = GTEST_DEBUG_INI_FILE;
-    ASSERT_EQ(rdk_logger_init(conf_file), RDK_SUCCESS);
-
-    const char* component = "LOG.RDK.rdklogger_component_name_for_boundary_length_testing_123";
-    ASSERT_EQ(strlen(component), 64U);
-
-    rdklogctrl_args_t args;
-    args.category = CAT_BOUNDARY;
-    args.level = LVL_INFO;
-
-    testing::internal::CaptureStderr();
-    pthread_t client_thread;
-    ASSERT_EQ(0, pthread_create(&client_thread, nullptr, run_rdklogctrl, &args));
-    usleep(500000);
-    rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.TESTMOD", "Process dynamic log request\n");
-    ASSERT_EQ(0, pthread_join(client_thread, nullptr));
-
-    const std::string output = testing::internal::GetCapturedStderr();
-    EXPECT_NE(output.find("for the component " + std::string(component) + ", is success"), std::string::npos);
+// Runs a command, echoes its stdout+stderr to the test log, and returns the pclose status.
+static int run_and_print(const std::string& command, std::string& output) {
+    FILE* pipe = popen((command + " 2>&1").c_str(), "r");
+    if (pipe == nullptr)
+        return -1;
+    char chunk[256];
+    while (fgets(chunk, sizeof(chunk), pipe) != nullptr)
+        output += chunk;
+    fprintf(stdout, "[%s]\n%s", command.c_str(), output.c_str());
+    fflush(stdout);
+    return pclose(pipe);
 }
 
-TEST(RdkDynamicLoggerTest, Critical001_RejectsComponentNameAboveBuffer) {
-    const char* output_path = "/tmp/rdklogctrl_critical001_test.txt";
-    const std::string component = "LOG.RDK." + std::string(57, 'C');
+TEST(RdkDynamicLoggerTest, Critical001_AcceptsBoundaryComponentName) {
+     ASSERT_EQ(rdk_logger_init(GTEST_DEBUG_INI_FILE), RDK_SUCCESS);
+     const std::string component = "LOG.RDK." + std::string(56, 'A');
+     ASSERT_EQ(component.size(), 64U);
+     ASSERT_TRUE(rdk_logger_set_logLevel(component.c_str(), RDK_LOG_NONE));
+     std::string output;
+     ASSERT_EQ(run_and_print("./rdklogctrl " + std::to_string((long)getpid()) + " " +
+                             component + " INFO", output), 0);
+     rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.TESTMOD", "Process dynamic log request\n");
+     rdk_LogLevel level = RDK_LOG_NONE;
+     ASSERT_TRUE(rdk_logger_get_logLevel(component.c_str(), &level));
+     EXPECT_EQ(level, RDK_LOG_INFO);
+ }
+
+TEST(RdkDynamicLoggerTest, Critical001_RejectsOversizedComponentName) {
+    // 65 characters: one more than the 64-byte component limit
+    const std::string component = "LOG.RDK." + std::string(57, 'A');
     ASSERT_EQ(component.size(), 65U);
-    const std::string command = "./rdklogctrl " + std::to_string(getpid()) + " " +
-                                component + " INFO > " + output_path + " 2>&1";
-    int status = system(command.c_str());
+
+    std::string output;
+    int status = run_and_print("./rdklogctrl " + std::to_string((long)getpid()) + " " +
+                               component + " INFO", output);
     ASSERT_NE(status, -1);
     EXPECT_NE(status, 0);
-    std::ifstream output_file(output_path);
-    const std::string output((std::istreambuf_iterator<char>(output_file)),
-                             std::istreambuf_iterator<char>());
-    EXPECT_NE(output.find("packet field size"), std::string::npos);
-    remove(output_path);
+    EXPECT_NE(output.find("exceeds packet field size"), std::string::npos);
 }
 
+// Medium_002: raises LOG.RDK.MEDIUM002 to INFO via rdklogctrl, then logs from two threads at once
+// and checks all 1000 messages appear, i.e. concurrent RDK_LOG calls neither hang nor drop lines.
 TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
     ASSERT_EQ(rdk_logger_init(GTEST_DEBUG_INI_FILE), RDK_SUCCESS);
 
@@ -398,8 +402,11 @@ TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
     pthread_t control_thread;
     pthread_t log_threads[2];
     testing::internal::CaptureStdout();
+    testing::internal::CaptureStderr();
     ASSERT_EQ(pthread_create(&control_thread, nullptr, run_rdklogctrl, &args), 0);
     ASSERT_EQ(pthread_join(control_thread, nullptr), 0);
+    // Apply the queued level change before the threads start; otherwise early messages are filtered.
+    rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.MEDIUM002", "Medium002 warm-up\n");
     ASSERT_EQ(pthread_create(&log_threads[0], nullptr, run_log_messages, &start_barrier), 0);
     ASSERT_EQ(pthread_create(&log_threads[1], nullptr, run_log_messages, &start_barrier), 0);
     pthread_barrier_wait(&start_barrier);
@@ -410,20 +417,33 @@ TEST(RdkDynamicLoggerTest, Medium002_ConcurrentLogCallsComplete) {
     const char* marker = "Medium002 INFO reconfiguration observed";
     rdk_logger_msg_printf(RDK_LOG_INFO, "LOG.RDK.MEDIUM002", "%s\n", marker);
     const std::string output = testing::internal::GetCapturedStdout();
+    const std::string errors = testing::internal::GetCapturedStderr();
+    size_t concurrent_count = 0;
+    for (size_t pos = output.find("Concurrent test log"); pos != std::string::npos;
+         pos = output.find("Concurrent test log", pos + 1))
+        ++concurrent_count;
+    printf("Medium002 concurrent log lines: %zu (expected 1000)\n", concurrent_count);
+    printf("Medium002 stderr:\n%s\n", errors.c_str());
+    EXPECT_NE(errors.find("is success"), std::string::npos);
+    EXPECT_EQ(concurrent_count, 1000U);
     EXPECT_NE(output.find(marker), std::string::npos);
 }
 
-TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedModule) {
-    const char* output_path = "/tmp/rdklogctrl_medium005_test.txt";
+TEST(RdkDynamicLoggerTest, Medium005_RdklogctrlRejectsOversizedArguments) {
+    const std::string oversized_pid(200, '1');
     const std::string oversized_module = "LOG.RDK." + std::string(200, 'B');
-    const std::string command = "./rdklogctrl " + std::to_string(getpid()) + " " +
-                                oversized_module + " DEBUG > " + output_path + " 2>&1";
-    int status = system(command.c_str());
-    ASSERT_NE(status, -1);
-    EXPECT_NE(status, 0);
-    std::ifstream output_file(output_path);
-    const std::string output((std::istreambuf_iterator<char>(output_file)),
-                             std::istreambuf_iterator<char>());
-    EXPECT_NE(output.find("packet field size"), std::string::npos);
-    remove(output_path);
+    const std::string commands[] = {
+        "./rdklogctrl " + oversized_pid + " LOG.RDK.TEST DEBUG",
+        "./rdklogctrl 1 " + oversized_module + " DEBUG"
+    };
+    const std::string expected_errors[] = {"Invalid process ID", "packet field size"};
+
+    for (size_t index = 0; index < sizeof(commands) / sizeof(commands[0]); ++index) {
+        std::string output;
+        int status = run_and_print(commands[index], output);
+        ASSERT_NE(status, -1);
+        EXPECT_NE(status, 0);
+        EXPECT_NE(output.find(expected_errors[index]), std::string::npos);
+    }
 }
+
