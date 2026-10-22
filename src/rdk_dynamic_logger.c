@@ -22,22 +22,24 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/select.h>
+#include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/un.h>
 
 #include "rdk_dynamic_logger.h"
 #include "rdk_debug_priv.h"
 
-#define DL_PORT 12035
-#define DL_SIGNATURE "COMC"
-#define DL_SIGNATURE_LEN 4
 
 static int g_dl_socket = -1;
+static pid_t g_dl_socket_pid = -1;
 static pthread_mutex_t g_dl_request_mutex = PTHREAD_MUTEX_INITIALIZER;
 extern char *__progname;
 
@@ -58,7 +60,7 @@ static char * rdk_dyn_log_logLevelToString(rdk_LogLevel log_level)
 
 static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t *message)
 {
-    if (0 != memcmp(message->signature, DL_SIGNATURE, DL_SIGNATURE_LEN)) {
+    if (0 != memcmp(message->signature, RDK_DYNAMIC_LOG_SIGNATURE, RDK_DYNAMIC_LOG_SIGNATURE_LEN)) {
         return;
     }
 
@@ -71,7 +73,7 @@ static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t 
 
     if((loggingLevel >= RDK_LOG_FATAL) && (loggingLevel <= RDK_LOG_NONE))
     {
-	rdk_dbg_priv_log_reconfig(message->component_name, loggingLevel);
+        rdk_dbg_priv_set_level(message->component_name, loggingLevel);
         fprintf(stderr, "Log level change request to %s (%u) for the component %s, is success\n", rdk_dyn_log_logLevelToString(loggingLevel), loggingLevel, message->component_name);
     }
     else
@@ -84,9 +86,8 @@ static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t 
 
 void rdk_dyn_log_process_pending_request()
 {
-    unsigned char packet[RDK_DYNAMIC_LOG_PACKET_MAX];
     rdk_dynamic_log_message_t message = {0};
-    struct sockaddr_in sender_addr;
+    struct sockaddr_un sender_addr;
     struct timeval tv;
     int numbytes, ret;
     size_t app_len, comp_len, comp_len_offset;
@@ -96,11 +97,20 @@ void rdk_dyn_log_process_pending_request()
     if (pthread_mutex_trylock(&g_dl_request_mutex) != 0)
         return;
 
+    /* After fork/daemonize the inherited socket is named after the parent PID; rebind for ours. */
+    if (g_dl_socket != -1 && g_dl_socket_pid != getpid()) {
+        close(g_dl_socket);
+        g_dl_socket = -1;
+        pthread_mutex_unlock(&g_dl_request_mutex);
+        rdk_dyn_log_init();
+        return;
+    }
+
     if(-1 == g_dl_socket) {
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
-    memset(&sender_addr,0,sizeof(sender_addr));
+
     while(1) {
         FD_ZERO(&rfds);
         FD_SET(g_dl_socket, &rfds);
@@ -112,9 +122,7 @@ void rdk_dyn_log_process_pending_request()
         if(ret <= 0)
             break;
 
-        numbytes = recvfrom(g_dl_socket, packet, sizeof(packet),
-                    MSG_DONTWAIT | MSG_TRUNC,
-                    (struct sockaddr *)&sender_addr, &addr_len);
+        numbytes = recvfrom(g_dl_socket, &message, sizeof(message), MSG_DONTWAIT | MSG_TRUNC, (struct sockaddr *)&sender_addr, &addr_len);
         if (numbytes == -1) {
             if(errno == EAGAIN || errno == EWOULDBLOCK)
                 break;
@@ -123,62 +131,57 @@ void rdk_dyn_log_process_pending_request()
             return;
         }
 
-        if (strcmp("127.0.0.1", inet_ntoa(sender_addr.sin_addr)) != 0 ||
-                numbytes > (int)sizeof(packet) ||
-                numbytes < DL_SIGNATURE_LEN + 4 ||
-                (size_t)numbytes != (size_t)packet[DL_SIGNATURE_LEN] + DL_SIGNATURE_LEN + 1 ||
-                memcmp(packet, DL_SIGNATURE, DL_SIGNATURE_LEN) != 0)
+        if ((numbytes != (int)sizeof(message))  ||
+            (memchr(message.app_name, '\0', sizeof(message.app_name)) == NULL) ||
+            (memchr(message.component_name, '\0', sizeof(message.component_name)) == NULL))
             continue;
 
-        app_len = packet[DL_SIGNATURE_LEN + 2];
-        if (app_len == 0 || app_len > RDK_DYNAMIC_LOG_APP_NAME_MAX ||
-                app_len > (size_t)numbytes - 8)
-            continue;
-
-        comp_len_offset = DL_SIGNATURE_LEN + 3 + app_len;
-        if (comp_len_offset >= (size_t)numbytes)
-            continue;
-        comp_len = packet[comp_len_offset];
-	if (comp_len == 0 || comp_len > RDK_DYNAMIC_LOG_COMPONENT_NAME_MAX || comp_len != (size_t)numbytes - comp_len_offset - 1)
-            continue;
-
-        memset(&message, 0, sizeof(message));
-        memcpy(message.signature, packet, DL_SIGNATURE_LEN);
-        message.message_length = packet[DL_SIGNATURE_LEN];
-        message.log_level = packet[DL_SIGNATURE_LEN + 1];
-        memcpy(message.app_name, packet + DL_SIGNATURE_LEN + 3, app_len);
-        memcpy(message.component_name, packet + comp_len_offset + 1, comp_len);
-        rdk_dyn_log_validate_component_name(&message);
+        if (0 == memcmp(message.signature, RDK_DYNAMIC_LOG_SIGNATURE, RDK_DYNAMIC_LOG_SIGNATURE_LEN))
+        {
+            rdk_dyn_log_validate_component_name(&message);
+        }
     }
     pthread_mutex_unlock(&g_dl_request_mutex);
 }
 
 void rdk_dyn_log_init()
 {
-    struct sockaddr_in my_addr;
-    int opt = 1;
+    struct sockaddr_un myAddr;
+    socklen_t addrLen = sizeof (struct sockaddr_un);
+    int bind_result = -1;
+
+    memset(&myAddr, 0, sizeof(myAddr));
+
+    if (__progname == NULL)
+        return;
 
     pthread_mutex_lock(&g_dl_request_mutex);
-    if ((g_dl_socket = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+
+    if ((g_dl_socket = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1)
+    {
         fprintf(stderr, "%s() Socket creation failed. %s\n",__func__,strerror(errno));
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
 
-    memset(&my_addr,0,sizeof(my_addr));
-    my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(DL_PORT);
-    my_addr.sin_addr.s_addr = inet_addr("127.255.255.255");
+    myAddr.sun_family = AF_UNIX;
 
-    if (-1 == setsockopt(g_dl_socket,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(int))) {
-        fprintf(stderr, "%s() setsockopt error %s\n",__func__,strerror(errno));
+    // The path is, "/tmp/.logger_<progname>.<pid>"
+    int pathLength = 1 + snprintf(myAddr.sun_path, 0, "%s_%s.%ld", RDK_DYNAMIC_SOCKET_PATH_PREFIX, __progname, (long)getpid());
+    if (pathLength > sizeof(myAddr.sun_path))
+    {
+        fprintf (stderr, "long process name that cannot be communicated\n");
         close(g_dl_socket);
         g_dl_socket = -1;
         pthread_mutex_unlock(&g_dl_request_mutex);
         return;
     }
 
-    if (-1 == bind(g_dl_socket, (struct sockaddr *)&my_addr, sizeof(struct sockaddr))) {
+    snprintf(myAddr.sun_path, sizeof(myAddr.sun_path), "%s_%s.%ld", RDK_DYNAMIC_SOCKET_PATH_PREFIX, __progname, (long)getpid());
+
+    bind_result = bind(g_dl_socket, (struct sockaddr *)&myAddr, sizeof(myAddr));
+    if (-1 == bind_result)
+    {
         fprintf(stderr, "%s() bind error %s\n",__func__,strerror(errno));
         close(g_dl_socket);
         g_dl_socket = -1;
@@ -186,8 +189,9 @@ void rdk_dyn_log_init()
         return;
     }
 
-    //fprintf(stderr, "%sg_dl_socket = %d __progname = %s \n",__func__,g_dl_socket,__progname);
+    g_dl_socket_pid = getpid();
     pthread_mutex_unlock(&g_dl_request_mutex);
+    return;
 }
 
 void rdk_dyn_log_deinit()
