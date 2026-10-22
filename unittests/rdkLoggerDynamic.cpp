@@ -361,6 +361,20 @@ static int run_and_print(const std::string& command, std::string& output) {
     return pclose(pipe);
 }
 
+TEST(RdkDynamicLoggerTest, Critical001_AcceptsBoundaryComponentName) {
+     ASSERT_EQ(rdk_logger_init(GTEST_DEBUG_INI_FILE), RDK_SUCCESS);
+     const std::string component = "LOG.RDK." + std::string(56, 'A');
+     ASSERT_EQ(component.size(), 64U);
+     ASSERT_TRUE(rdk_logger_set_logLevel(component.c_str(), RDK_LOG_NONE));
+     std::string output;
+     ASSERT_EQ(run_and_print("./rdklogctrl " + std::to_string((long)getpid()) + " " +
+                             component + " INFO", output), 0);
+     rdk_logger_msg_printf(RDK_LOG_ERROR, "LOG.RDK.TESTMOD", "Process dynamic log request\n");
+     rdk_LogLevel level = RDK_LOG_NONE;
+     ASSERT_TRUE(rdk_logger_get_logLevel(component.c_str(), &level));
+     EXPECT_EQ(level, RDK_LOG_INFO);
+ }
+
 TEST(RdkDynamicLoggerTest, Critical001_RejectsOversizedComponentName) {
     // 65 characters: one more than the 64-byte component limit
     const std::string component = "LOG.RDK." + std::string(57, 'A');

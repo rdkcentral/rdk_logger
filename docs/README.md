@@ -170,7 +170,7 @@ sequenceDiagram
     PrivCore-->>Logger: RDK_SUCCESS
 
     Logger->>DynLog: rdk_dyn_log_init()
-    DynLog->>DynLog: socket(AF_INET, SOCK_DGRAM) bind /tmp/.logger.<process_name>.<pid>
+    DynLog->>DynLog: socket(AF_UNIX, SOCK_DGRAM) bind /tmp/.logger_<process_name>.<pid>
     DynLog-->>Logger: Socket listener ready
 
     Note over Logger: isLogInited = true
@@ -282,7 +282,7 @@ sequenceDiagram
     Ctrl->>Socket: sendto(/tmp/.logger.<process_name>.<pid>, COMC-framed packet)
     Note over Listener: Called from within target process event loop
     Listener->>Socket: select() + recvfrom() — non-blocking
-    Sicket-->>Listener: Binary control packet
+    Socket-->>Listener: Binary control packet
     Listener->>Listener: Verify COMC signature
     Listener->>Listener: Match __progname against app_name field
     Listener->>Reconfig: rdk_dbg_priv_set_level("LOG.RDK.MODULE", RDK_LOG_DEBUG)
@@ -322,8 +322,7 @@ RDK Logger is a foundational library where all interactions flow inward — midd
 | syslog daemon                | System-wide log integration                                          | `openlog()`, `syslog()`, `closelog()` — active when `HAVE_SYSLOG_H` is defined                                             |
 | systemd journal              | Modern Linux logging integration                                     | `sd_journal_print()` — active when `HAVE_SYSTEMD` is defined and `libsystemd >= 209` is present                            |
 | File system                  | Configuration file parsing; milestone and onboarding log persistence | `fopen()`, `fgets()`, `fprintf()` on `/etc/debug.ini`, `/opt/debug.ini`, `/nvram/debug.ini`, milestone log, onboarding log |
-| unix socket (loopback)       | Runtime log level control from `rdklogctrl`                          | `socket(AF_INET, SOCK_DGRAM)`, unicast                                                           |
-
+| Unix-domain datagram socket | Runtime log level control from `rdklogctrl` | `socket(AF_UNIX, SOCK_DGRAM)`, `/tmp/.logger_<process_name>.<pid>` |
 ### Events Published
 
 RDK Logger operates as a logging service, receiving log messages and control commands from RDK components and routing output to configured destinations. The table below captures the operational signals it emits.
@@ -392,9 +391,7 @@ sequenceDiagram
 
 - **Extended Initialization and File Logging**: `rdk_logger_ext_init()` accepts an `rdk_logger_ext_config_t` structure specifying a module name, log level, output type (`RDKLOG_OUTPUT_CONSOLE`, `RDKLOG_OUTPUT_SYSLOG`, `RDKLOG_OUTPUT_JOURNAL`, or `RDKLOG_OUTPUT_FILE`), format type, and an optional `rdk_LogOutput_File` file policy. When `RDKLOG_OUTPUT_FILE` is selected, the `rdk_LogOutput_File` structure must be populated with `fileName` (log file prefix, max 64 chars), `fileLocation` (directory path, max 256 chars), `fileCountMax` (maximum number of rotating files), and `fileSizeMax` (maximum size per file in bytes). This path, implemented in `rdk_dbg_priv_ext_init()`, creates or retrieves a Log4C category and attaches a dedicated `rollingfile` appender with a `sizewin` rolling policy. File rolling closes the current appender before reconfiguring, preventing data loss. This mechanism is the primary means for components that require per-component log files on disk rather than shared console or system log output.
 
-- **Runtime Log Level Control**: `rdk_dyn_log_process_pending_request()` in `src/rdk_dynamic_logger.c` uses a non-blocking `select()` call on the unix socket to drain any pending control messages in a loop. Each message is validated for the `"COMC"` signature and loopback source address before `rdk_dyn_log_validate_component_name()` matches the target process name against `__progname`. Validated messages invoke `rdk_dbg_priv_set_level()` which calls `log4c_category_set_priority()` with the new level.
-
-- **Error Handling Strategy**: If configuration file parsing fails, `rdk_logger_init()` returns `RDK_FAILURE` and writes a diagnostic message to `printf`. When `log4c_init()` encounters an error, `rdk_dbg_priv_init()` writes a diagnostic message to `stderr` and the process continues with category state unchanged. When the unix socket cannot be bound, `rdk_dyn_log_init()` writes a diagnostic to `stderr` and the process continues with static log levels only. Onboarding log file write failures produce output on `printf` as a fallback.
+- **Runtime Log Level Control**: `rdk_dyn_log_process_pending_request()` in `src/rdk_dynamic_logger.c` uses a non-blocking `select()` call on the Unix socket to drain pending control messages. Each message is checked for its size, terminated name fields, and `"COMC"` signature before `rdk_dyn_log_validate_component_name()` matches the target process name against `__progname` and validates the log level. Validated messages invoke `rdk_dbg_priv_set_level()` to update the category priority. Sender credentials are not checked.
 
 - **Logging & Diagnostics**: All `RDK_LOG()` calls use the `LOG.RDK.<MODULE>` naming convention. The root category `LOG.RDK` acts as the default parent for any module not explicitly listed in `debug.ini`. RDK Logger itself writes internal diagnostic messages to `stderr` (not through the `RDK_LOG` path) to avoid recursion during initialization or error conditions.
 
