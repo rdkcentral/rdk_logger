@@ -34,15 +34,15 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include "rdk_debug.h"
-#include "rdk_error.h"
+#include <pthread.h>
+#include "rdk_logger.h"
 #include "rdk_debug_priv.h"
 #include "rdk_dynamic_logger.h"
-#include "rdk_utils.h"
 
-#define BUF_LEN 256
-static int isLogInited = 0;
+static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
+
+bool isLogInited = false;
+
 /**
  * @brief Initialize the logger. Sets up the environment variable storage by parsing
  * debug configuration file then Initialize the debug support to the underlying platform.
@@ -56,48 +56,55 @@ static int isLogInited = 0;
  */
 rdk_Error rdk_logger_init(const char* debugConfigFile)
 {
-    rdk_Error ret;
-    struct stat st;
-    char buf[BUF_LEN] = {'\0'};
-
-    if (0 == isLogInited)
+    rdk_Error ret = RDK_SUCCESS;
+    pthread_mutex_lock(&gInitMutex);
+    if (!isLogInited)
     {
         if (NULL == debugConfigFile)
         {
             debugConfigFile = DEBUG_CONF_FILE;
         }
 
-        ret = rdk_logger_env_add_conf_file(debugConfigFile);
-        if ( RDK_SUCCESS != ret)
+        rdk_dbg_priv_init();
+        /* Perform Logger Internal Init */
+        ret = rdk_dbg_priv_config(debugConfigFile);
+
+        if (RDK_SUCCESS == ret)
         {
-            printf("%s:%d Adding debug config file %s failed\n", __FUNCTION__, __LINE__, debugConfigFile);
-            return ret;
-        }
+            /* Perform Dynamic Logger Internal Init */
+            rdk_dyn_log_init();
 
-        rdk_dbgInit();
-        rdk_dyn_log_init();
-
-        snprintf(buf, BUF_LEN-1, "/tmp/%s", "debugConfigFile_read");
-        buf[BUF_LEN-1] = '\0';
-
-        if((0 == stat(buf, &st) && (0 != st.st_ino)))
-        {
-            printf("%s %s Already Stack Level Logging processed... not processing again.\n", __FUNCTION__, debugConfigFile);
+            isLogInited = true;
+            /**
+             * Requests not to send SIGPIPE on errors on stream oriented
+             * sockets when the other end breaks the connection. The EPIPE
+             * error is still returned.
+             */
+            signal(SIGPIPE, SIG_IGN);
         }
         else
         {
-            rdk_dbgDumpLog(buf);
+            printf("Parsing debug config file %s failed\n", debugConfigFile);
         }
-
-        /**
-         * Requests not to send SIGPIPE on errors on stream oriented
-         * sockets when the other end breaks the connection. The EPIPE
-         * error is still returned.
-         */
-        signal(SIGPIPE, SIG_IGN);
-        isLogInited = 1;
     }
-    return RDK_SUCCESS;
+    pthread_mutex_unlock(&gInitMutex);
+    return ret;
+}
+
+rdk_Error rdk_logger_ext_init(const rdk_logger_ext_config_t* config)
+{
+    rdk_Error ret = RDK_SUCCESS;
+
+    ret = RDK_LOGGER_INIT();
+
+    if (RDK_SUCCESS == ret)
+    {
+        pthread_mutex_lock(&gInitMutex);
+        ret = rdk_dbg_priv_ext_init(config);
+        pthread_mutex_unlock(&gInitMutex);
+    }
+
+    return ret;
 }
 
 /**
@@ -107,15 +114,12 @@ rdk_Error rdk_logger_init(const char* debugConfigFile)
  */
 rdk_Error rdk_logger_deinit()
 {
-    if(isLogInited)
+    pthread_mutex_lock(&gInitMutex);
+    if (isLogInited)
     {
-        //rdk_dbgDeinit();
-        rdk_dyn_log_deInit();
-        //rdk_dbg_priv_DeInit();
-        rdk_logger_env_rem_conf_details();
-        log4c_fini();
-        //isLogInited = 0;
+        rdk_dyn_log_deinit();
     }
+    pthread_mutex_unlock(&gInitMutex);
 
     return RDK_SUCCESS;
 }

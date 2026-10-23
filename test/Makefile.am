@@ -20,11 +20,12 @@
 SUBDIRS =
 DIST_SUBDIRS =
 
-bin_PROGRAMS = dynamicLoggerTest
+bin_PROGRAMS = rdk_logger_cpu_test
 
-dynamicLoggerTest_SOURCES=rdk_dynamic_logger_test.c
-dynamicLoggerTest_LDADD = -L../src/util/.libs -lloggerutil -lIARMBus
-dynamicLoggerTest_CPPFLAGS = -I$(top_srcdir)/include
-dynamicLoggerTest_CFLAGS = -I./usr/include -I=/usr/include/rdk/iarmbus
-dynamicLoggerTest_LDFLAGS = -I./usr/lib
+rdk_logger_cpu_test_SOURCES= rdk_logger_cpu_test.c
+rdk_logger_cpu_test_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/include -I./usr/include
+rdk_logger_cpu_test_LDADD = $(top_builddir)/src/librdkloggers.la $(LOG4C_LIBS)
+rdk_logger_cpu_test_LDFLAGS = -L/usr/lib
+
+
 
