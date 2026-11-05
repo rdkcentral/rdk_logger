@@ -35,6 +35,7 @@
 #include <sys/un.h>
 
 #include "rdk_dynamic_logger.h"
+#include "rdk_dynamic_logger_parser.h"
 #include "rdk_debug_priv.h"
 
 
@@ -58,6 +59,14 @@ static char * rdk_dyn_log_logLevelToString(rdk_LogLevel log_level)
     return "NONE";
 }
 
+static void rdk_dyn_log_validate_component_name(const unsigned char *buf, size_t length)
+{
+    unsigned char log_level = 0;
+    char comp_name[64] = {0};
+    rdk_LogLevel loggingLevel;
+
+    if (!rdk_dyn_log_parse_request(buf, length, __progname, comp_name, sizeof(comp_name), &log_level))
+        return;
 static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t *message)
 {
     if (0 != memcmp(message->signature, RDK_DYNAMIC_LOG_SIGNATURE, RDK_DYNAMIC_LOG_SIGNATURE_LEN)) {
@@ -71,8 +80,11 @@ static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t 
 
     rdk_LogLevel loggingLevel = (rdk_LogLevel) message->log_level;
 
+    loggingLevel = (rdk_LogLevel) log_level;
     if((loggingLevel >= RDK_LOG_FATAL) && (loggingLevel <= RDK_LOG_NONE))
     {
+        rdk_dbg_priv_log_reconfig(comp_name, loggingLevel);
+        fprintf(stderr, "Log level change request to %s (%u) for the component %s, is success\n", rdk_dyn_log_logLevelToString(loggingLevel), loggingLevel, comp_name);
         rdk_dbg_priv_set_level(message->component_name, loggingLevel);
         fprintf(stderr, "Log level change request to %s (%u) for the component %s, is success\n", rdk_dyn_log_logLevelToString(loggingLevel), loggingLevel, message->component_name);
     }
@@ -80,12 +92,13 @@ static void rdk_dyn_log_validate_component_name(const rdk_dynamic_log_message_t 
     {
         fprintf(stderr, "Log level change request with Invalid input (%u)\n", loggingLevel);
     }
-
-    return;
 }
 
 void rdk_dyn_log_process_pending_request()
 {
+    char buf[128] = {0};
+    struct timeval tv;
+    int numbytes, ret;
     rdk_dynamic_log_message_t message = {0};
     struct sockaddr_un sender_addr;
     struct timeval tv;
@@ -114,7 +127,6 @@ void rdk_dyn_log_process_pending_request()
     while(1) {
         FD_ZERO(&rfds);
         FD_SET(g_dl_socket, &rfds);
-        addr_len = sizeof(sender_addr);
 
         tv.tv_sec = 0;
         tv.tv_usec = 0;
@@ -122,6 +134,7 @@ void rdk_dyn_log_process_pending_request()
         if(ret <= 0)
             break;
 
+        if ((numbytes=recvfrom(g_dl_socket, buf, sizeof(buf), MSG_TRUNC, NULL, NULL)) == -1) {
         numbytes = recvfrom(g_dl_socket, &message, sizeof(message), MSG_DONTWAIT | MSG_TRUNC, (struct sockaddr *)&sender_addr, &addr_len);
         if (numbytes == -1) {
             if(errno == EAGAIN || errno == EWOULDBLOCK)
@@ -131,6 +144,23 @@ void rdk_dyn_log_process_pending_request()
             return;
         }
 
+        /*
+         * msg_format {
+         *    char    m_signature[4];
+         *    uchar8  m_msgLength;
+         *    uchar8  m_logLevel;
+         *    uchar8  m_appLength;
+         *    char    m_appname[m_appLength];
+         *    uchar8  m_compNameLength;
+         *    char    m_compName[m_compNameLength];
+         * }
+         *
+         * Ensure that the we handle msgs only from localhost
+         */
+        if((numbytes >= DL_SIGNATURE_LEN + 1) &&
+                ((size_t)numbytes <= sizeof(buf)) &&
+                ((size_t)numbytes == (size_t)(unsigned char)buf[4] + DL_SIGNATURE_LEN + 1)) {
+            rdk_dyn_log_validate_component_name((const unsigned char *)buf, (size_t)numbytes);
         if ((numbytes != (int)sizeof(message))  ||
             (memchr(message.app_name, '\0', sizeof(message.app_name)) == NULL) ||
             (memchr(message.component_name, '\0', sizeof(message.component_name)) == NULL))
