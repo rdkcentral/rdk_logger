@@ -23,11 +23,14 @@ aclocal -I cfg
 libtoolize --automake
 autoheader
 automake --foreign --add-missing
-rm -f configure
-autoconf
+CONFIGURE_TMP="/tmp/rdklogger-configure.$$"
+autoconf -f -o "${CONFIGURE_TMP}" configure.ac
+test -s "${CONFIGURE_TMP}"
+cp "${CONFIGURE_TMP}" ./configure
+rm -f "${CONFIGURE_TMP}"
 export ac_cv_func_malloc_0_nonnull=yes
 export ac_cv_func_memset=yes
-./configure "--prefix=${INSTALL_PREFIX}"
+sh ./configure "--prefix=${INSTALL_PREFIX}"
 make
 make install
 echo "======================================================================================"
